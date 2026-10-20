@@ -53,6 +53,13 @@ jobs:
         with:
           tag_name: ${{ needs.tag.outputs.tag }}
           files: artifacts/**/*
+          body: |
+            **Download one file:**
+            - Windows: `Jollyboat-Setup-${{ inputs.version }}.exe` (updates itself) — or the `.msi` if you prefer, it doesn't update itself
+            - Linux: `Jollyboat-${{ inputs.version }}-x86_64.flatpak`
+
+            `latest.yml` and `.blockmap` are read by installed copies when they check for updates; ignore them.
+
           generate_release_notes: true
           draft: true
           prerelease: ${{ inputs.prerelease }}
