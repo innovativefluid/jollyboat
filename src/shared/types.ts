@@ -40,7 +40,7 @@ export type TSettings = {
 
 export type TVoiceState = { connected: boolean; inVoice: boolean; micMuted: boolean; deafened: boolean };
 
-export type TUpdateStatus = { state: 'idle' | 'checking' | 'available' | 'downloaded' | 'none' | 'error'; version?: string; message?: string };
+export type TUpdateStatus = { state: 'idle' | 'checking' | 'available' | 'downloaded' | 'none' | 'error'; version?: string; message?: string; url?: string };
 
 export type TServerInfo = {
   serverId: string;

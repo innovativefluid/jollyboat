@@ -14,6 +14,7 @@ import { app } from 'electron';
 import { createRequire } from 'node:module';
 import { basename } from 'node:path';
 import { release } from 'node:os';
+import { log } from './log';
 
 export type TScreenAudioMode = 'loopback-own-excluded' | 'loopback' | 'pipewire' | 'none';
 
@@ -43,8 +44,8 @@ export const initScreenAudio = () => {
   if (process.platform === 'linux') {
     // dev only: pretend pipewire is there so the page side can be tested headless
     if (!app.isPackaged && process.env.JOLLYBOAT_FAKE_PIPEWIRE) {
-      const log = (m: string) => () => (console.log(`[screen-audio] fake ${m}`), true);
-      patchBay = { link: log('link'), unlink: log('unlink'), unmute: log('unmute') } as unknown as TPatchBay;
+      const fake = (m: string) => () => (log('screen-audio', `fake ${m}`), true);
+      patchBay = { link: fake('link'), unlink: fake('unlink'), unmute: fake('unmute') } as unknown as TPatchBay;
       mode = 'pipewire';
       return mode;
     }
@@ -61,7 +62,7 @@ export const initScreenAudio = () => {
         return mode;
       }
     } catch (err) {
-      if (process.env.JOLLYBOAT_DEBUG) console.log('[screen-audio] venmic unavailable:', (err as Error).message);
+      log('screen-audio', 'venmic unavailable:', (err as Error).message);
     }
 
     mode = 'loopback';
@@ -106,7 +107,7 @@ export const startPipeWireShare = () => {
     only_default_speakers: true
   });
 
-  if (process.env.JOLLYBOAT_DEBUG) console.log('[screen-audio] pipewire link', linked, JSON.stringify(ownNodes()));
+  log('screen-audio', 'pipewire link', linked, ownNodes());
 
   return linked;
 };
@@ -121,7 +122,7 @@ export const stopPipeWireShare = () => {
   patchBay?.unlink();
   linked = false;
 
-  if (process.env.JOLLYBOAT_DEBUG) console.log('[screen-audio] pipewire unlinked');
+  log('screen-audio', 'pipewire unlinked');
 };
 
 /** one line for the launcher */

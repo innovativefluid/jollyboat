@@ -4,6 +4,7 @@
 import { app, Menu, nativeImage, Tray, type BrowserWindow } from 'electron';
 import { join } from 'node:path';
 import type { TVoiceState } from '../shared/types';
+import { log } from './log';
 
 type TTrayActions = {
   show: () => void;
@@ -13,14 +14,20 @@ type TTrayActions = {
   getMainWindow: () => BrowserWindow | null;
 };
 
-const state: TVoiceState & { unread: number; serverName: string } = {
+// unread has two sources: notifications that arrived while the window was in the background
+// (cleared when it gets focus) and the count Sharkord puts in its page title, "name (3)", which
+// Sharkord itself clears as channels are read. The marker shows the larger of the two.
+const state: TVoiceState & { notified: number; titled: number; serverName: string } = {
   connected: false,
   inVoice: false,
   micMuted: false,
   deafened: false,
-  unread: 0,
+  notified: 0,
+  titled: 0,
   serverName: ''
 };
+
+const unread = () => Math.max(state.notified, state.titled);
 
 let tray: Tray | null = null;
 let actions: TTrayActions | null = null;
@@ -45,17 +52,17 @@ const renderBadge = () => {
 
   if (process.platform === 'win32') {
     if (!win) return;
-    if (state.unread > 0) win.setOverlayIcon(iconFor('overlay-unread'), `${state.unread} new messages`);
+    if (unread() > 0) win.setOverlayIcon(iconFor('overlay-unread'), `${unread()} new messages`);
     else win.setOverlayIcon(null, '');
   } else {
-    app.setBadgeCount(state.unread);
+    app.setBadgeCount(unread());
   }
 };
 
 const iconName = () => {
   const base = state.deafened ? 'deafened' : state.micMuted ? 'muted' : 'normal';
 
-  return state.unread > 0 ? `${base}-unread` : base;
+  return unread() > 0 ? `${base}-unread` : base;
 };
 
 const tooltip = () => {
@@ -63,7 +70,7 @@ const tooltip = () => {
 
   if (state.serverName) parts.push(state.serverName);
   if (state.inVoice) parts.push(state.deafened ? 'deafened' : state.micMuted ? 'mic muted' : 'in voice');
-  if (state.unread > 0) parts.push(`${state.unread} new`);
+  if (unread() > 0) parts.push(`${unread()} new`);
 
   return parts.join(' | ');
 };
@@ -71,7 +78,7 @@ const tooltip = () => {
 const render = () => {
   if (!tray || !actions) return;
 
-  if (process.env.JOLLYBOAT_DEBUG) console.log('[tray]', iconName(), '|', tooltip());
+  log('tray', iconName(), '|', tooltip());
 
   const img = iconFor(iconName());
 
@@ -116,19 +123,26 @@ export const setVoiceState = (next: TVoiceState) => {
 
 export const setServerName = (name: string) => {
   state.serverName = name;
-  if (!name) Object.assign(state, { connected: false, inVoice: false, micMuted: false, deafened: false });
+  if (!name) Object.assign(state, { connected: false, inVoice: false, micMuted: false, deafened: false, titled: 0 });
   render();
 };
 
 export const addUnread = () => {
-  state.unread += 1;
+  state.notified += 1;
   render();
   actions?.getMainWindow()?.flashFrame(true);
 };
 
+export const setTitleUnread = (count: number) => {
+  if (state.titled === count) return;
+  state.titled = count;
+  render();
+};
+
+/** the window got focus: notification-driven marks are seen; the title count is Sharkord's to clear */
 export const clearUnread = () => {
-  if (state.unread === 0) return;
-  state.unread = 0;
+  if (state.notified === 0) return;
+  state.notified = 0;
   render();
   actions?.getMainWindow()?.flashFrame(false);
 };

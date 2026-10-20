@@ -15,8 +15,10 @@ import {
   unmutePipeWireShare,
   VIRTUAL_MIC_LABEL
 } from './screen-audio';
-import { addUnread, setVoiceState } from './tray';
-import { getUpdateStatus, installUpdateNow, onUpdateStatus, startUpdater } from './updater';
+import { addUnread, setTitleUnread, setVoiceState } from './tray';
+import { diagnostics } from './diagnostics';
+import { log } from './log';
+import { getUpdateStatus, installUpdateNow, onUpdateStatus, openReleasePage, startUpdater } from './updater';
 import {
   decryptPassword,
   findServerByUrl,
@@ -174,6 +176,19 @@ export const registerIpc = ({ connectToServer, quit, getMainWindow, spellcheckAt
     return false;
   });
 
+  // sharkord's title carries its own unread total: "name (3)"
+  ipcMain.on('server:title', (event, title: unknown) => {
+    if (!fromSavedServer(event) || typeof title !== 'string') return;
+    const m = /\((\d+)\)\s*$/.exec(title);
+    setTitleUnread(m ? Math.min(999, Number(m[1])) : 0);
+  });
+
+  // warnings from the page side, for diagnostics
+  ipcMain.on('server:log', (event, text: unknown) => {
+    if (!fromSavedServer(event) || typeof text !== 'string') return;
+    log('page', text.slice(0, 500));
+  });
+
   ipcMain.on('server:notification-click', (event) => {
     if (!fromSavedServer(event)) return;
 
@@ -221,6 +236,8 @@ export const registerIpc = ({ connectToServer, quit, getMainWindow, spellcheckAt
   ipcMain.handle('autostart:set', guard((_e, enabled: unknown) => setAutoStart(enabled === true)));
   ipcMain.handle('update:status', guard(() => getUpdateStatus()));
   ipcMain.handle('update:install', guard(() => installUpdateNow()));
+  ipcMain.handle('update:open', guard(() => openReleasePage()));
+  ipcMain.handle('diag:text', guard(() => diagnostics()));
 
   onUpdateStatus((status) => getMainWindow()?.webContents.send('update:status', status));
 };

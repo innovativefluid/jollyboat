@@ -6,6 +6,7 @@
 
 import { BrowserWindow, desktopCapturer, ipcMain, session } from 'electron';
 import type { TCaptureSource, TPickerResult } from '../shared/types';
+import { log } from './log';
 import { loopbackForRequest } from './screen-audio';
 import { getSettings, saveSettings } from './settings';
 import { pageUrl, preloadPath } from './paths';
@@ -94,7 +95,7 @@ export const installDisplayMediaHandler = (getMainWindow: () => BrowserWindow | 
 
       callback({ video: source, audio: loopbackForRequest(request.audioRequested) });
     } catch (err) {
-      console.error('[screen-share] failed', err);
+      log('screen-share', 'failed', String(err));
       callback({});
     }
   });

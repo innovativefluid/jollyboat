@@ -56,7 +56,7 @@ jobs:
           body: |
             **Download one file:**
             - Windows: `Jollyboat-Setup-${{ inputs.version }}.exe`
-            - Linux: `Jollyboat-${{ inputs.version }}-x86_64.flatpak`
+            - Linux: `Jollyboat-${{ inputs.version }}-x86_64.flatpak`, or `-aarch64` on ARM
 
             `latest.yml` and `.blockmap` are read by installed copies when they check for updates; ignore them.
 

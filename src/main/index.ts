@@ -6,6 +6,7 @@ import { registerIpc } from './ipc';
 import { isOwnPageUrl, originOf, pageUrl, preloadPath } from './paths';
 import { installDisplayMediaHandler } from './screen-share';
 import { findServerByUrl, getSettings, saveSettings } from './settings';
+import { log } from './log';
 import { clearUnread, createTray, hasTray, setServerName } from './tray';
 import { applySpellcheck, blockDictionaryDownloads } from './privacy';
 import { initScreenAudio, stopPipeWireShare } from './screen-audio';
@@ -39,6 +40,7 @@ if (!spellcheckAtStart) blockDictionaryDownloads();
 
 let mainWindow: BrowserWindow | null = null;
 let quitting = false;
+let crashes: number[] = [];
 // --hidden (autostart): stay in the tray until the user asks for the window
 let startHidden = process.argv.includes('--hidden');
 
@@ -106,7 +108,35 @@ const createMainWindow = () => {
   // identity provider, so other https origins are allowed in-window; anything else is not
   // a pipewire share never outlives the page that started it
   mainWindow.webContents.on('did-start-navigation', (details) => details.isMainFrame && !details.isSameDocument && stopPipeWireShare());
-  mainWindow.webContents.on('render-process-gone', stopPipeWireShare);
+  // a crashed or hung page comes back on its own; three crashes in two minutes go to the launcher
+  mainWindow.webContents.on('render-process-gone', (_e, details) => {
+    stopPipeWireShare();
+    log('window', 'renderer gone:', details.reason, details.exitCode);
+
+    if (details.reason === 'clean-exit' || details.reason === 'killed') return;
+
+    const now = Date.now();
+    crashes = crashes.filter((t) => now - t < 120_000).concat(now);
+
+    const url = mainWindow?.webContents.getURL() ?? '';
+    const server = findServerByUrl(url);
+
+    if (crashes.length >= 3 || !server) showLauncher(`${server ? `${server.name} | ` : ''}page crashed (${details.reason})`);
+    else mainWindow?.loadURL(url);
+  });
+
+  let hangTimer: NodeJS.Timeout | null = null;
+  mainWindow.on('unresponsive', () => {
+    log('window', 'unresponsive');
+    hangTimer = setTimeout(() => {
+      log('window', 'still unresponsive after 30 s, reloading');
+      mainWindow?.webContents.forcefullyCrashRenderer();
+    }, 30_000);
+  });
+  mainWindow.on('responsive', () => {
+    if (hangTimer) clearTimeout(hangTimer);
+    hangTimer = null;
+  });
 
   mainWindow.webContents.on('will-navigate', (event, url) => {
     if (!isOwnPageUrl(url) && !/^https?:/i.test(url)) event.preventDefault();

@@ -32,6 +32,8 @@ declare global {
       setAutoStart: (enabled: boolean) => Promise<boolean>;
       updateStatus: () => Promise<TUpdateStatus>;
       installUpdate: () => Promise<void>;
+      openReleasePage: () => Promise<void>;
+      diagnostics: () => Promise<string>;
       onUpdateStatus: (cb: (s: TUpdateStatus) => void) => void;
       onPickerSources: (cb: (sources: TCaptureSource[], lastName: string | null) => void) => void;
       pickerChoose: (result: TPickerResult) => void;

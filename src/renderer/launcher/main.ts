@@ -263,8 +263,14 @@ const renderSettings = async () => {
     toast(spell.checked && !settings.spellcheckAtStart ? 'on after restart' : 'saved');
   };
 
+  $('diagnostics').onclick = async () => {
+    await navigator.clipboard.writeText(await window.shell.diagnostics());
+    fx.burstAt($('diagnostics'), 10);
+    toast('copied');
+  };
+
   const updates = $<HTMLInputElement>('check-updates');
-  $('updates-row').hidden = platform !== 'win32';
+  $('updates-row').hidden = platform !== 'win32' && platform !== 'linux';
   updates.checked = settings.checkUpdates;
   updates.onchange = () => { window.shell.saveSettings({ checkUpdates: updates.checked }); toast('saved'); };
 
@@ -290,21 +296,20 @@ const renderSettings = async () => {
     const text = {
       idle: '',
       checking: 'checking for updates',
-      available: `downloading ${s.version ?? 'update'}`,
+      available: platform === 'win32' ? `downloading ${s.version ?? 'update'}` : `${s.version ?? 'a newer version'} available | click to open`,
       downloaded: `${s.version ?? 'update'} ready | click to install`,
       none: 'up to date',
       error: `update check failed | ${s.message ?? ''}`
     }[s.state];
-    hint(updateLine, text, s.state === 'downloaded' ? 'good' : s.state === 'error' ? 'bad' : '');
-    updateLine.onclick = s.state === 'downloaded' ? () => window.shell.installUpdate() : null;
-    updateLine.style.cursor = s.state === 'downloaded' ? 'pointer' : '';
+    const clickable = s.state === 'downloaded' || (platform === 'linux' && s.state === 'available');
+    hint(updateLine, text, s.state === 'downloaded' || (platform === 'linux' && s.state === 'available') ? 'good' : s.state === 'error' ? 'bad' : '');
+    updateLine.onclick = !clickable ? null : s.state === 'downloaded' ? () => window.shell.installUpdate() : () => window.shell.openReleasePage();
+    updateLine.style.cursor = clickable ? 'pointer' : '';
   };
-  if (platform === 'win32') {
+  if (platform === 'win32' || platform === 'linux') {
     if (!settings.checkUpdates) hint(updateLine, 'update checks off');
     else showUpdate(await window.shell.updateStatus());
     window.shell.onUpdateStatus(showUpdate);
-  } else if (platform === 'linux') {
-    hint(updateLine, 'updates via flatpak');
   }
 
   $('version').textContent = `jollyboat ${window.shell.version}${settings.secureStorage ? '' : ' | no keyring, passwords unencrypted'}`;

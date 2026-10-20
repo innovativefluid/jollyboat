@@ -39,6 +39,8 @@ if (boot.isOwnPage) {
     setAutoStart: (enabled: boolean) => ipcRenderer.invoke('autostart:set', enabled),
     updateStatus: () => ipcRenderer.invoke('update:status'),
     installUpdate: () => ipcRenderer.invoke('update:install'),
+    openReleasePage: () => ipcRenderer.invoke('update:open'),
+    diagnostics: () => ipcRenderer.invoke('diag:text'),
     onUpdateStatus: (cb: (s: TUpdateStatus) => void) => {
       ipcRenderer.on('update:status', (_e, s) => cb(s));
     },
@@ -78,6 +80,10 @@ if (boot.isSavedServer) {
     const md = navigator.mediaDevices;
     const cfg = ${screenAudio};
     const shell = window.jollyboat;
+    const warn = (text, err) => {
+      console.warn('[jollyboat] ' + text, err || '');
+      try { window.postMessage({ __jollyboat: 'log', text: text + (err ? ' | ' + (err.name || '') + ' ' + (err.message || '') : '') }, '*'); } catch {}
+    };
 
     // pipewire: the page gets a video-only capture plus the virtual mic that carries every app's
     // sound except ours; the link is undone when the share stops
@@ -88,7 +94,7 @@ if (boot.isSavedServer) {
         device = (await md.enumerateDevices()).find((d) => d.kind === 'audioinput' && d.label.toLowerCase().includes(cfg.virtualMic));
         if (!device) await new Promise((r) => setTimeout(r, 100));
       }
-      if (!device) { shell.screenAudio('stop'); console.warn('[jollyboat] the pipewire share source did not appear'); return; }
+      if (!device) { shell.screenAudio('stop'); warn('the pipewire share source did not appear'); return; }
       const audio = await md.getUserMedia({ audio: {
         deviceId: { exact: device.deviceId },
         echoCancellation: false, noiseSuppression: false, autoGainControl: false,
@@ -125,7 +131,7 @@ if (boot.isSavedServer) {
 
         if (cfg && cfg.pipewire && wantsAudio) {
           const stream = await original({ ...c, audio: false });
-          try { await attachPipeWire(stream); } catch (err) { shell.screenAudio('stop'); console.warn('[jollyboat] pipewire audio failed', err); }
+          try { await attachPipeWire(stream); } catch (err) { shell.screenAudio('stop'); warn('pipewire audio failed', err); }
           return stream;
         }
 
@@ -134,7 +140,7 @@ if (boot.isSavedServer) {
         } catch (err) {
           // a loopback device that cannot open must not cost the whole share
           if (wantsAudio && err && err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
-            console.warn('[jollyboat] share with audio failed, sharing without audio', err);
+            warn('share with audio failed, sharing without audio', err);
             return original({ ...c, audio: false });
           }
           throw err;
@@ -166,6 +172,7 @@ if (boot.isSavedServer) {
     if (e.source !== window || !e.data || typeof e.data !== 'object') return;
     const kind = (e.data as { __jollyboat?: string }).__jollyboat;
     if (kind === 'notification') ipcRenderer.send('server:notification');
+    if (kind === 'log') ipcRenderer.send('server:log', String((e.data as { text?: unknown }).text ?? ''));
     if (kind === 'notification-click') ipcRenderer.send('server:notification-click');
   });
 
@@ -201,9 +208,20 @@ if (boot.isSavedServer) {
     requestAnimationFrame(report);
   };
 
+  // sharkord keeps its unread total in the title: "name (3)"
+  let lastTitle = '';
+  const reportTitle = () => {
+    if (document.title === lastTitle) return;
+    lastTitle = document.title;
+    ipcRenderer.send('server:title', lastTitle);
+  };
+
   window.addEventListener('DOMContentLoaded', () => {
     new MutationObserver(schedule).observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
     schedule();
+    const head = document.querySelector('head');
+    if (head) new MutationObserver(reportTitle).observe(head, { subtree: true, childList: true, characterData: true });
+    reportTitle();
   });
 
   // tray menu actions: click Sharkord's own buttons

@@ -19,7 +19,7 @@ From [releases](../../releases):
 | | |
 |---|---|
 | Windows | `Jollyboat-Setup-x.y.z.exe` |
-| Linux | `flatpak install ./jollyboat-x.y.z.flatpak` |
+| Linux | `flatpak install ./Jollyboat-x.y.z-x86_64.flatpak` (or `-aarch64`) |
 
 Add your server's address; if a proxy asks for a login first, fill in the basic auth fields.
 
