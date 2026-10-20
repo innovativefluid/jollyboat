@@ -270,8 +270,9 @@ if (boot.isSavedServer) {
     ipcRenderer.send('server:title', lastTitle);
   };
 
-  // sharkord's chat re-renders constantly, so the whole document is watched only until the
-  // control bar exists; from then on just the bar, and the body for it disappearing
+  // the mic/deafen bar is watched closely (class changes included); the in-voice marker sits
+  // elsewhere in the sidebar, so any added/removed node in the document also re-reads the
+  // state — once per animation frame at most, and only reported when it changed
   let watchedBar: Element | null = null;
   const barObserver = new MutationObserver(schedule);
   const rescope = () => {
@@ -280,12 +281,15 @@ if (boot.isSavedServer) {
     barObserver.disconnect();
     watchedBar = bar;
     if (bar) barObserver.observe(bar, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
-    schedule();
   };
 
   window.addEventListener('DOMContentLoaded', () => {
-    new MutationObserver(rescope).observe(document.body, { subtree: true, childList: true });
+    new MutationObserver(() => {
+      rescope();
+      schedule();
+    }).observe(document.body, { subtree: true, childList: true });
     rescope();
+    schedule();
     const head = document.querySelector('head');
     if (head) new MutationObserver(reportTitle).observe(head, { subtree: true, childList: true, characterData: true });
     reportTitle();
