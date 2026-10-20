@@ -7,6 +7,9 @@ files:
   - out/**
   - resources/**
   - package.json
+  # venmic ships its build tree in the npm package; only lib/ and prebuilds/ run
+  - '!node_modules/@vencord/venmic/{src,include,private,addon,cmake,CMakeLists.txt,flake.nix,README.md}'
+  - '!node_modules/{cmake-js,node-addon-api}/**'
 asar: true
 # native modules (venmic on linux) must live outside the archive; the prebuilt N-API binaries
 # are used as they are, nothing is recompiled for electron
