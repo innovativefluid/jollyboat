@@ -19,18 +19,68 @@ const filePath = () => join(app.getPath('userData'), 'settings.json');
 
 let cache: TSettings | null = null;
 
+// settings.json is user-writable: keep only values of the right shape
+const sanitize = (raw: unknown): TSettings => {
+  const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const out: TSettings = { ...DEFAULTS };
+
+  if (Array.isArray(r.servers)) {
+    out.servers = r.servers.flatMap((s): TServerEntry[] => {
+      const e = (s ?? {}) as Record<string, unknown>;
+      if (typeof e.id !== 'string' || typeof e.url !== 'string') return [];
+      try {
+        new URL(e.url);
+      } catch {
+        return [];
+      }
+      const auth = e.basicAuth as Record<string, unknown> | undefined;
+      const test = e.lastTest as Record<string, unknown> | undefined;
+      return [
+        {
+          id: e.id,
+          url: e.url,
+          name: typeof e.name === 'string' ? e.name : new URL(e.url).host,
+          ...(auth && typeof auth.username === 'string' && typeof auth.passwordEnc === 'string'
+            ? { basicAuth: { username: auth.username, passwordEnc: auth.passwordEnc } }
+            : {}),
+          ...(test && typeof test.ok === 'boolean' && typeof test.at === 'number'
+            ? { lastTest: { ok: test.ok, at: test.at, ...(typeof test.status === 'number' ? { status: test.status } : {}) } }
+            : {})
+        }
+      ];
+    });
+  }
+
+  if (typeof r.autoConnectServerId === 'string' && out.servers.some((s) => s.id === r.autoConnectServerId)) {
+    out.autoConnectServerId = r.autoConnectServerId;
+  }
+  for (const key of ['minimizeToTray', 'spellcheck', 'checkUpdates', 'notifyTray'] as const) {
+    if (typeof r[key] === 'boolean') out[key] = r[key] as boolean;
+  }
+  const b = r.windowBounds as Record<string, unknown> | undefined;
+  if (b && ['x', 'y', 'width', 'height'].every((k) => Number.isFinite(b[k]))) {
+    out.windowBounds = { x: b.x as number, y: b.y as number, width: Math.max(300, b.width as number), height: Math.max(200, b.height as number) };
+  }
+  if (typeof r.lastSourceName === 'string') out.lastSourceName = r.lastSourceName.slice(0, 200);
+
+  return out;
+};
+
 export const getSettings = (): TSettings => {
   if (cache) return cache;
 
   try {
-    const raw = JSON.parse(readFileSync(filePath(), 'utf8'));
-    cache = { ...DEFAULTS, ...raw };
+    cache = sanitize(JSON.parse(readFileSync(filePath(), 'utf8')));
   } catch {
     cache = { ...DEFAULTS };
   }
 
   return cache!;
 };
+
+const serverListeners = new Set<() => void>();
+/** called after any change to the server list (basic-auth filter follows it) */
+export const onServersChanged = (l: () => void) => serverListeners.add(l);
 
 export const saveSettings = (patch: Partial<TSettings>) => {
   const next = { ...getSettings(), ...patch };
@@ -91,6 +141,7 @@ export const upsertServer = (input: TServerInput): TServerEntry => {
     : [...settings.servers, entry];
 
   saveSettings({ servers });
+  serverListeners.forEach((l) => l());
 
   return entry;
 };
@@ -102,6 +153,7 @@ export const removeServer = (id: string) => {
     servers: settings.servers.filter((s) => s.id !== id),
     autoConnectServerId: settings.autoConnectServerId === id ? null : settings.autoConnectServerId
   });
+  serverListeners.forEach((l) => l());
 };
 
 export const recordTest = (id: string, result: { ok: boolean; status?: number }) => {

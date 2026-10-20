@@ -75,14 +75,19 @@ if (boot.isSavedServer) {
   // --- main-world patches: getDisplayMedia (screen-share audio) and Notification ----------------
   // screen quality (resolution, fps, bitrate, codec) stays Sharkord's own setting
   const screenAudio = JSON.stringify(boot.screenAudio);
+  // messages from the injected script carry a nonce that lives in its closure; page scripts
+  // cannot read it, so they cannot forge notifications, focus requests or log lines
+  const nonce = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('');
 
   webFrame.executeJavaScript(`(() => {
     const md = navigator.mediaDevices;
     const cfg = ${screenAudio};
     const shell = window.jollyboat;
+    const nonce = ${JSON.stringify(nonce)};
+    const tell = (kind, extra) => { try { window.postMessage({ __jollyboat: kind, nonce, ...(extra || {}) }, '*'); } catch {} };
     const warn = (text, err) => {
       console.warn('[jollyboat] ' + text, err || '');
-      try { window.postMessage({ __jollyboat: 'log', text: text + (err ? ' | ' + (err.name || '') + ' ' + (err.message || '') : '') }, '*'); } catch {}
+      tell('log', { text: text + (err ? ' | ' + (err.name || '') + ' ' + (err.message || '') : '') });
     };
 
     // pipewire: the page gets a video-only capture plus the virtual mic that carries every app's
@@ -153,9 +158,9 @@ if (boot.isSavedServer) {
     if (Orig && !Orig.__jollyboatPatched) {
       const Wrapped = function (title, options) {
         const n = new Orig(title, options);
-        try { window.postMessage({ __jollyboat: 'notification', title: String(title) }, '*'); } catch {}
+        tell('notification');
         n.addEventListener('click', () => {
-          try { window.postMessage({ __jollyboat: 'notification-click' }, '*'); } catch {}
+          tell('notification-click');
         });
         return n;
       };
@@ -168,12 +173,17 @@ if (boot.isSavedServer) {
     }
   })();`);
 
+  let lastClick = 0;
   window.addEventListener('message', (e) => {
     if (e.source !== window || !e.data || typeof e.data !== 'object') return;
-    const kind = (e.data as { __jollyboat?: string }).__jollyboat;
-    if (kind === 'notification') ipcRenderer.send('server:notification');
-    if (kind === 'log') ipcRenderer.send('server:log', String((e.data as { text?: unknown }).text ?? ''));
-    if (kind === 'notification-click') ipcRenderer.send('server:notification-click');
+    const data = e.data as { __jollyboat?: string; nonce?: string; text?: unknown };
+    if (data.nonce !== nonce) return;
+    if (data.__jollyboat === 'notification') ipcRenderer.send('server:notification');
+    if (data.__jollyboat === 'log') ipcRenderer.send('server:log', String(data.text ?? '').slice(0, 500));
+    if (data.__jollyboat === 'notification-click' && Date.now() - lastClick > 2000) {
+      lastClick = Date.now();
+      ipcRenderer.send('server:notification-click');
+    }
   });
 
   // --- voice state for the tray: read from Sharkord's own controls ----------------------------
@@ -216,9 +226,22 @@ if (boot.isSavedServer) {
     ipcRenderer.send('server:title', lastTitle);
   };
 
-  window.addEventListener('DOMContentLoaded', () => {
-    new MutationObserver(schedule).observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+  // sharkord's chat re-renders constantly, so the whole document is watched only until the
+  // control bar exists; from then on just the bar, and the body for it disappearing
+  let watchedBar: Element | null = null;
+  const barObserver = new MutationObserver(schedule);
+  const rescope = () => {
+    const bar = controlBar();
+    if (bar === watchedBar) return;
+    barObserver.disconnect();
+    watchedBar = bar;
+    if (bar) barObserver.observe(bar, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
     schedule();
+  };
+
+  window.addEventListener('DOMContentLoaded', () => {
+    new MutationObserver(rescope).observe(document.body, { subtree: true, childList: true });
+    rescope();
     const head = document.querySelector('head');
     if (head) new MutationObserver(reportTitle).observe(head, { subtree: true, childList: true, characterData: true });
     reportTitle();

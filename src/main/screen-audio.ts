@@ -27,6 +27,12 @@ type TPatchBay = {
 let mode: TScreenAudioMode = 'none';
 let patchBay: TPatchBay | null = null;
 let linked = false;
+let shareGrantedAt = 0;
+
+/** the display-media handler just handed a page a capture; a pipewire link may follow */
+export const markShareGranted = () => {
+  shareGrantedAt = Date.now();
+};
 
 export const VIRTUAL_MIC_LABEL = 'vencord-screen-share';
 
@@ -97,6 +103,11 @@ const ownNodes = () => {
 /** links every app's output except ours into the virtual mic */
 export const startPipeWireShare = () => {
   if (mode !== 'pipewire' || !patchBay) return false;
+  // only right after a share the user picked; a page cannot route system audio on its own
+  if (Date.now() - shareGrantedAt > 15_000) {
+    log('screen-audio', 'link refused: no share was granted recently');
+    return false;
+  }
 
   if (linked) patchBay.unlink();
 

@@ -7,7 +7,7 @@
 import { BrowserWindow, desktopCapturer, ipcMain, session } from 'electron';
 import type { TCaptureSource, TPickerResult } from '../shared/types';
 import { log } from './log';
-import { loopbackForRequest } from './screen-audio';
+import { loopbackForRequest, markShareGranted } from './screen-audio';
 import { getSettings, saveSettings } from './settings';
 import { pageUrl, preloadPath } from './paths';
 
@@ -78,6 +78,7 @@ export const installDisplayMediaHandler = (getMainWindow: () => BrowserWindow | 
         // window comes back instead, so that path falls through to our own picker
         const [source] = await desktopCapturer.getSources({ types: ['screen', 'window'] });
 
+        if (source) markShareGranted();
         return callback(source ? { video: source, audio: loopbackForRequest(request.audioRequested) } : {});
       }
 
@@ -92,6 +93,7 @@ export const installDisplayMediaHandler = (getMainWindow: () => BrowserWindow | 
       if (!source) return callback({});
 
       saveSettings({ lastSourceName: source.name });
+      markShareGranted();
 
       callback({ video: source, audio: loopbackForRequest(request.audioRequested) });
     } catch (err) {

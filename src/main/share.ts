@@ -96,7 +96,8 @@ export const importShared = (doc: TShared) => {
         : null
     };
 
-    return upsertServer(input).name;
+    const saved = upsertServer(input);
+    return `${saved.name} (${new URL(saved.url).host})`;
   });
 };
 

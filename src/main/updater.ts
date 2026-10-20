@@ -94,4 +94,7 @@ export const installUpdateNow = async () => {
   autoUpdater.quitAndInstall();
 };
 
-export const openReleasePage = () => shell.openExternal(status.url ?? RELEASES_PAGE);
+export const openReleasePage = () => {
+  const url = status.url && status.url.startsWith(`${RELEASES_PAGE}/`) ? status.url : RELEASES_PAGE;
+  return shell.openExternal(url);
+};

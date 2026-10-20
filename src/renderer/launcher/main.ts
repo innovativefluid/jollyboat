@@ -95,6 +95,7 @@ const openEditor = (server?: TServerEntry) => {
   fUser.value = server?.basicAuth?.username ?? '';
   fPass.value = '';
   fPass.placeholder = server?.basicAuth ? 'unchanged' : '';
+  checkUrl();
   deleteBtn.hidden = !server;
   openBtn.hidden = !server;
   autoRow.hidden = !server;
@@ -146,6 +147,13 @@ openBtn.onclick = () => editingId && window.shell.connect(editingId);
 for (const input of [fUrl, fName, fUser, fPass]) {
   input.addEventListener('keydown', (e) => e.key === 'Enter' && save());
 }
+
+// a plain http server sends the proxy login in clear
+const urlNote = $('url-note');
+const checkUrl = () => {
+  urlNote.textContent = /^http:\/\/(?!(localhost|127\.|10\.|192\.168\.|\[::1\]))/i.test(fUrl.value.trim()) ? '! http: the proxy login travels unencrypted' : '';
+};
+fUrl.addEventListener('input', checkUrl);
 
 // remove needs a second click
 deleteBtn.onclick = async () => {

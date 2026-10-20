@@ -201,9 +201,11 @@ export const createPaper = (canvas: HTMLCanvasElement) => {
   const start = performance.now();
   const now = () => (performance.now() - start) / 1000;
 
+  let tick = 0;
   const loop = () => {
     if (!running) return;
-    frame(now());
+    // half rate while another window has focus: the glass still breathes, at half the cost
+    if (document.hasFocus() || (tick++ & 1) === 0) frame(now());
     raf = requestAnimationFrame(loop);
   };
 

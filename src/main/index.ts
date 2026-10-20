@@ -1,11 +1,11 @@
 import { app, BrowserWindow, Menu, screen, session, shell } from 'electron';
 import { join } from 'node:path';
-import { installBasicAuth } from './basic-auth';
+import { installBasicAuth, refreshBasicAuth } from './basic-auth';
 import { startBridge, stopBridge } from './hotkeys/bridge';
 import { registerIpc } from './ipc';
 import { isOwnPageUrl, originOf, pageUrl, preloadPath } from './paths';
 import { installDisplayMediaHandler } from './screen-share';
-import { findServerByUrl, getSettings, saveSettings } from './settings';
+import { findServerByUrl, getSettings, onServersChanged, saveSettings } from './settings';
 import { log } from './log';
 import { clearUnread, createTray, hasTray, setServerName } from './tray';
 import { applySpellcheck, blockDictionaryDownloads } from './privacy';
@@ -98,8 +98,13 @@ const createMainWindow = () => {
   mainWindow.on('move', rememberBounds);
 
   // links Sharkord opens in a new window go to the system browser
+  let lastExternal = 0;
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (/^https?:/i.test(url)) shell.openExternal(url);
+    // at most one external tab per second, so a page cannot flood the browser
+    if (/^https?:/i.test(url) && Date.now() - lastExternal > 1000) {
+      lastExternal = Date.now();
+      shell.openExternal(url);
+    }
 
     return { action: 'deny' };
   });
@@ -250,7 +255,8 @@ if (!app.requestSingleInstanceLock()) {
       callback(allowedPermissions.includes(permission) && isTrustedOrigin(url));
     });
     session.defaultSession.setPermissionCheckHandler((wc, permission, origin) => {
-      return allowedPermissions.includes(permission) && isTrustedOrigin(wc?.getURL() ?? originOf(origin) ?? '');
+      const url = originOf(origin) ?? wc?.getURL() ?? '';
+      return allowedPermissions.includes(permission) && isTrustedOrigin(url);
     });
 
     // dns: the operating system's resolver (hosts file, mdns .local names, vpn split dns), no doh upgrade
@@ -259,6 +265,7 @@ if (!app.requestSingleInstanceLock()) {
     initScreenAudio();
 
     installBasicAuth();
+    onServersChanged(refreshBasicAuth);
     installDisplayMediaHandler(() => mainWindow);
     await startBridge();
     registerIpc({
