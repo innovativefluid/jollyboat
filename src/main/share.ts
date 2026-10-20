@@ -110,7 +110,7 @@ export const exportToFile = async (win: BrowserWindow | null, doc: TShared) => {
 
   if (canceled || !filePath) return null;
 
-  await writeFile(filePath, JSON.stringify(doc, null, 2));
+  await writeFile(filePath, JSON.stringify(doc, null, 2), { mode: 0o600 }); // may hold passwords
 
   return filePath;
 };

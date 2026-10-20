@@ -8,11 +8,12 @@
 
 import { app, globalShortcut } from 'electron';
 import { randomBytes } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import { join } from 'node:path';
 import { WebSocketServer, type WebSocket } from 'ws';
 import { BRIDGE_PORT, type TBridgeStatus } from '../../shared/types';
+import { findServerByUrl } from '../settings';
 import { comboToAccelerator } from './combo';
 
 const PROTOCOL_VERSION = 1;
@@ -33,14 +34,21 @@ const tokenPath = () => join(app.getPath('userData'), 'bridge-token');
 const loadOrCreateToken = () => {
   try {
     const existing = readFileSync(tokenPath(), 'utf8').trim();
-    if (existing) return existing;
+    if (existing) {
+      try {
+        chmodSync(tokenPath(), 0o600); // files from older versions
+      } catch {
+        /* windows: acls, not modes */
+      }
+      return existing;
+    }
   } catch {
     /* first run */
   }
 
   const fresh = randomBytes(24).toString('base64url');
   mkdirSync(app.getPath('userData'), { recursive: true });
-  writeFileSync(tokenPath(), fresh);
+  writeFileSync(tokenPath(), fresh, { mode: 0o600 });
 
   return fresh;
 };
@@ -169,7 +177,14 @@ export const startBridge = async (): Promise<TBridgeStatus> => {
   const server = createServer((_req, res) => {
     res.writeHead(426).end('Jollyboat hotkey bridge');
   });
-  const wss = new WebSocketServer({ server, maxPayload: 64 * 1024 });
+  // only sharkord pages from saved servers (inside jollyboat) talk to this bridge: any other site
+  // in any browser on this machine could reach 127.0.0.1, so it is turned away before the token
+  // even comes into it. a handful of connections at most
+  const wss: WebSocketServer = new WebSocketServer({
+    server,
+    maxPayload: 64 * 1024,
+    verifyClient: ({ origin }: { origin: string }) => !!origin && !!findServerByUrl(origin) && wss.clients.size < 8
+  });
 
   wss.on('connection', handleConnection);
 

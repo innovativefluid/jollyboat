@@ -17,6 +17,12 @@ export const pageUrl = (page: 'launcher' | 'picker' | 'prompt' | 'bar') => {
   return `${rendererRoot()}${page}/index.html`;
 };
 
+export type TOwnPage = 'launcher' | 'picker' | 'prompt' | 'bar';
+
+/** Which of our pages a url is (null for anything else). */
+export const ownPageOf = (url: string): TOwnPage | null =>
+  (['launcher', 'picker', 'prompt', 'bar'] as const).find((p) => url.startsWith(pageUrl(p).replace(/index\.html$/, ''))) ?? null;
+
 /** True only for our own pages: the built renderer directory or the electron-vite dev server. */
 export const isOwnPageUrl = (url: string) => {
   const dev = process.env.ELECTRON_RENDERER_URL;

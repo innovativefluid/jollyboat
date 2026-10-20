@@ -92,7 +92,8 @@ const renderIcon = () => {
 const render = () => {
   if (!tray || !actions) return;
 
-  log('tray', tooltip());
+  // the state without the server's name: diagnostics carry no server names
+  log('tray', [state.inVoice ? (state.deafened ? 'deafened' : state.micMuted ? 'mic muted' : 'in voice') : state.serverName ? 'connected' : 'no server', unread() ? `${unread()} new` : ''].filter(Boolean).join(' | '));
   renderIcon();
   tray.setToolTip(tooltip());
   tray.setContextMenu(

@@ -299,7 +299,8 @@ const createMainWindow = () => {
 
   // a server that cannot be reached bounces back to the launcher with the reason
   wc.on('did-fail-load', (_e, code, description, url, isMainFrame) => {
-    log('window', 'load failed', code, description, isMainFrame ? 'main' : 'sub', url.slice(0, 80));
+    // no address in the log: diagnostics promise no server names or urls
+    log('window', 'load failed', code, description, isMainFrame ? 'main frame' : 'subframe', findServerByUrl(url) ? 'of a saved server' : 'elsewhere');
     if (!isMainFrame || code === -3 /* aborted: a new navigation started */) return;
 
     const text = description.toLowerCase().replace(/^err_/, '').replace(/_/g, ' ');
@@ -531,6 +532,21 @@ const runSmokeTest = async () => {
   }
 };
 
+// every web contents, whatever made it: no <webview>, no bluetooth chooser, no new windows unless
+// a window says otherwise (the server window sends links to the browser), and our own pages
+// never navigate away from our own pages
+app.on('web-contents-created', (_e, contents) => {
+  contents.on('will-attach-webview', (event) => event.preventDefault());
+  contents.on('select-bluetooth-device', (event, _devices, callback) => {
+    event.preventDefault();
+    callback('');
+  });
+  contents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  contents.on('will-navigate', (event, url) => {
+    if (isOwnPageUrl(contents.getURL()) && !isOwnPageUrl(url)) event.preventDefault();
+  });
+});
+
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
@@ -545,8 +561,9 @@ if (!app.requestSingleInstanceLock()) {
     }
 
     // mic / camera / screen / notifications only for our own pages and saved servers;
-    // Sharkord's own UI does the asking, so there is no second prompt
-    const allowedPermissions = ['media', 'display-capture', 'notifications', 'clipboard-read', 'fullscreen'];
+    // Sharkord's own UI does the asking, so there is no second prompt. no clipboard reading:
+    // sharkord never reads it through the api, and a page should not do so silently
+    const allowedPermissions = ['media', 'display-capture', 'notifications', 'clipboard-sanitized-write', 'fullscreen'];
     const isTrustedOrigin = (url: string) => isOwnPageUrl(url) || !!findServerByUrl(url);
 
     session.defaultSession.setPermissionRequestHandler((wc, permission, callback, details) => {
@@ -556,6 +573,21 @@ if (!app.requestSingleInstanceLock()) {
     session.defaultSession.setPermissionCheckHandler((wc, permission, origin) => {
       const url = originOf(origin) ?? wc?.getURL() ?? '';
       return allowedPermissions.includes(permission) && isTrustedOrigin(url);
+    });
+    // hardware access (hid, serial, usb, bluetooth): never. electron would otherwise hand a page
+    // the first device in a chooser nobody sees
+    session.defaultSession.setDevicePermissionHandler(() => false);
+    session.defaultSession.on('select-hid-device', (event, _details, callback) => {
+      event.preventDefault();
+      callback();
+    });
+    session.defaultSession.on('select-serial-port', (event, _ports, _wc, callback) => {
+      event.preventDefault();
+      callback('');
+    });
+    session.defaultSession.on('select-usb-device', (event, _details, callback) => {
+      event.preventDefault();
+      callback();
     });
 
     // dns: the operating system's resolver (hosts file, mdns .local names, vpn split dns), no doh upgrade

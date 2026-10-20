@@ -3,7 +3,7 @@ import type { TServerInput, TSettings, TTestResult, TVoiceState } from '../share
 import { getAutoStart, isAutoStartSupported, setAutoStart } from './autostart';
 import { basicHeaderFor } from './basic-auth';
 import { getBridgeStatus, getBridgeToken } from './hotkeys/bridge';
-import { isOwnPageUrl } from './paths';
+import { isOwnPageUrl, ownPageOf } from './paths';
 import { applySpellcheck } from './privacy';
 import { buildExport, exportToFile, importFromFile, importShared, parseShared, toCode } from './share';
 import {
@@ -38,7 +38,9 @@ type THandlers = { connectToServer: (id: string) => void; getMainWindow: () => B
 
 let spellcheckAtStartup = false;
 
-const trusted = (event: IpcMainInvokeEvent | IpcMainEvent) => isOwnPageUrl(event.senderFrame?.url ?? '');
+// the settings / servers api is the setup window's alone; the bar, prompt and picker have their
+// own channels with their own sender checks
+const trusted = (event: IpcMainInvokeEvent | IpcMainEvent) => ownPageOf(event.senderFrame?.url ?? '') === 'launcher';
 
 const guard =
   <T extends unknown[], R>(fn: (event: IpcMainInvokeEvent, ...args: T) => R) =>
@@ -139,6 +141,7 @@ export const registerIpc = ({ connectToServer, quit, getMainWindow, spellcheckAt
 
     event.returnValue = {
       isOwnPage: own,
+      ownPage: ownPageOf(url),
       isSavedServer: !!server,
       platform: process.platform,
       version: __APP_VERSION__,

@@ -10,7 +10,7 @@ A desktop client for [Sharkord](https://sharkord.com) servers, for Windows and L
 - **Global hotkeys** — mute and deafen from any window; set them in Sharkord's user settings. Works on Wayland (KDE, GNOME 48+).
 - **Tray** — shows in voice, talking, muted, deafened and new messages; closing the window minimizes, hides to the tray or quits — your choice; starts with the system.
 - **Servers** — several at once, proxy logins, stays logged in, one that opens at start, share codes for friends.
-- **Private** — talks to your servers and nobody else. No telemetry. Spellcheck and update checks are off/opt-in.
+- **Private** — talks to your servers, and to GitHub only for update checks (on by default, one switch to turn off). No telemetry; spellcheck (Google dictionaries) is off unless you turn it on.
 
 ## Install
 

@@ -8,6 +8,7 @@ import type { TPickerResult, TServerInput, TSettings, TUpdateStatus, TVoiceState
 
 type TBootstrap = {
   isOwnPage: boolean;
+  ownPage: 'launcher' | 'picker' | 'prompt' | 'bar' | null;
   isSavedServer: boolean;
   platform: NodeJS.Platform;
   version: string;
@@ -19,47 +20,54 @@ type TBootstrap = {
 const boot = ipcRenderer.sendSync('shell:bootstrap') as TBootstrap;
 
 if (boot.isOwnPage) {
-  contextBridge.exposeInMainWorld('shell', {
-    platform: boot.platform,
-    version: boot.version,
-    getSettings: () => ipcRenderer.invoke('settings:get') as Promise<TSettings>,
-    saveSettings: (patch: Partial<TSettings>) => ipcRenderer.invoke('settings:save', patch),
-    listServers: () => ipcRenderer.invoke('servers:list'),
-    saveServer: (input: TServerInput) => ipcRenderer.invoke('servers:save', input),
-    removeServer: (id: string) => ipcRenderer.invoke('servers:remove', id),
-    setKeepLogin: (id: string, keep: boolean) => ipcRenderer.invoke('servers:keepLogin', id, keep),
-    testServer: (input: TServerInput) => ipcRenderer.invoke('servers:test', input),
-    connect: (id: string) => ipcRenderer.invoke('servers:connect', id),
-    bridgeStatus: () => ipcRenderer.invoke('bridge:status'),
-    screenAudioInfo: () => ipcRenderer.invoke('screenAudio:info'),
-    quit: () => ipcRenderer.invoke('app:quit'),
-    openWebsite: () => ipcRenderer.invoke('app:website'),
-    shareCode: (ids: string[] | null, withPasswords: boolean) => ipcRenderer.invoke('share:code', ids, withPasswords),
-    exportFile: (ids: string[] | null, withPasswords: boolean) => ipcRenderer.invoke('share:exportFile', ids, withPasswords),
-    importText: (text: string) => ipcRenderer.invoke('share:importText', text),
-    importFile: () => ipcRenderer.invoke('share:importFile'),
-    getAutoStart: () => ipcRenderer.invoke('autostart:get'),
-    setAutoStart: (enabled: boolean) => ipcRenderer.invoke('autostart:set', enabled),
-    updateStatus: () => ipcRenderer.invoke('update:status'),
-    installUpdate: () => ipcRenderer.invoke('update:install'),
-    openReleasePage: () => ipcRenderer.invoke('update:open'),
-    diagnostics: () => ipcRenderer.invoke('diag:text'),
-    onUpdateStatus: (cb: (s: TUpdateStatus) => void) => {
-      ipcRenderer.on('update:status', (_e, s) => cb(s));
+  // each of our pages gets only what it uses: the setup window the settings / servers api, the
+  // picker, prompt and bar their one or two calls
+  const common = { platform: boot.platform, version: boot.version };
+  const byPage = {
+    launcher: {
+      getSettings: () => ipcRenderer.invoke('settings:get') as Promise<TSettings>,
+      saveSettings: (patch: Partial<TSettings>) => ipcRenderer.invoke('settings:save', patch),
+      listServers: () => ipcRenderer.invoke('servers:list'),
+      saveServer: (input: TServerInput) => ipcRenderer.invoke('servers:save', input),
+      removeServer: (id: string) => ipcRenderer.invoke('servers:remove', id),
+      setKeepLogin: (id: string, keep: boolean) => ipcRenderer.invoke('servers:keepLogin', id, keep),
+      testServer: (input: TServerInput) => ipcRenderer.invoke('servers:test', input),
+      connect: (id: string) => ipcRenderer.invoke('servers:connect', id),
+      bridgeStatus: () => ipcRenderer.invoke('bridge:status'),
+      screenAudioInfo: () => ipcRenderer.invoke('screenAudio:info'),
+      quit: () => ipcRenderer.invoke('app:quit'),
+      openWebsite: () => ipcRenderer.invoke('app:website'),
+      shareCode: (ids: string[] | null, withPasswords: boolean) => ipcRenderer.invoke('share:code', ids, withPasswords),
+      exportFile: (ids: string[] | null, withPasswords: boolean) => ipcRenderer.invoke('share:exportFile', ids, withPasswords),
+      importText: (text: string) => ipcRenderer.invoke('share:importText', text),
+      importFile: () => ipcRenderer.invoke('share:importFile'),
+      getAutoStart: () => ipcRenderer.invoke('autostart:get'),
+      setAutoStart: (enabled: boolean) => ipcRenderer.invoke('autostart:set', enabled),
+      updateStatus: () => ipcRenderer.invoke('update:status'),
+      installUpdate: () => ipcRenderer.invoke('update:install'),
+      openReleasePage: () => ipcRenderer.invoke('update:open'),
+      diagnostics: () => ipcRenderer.invoke('diag:text'),
+      onUpdateStatus: (cb: (s: TUpdateStatus) => void) => {
+        ipcRenderer.on('update:status', (_e, s) => cb(s));
+      }
     },
-    // picker window
-    onPickerSources: (cb: (sources: unknown[], lastName: string | null) => void) => {
-      ipcRenderer.on('picker:sources', (_e, sources, lastName) => cb(sources, lastName));
+    picker: {
+      onPickerSources: (cb: (sources: unknown[], lastName: string | null) => void) => {
+        ipcRenderer.on('picker:sources', (_e, sources, lastName) => cb(sources, lastName));
+      },
+      pickerChoose: (result: TPickerResult) => ipcRenderer.send('picker:choose', result)
     },
-    pickerChoose: (result: TPickerResult) => ipcRenderer.send('picker:choose', result),
-    // bar above the server page
-    barAction: (action: string, at?: { x: number; y: number }) => ipcRenderer.send('bar:action', action, at),
-    onBarState: (cb: (state: { server: string; zoom: number; theme: 'light' | 'dark' | null; maximized: boolean }) => void) => {
-      ipcRenderer.on('bar:state', (_e, state) => cb(state));
+    bar: {
+      barAction: (action: string, at?: { x: number; y: number }) => ipcRenderer.send('bar:action', action, at),
+      onBarState: (cb: (state: { server: string; zoom: number; theme: 'light' | 'dark' | null; maximized: boolean }) => void) => {
+        ipcRenderer.on('bar:state', (_e, state) => cb(state));
+      }
     },
-    // prompt window
-    promptAnswer: (answer: boolean) => ipcRenderer.send('prompt:answer', answer)
-  });
+    prompt: {
+      promptAnswer: (answer: boolean) => ipcRenderer.send('prompt:answer', answer)
+    }
+  };
+  contextBridge.exposeInMainWorld('shell', { ...common, ...(boot.ownPage ? byPage[boot.ownPage] : {}) });
 } else {
   contextBridge.exposeInMainWorld('jollyboat', {
     platform: boot.platform,

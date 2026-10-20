@@ -1,6 +1,6 @@
 import { app, safeStorage } from 'electron';
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { TServerEntry, TServerInput, TSettings } from '../shared/types';
 
@@ -89,7 +89,13 @@ export const saveSettings = (patch: Partial<TSettings>) => {
   const next = { ...getSettings(), ...patch };
 
   mkdirSync(app.getPath('userData'), { recursive: true });
-  writeFileSync(filePath(), JSON.stringify(next, null, 2));
+  // passwords and the login token are in here (encrypted when there is a keyring): owner only
+  writeFileSync(filePath(), JSON.stringify(next, null, 2), { mode: 0o600 });
+  try {
+    chmodSync(filePath(), 0o600); // files from older versions
+  } catch {
+    /* windows: acls, not modes */
+  }
   cache = next;
 
   return next;
