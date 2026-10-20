@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'" />
+    <title>jollyboat</title>
+    <link rel="stylesheet" href="../theme/theme.css" />
+    <style>
+      .dot { width: 10px; height: 10px; border-radius: 2px; flex: none; border: 2px solid var(--dim); }
+      .dot.ok { background: var(--fg); border-color: var(--fg); }
+      .dot.bad { background: transparent; border-color: var(--dim); position: relative; }
+      .dot.bad::after { content: ''; position: absolute; left: -1px; top: 2px; width: 8px; height: 2px; background: var(--dim); transform: rotate(-45deg); }
+      .dot.none { visibility: hidden; }
+      .item { cursor: pointer; }
+      .inputs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="header">
+        <div class="title-block">
+          <div class="title" data-text="jollyboat">jollyboat</div>
+          <canvas class="strip"></canvas>
+          <div class="subtitle">a client for sharkord servers | setup and settings</div>
+        </div>
+        <div class="right">
+          <button class="pill minor small alt" id="quit">quit</button>
+        </div>
+      </header>
+
+      <div class="columns">
+        <div class="col fixed">
+          <section class="panel">
+            <div class="panel-title">servers</div>
+            <div class="list" id="server-list"></div>
+            <div class="row" style="margin-top: 8px">
+              <button class="pill" id="add-server">add server</button>
+              <button class="pill minor small alt" id="export-all">share all</button>
+              <span class="meta" id="server-count"></span>
+            </div>
+            <div class="row" style="margin-top: 10px">
+              <input type="text" id="import-code" placeholder="paste a share code to import" style="flex: 1" spellcheck="false" />
+              <button class="pill small" id="import-go">import</button>
+              <button class="pill minor small alt" id="import-file">from file</button>
+            </div>
+            <div class="hint" id="list-status" style="margin-top: 6px"></div>
+          </section>
+        </div>
+
+        <div class="col fixed">
+          <section class="panel alt" id="editor">
+            <div class="panel-title" id="editor-title">server</div>
+            <div class="hint" id="editor-empty">pick a server on the left or add one</div>
+            <div id="editor-form" hidden>
+              <div class="field">
+                <label for="f-url">url</label>
+                <div class="control"><input type="url" id="f-url" placeholder="https://chat.example.com" spellcheck="false" /></div>
+              </div>
+              <div class="field">
+                <label for="f-name">name</label>
+                <div class="control"><input type="text" id="f-name" placeholder="optional | shown in the list" /></div>
+              </div>
+              <div class="panel-title" style="margin-top: 10px">basic auth</div>
+              <div class="hint">for a reverse proxy that asks for a login before sharkord loads | not your sharkord account</div>
+              <div class="field" style="margin-top: 4px">
+                <label for="f-user">user</label>
+                <div class="control"><input type="text" id="f-user" autocomplete="off" spellcheck="false" /></div>
+              </div>
+              <div class="field">
+                <label for="f-pass">password</label>
+                <div class="control"><input type="password" id="f-pass" autocomplete="off" /></div>
+              </div>
+              <label class="check" id="auto-connect-row" style="margin-top: 10px" hidden>
+                <input type="checkbox" id="auto-connect" /> open this server when the app starts
+              </label>
+              <div class="hint" id="test-status" style="margin-top: 6px"></div>
+              <div class="row" style="margin-top: 10px">
+                <button class="pill small" id="save">save</button>
+                <button class="pill minor small alt" id="open-now" hidden>open</button>
+                <span class="spacer"></span>
+                <button class="pill minor small alt" id="delete" hidden>remove</button>
+              </div>
+              <div id="share-row" hidden>
+                <div class="panel-title" style="margin-top: 12px">share</div>
+                <label class="check"><input type="checkbox" id="share-passwords" /> include the basic auth password</label>
+                <div class="row" style="margin-top: 8px">
+                  <button class="pill minor small" id="share-copy">copy code</button>
+                  <button class="pill minor small alt" id="share-file">save file</button>
+                </div>
+                <div class="hint" id="share-status" style="margin-top: 6px"></div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="col fill">
+          <section class="panel alt">
+            <div class="panel-title">app</div>
+            <div class="hint" id="bridge-text"></div>
+            <div class="hint" id="screen-audio-text" style="margin-top: 4px"></div>
+            <div class="meta" style="margin-top: 4px">resolution, fps and bitrate are sharkord settings | user settings | devices</div>
+            <label class="check" style="margin-top: 10px"><input type="checkbox" id="minimize-to-tray" /> keep running in the tray when the window closes</label>
+            <label class="check" id="autostart-row" style="margin-top: 6px"><input type="checkbox" id="autostart" /> start with the system, hidden in the tray</label>
+            <label class="check" style="margin-top: 6px"><input type="checkbox" id="notify-tray" /> flash the window and mark the tray on new messages</label>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">privacy</div>
+            <div class="meta">the app only talks to the servers you add | no telemetry, no crash reports, no google services</div>
+            <label class="check" style="margin-top: 8px"><input type="checkbox" id="spellcheck" /> spellcheck | downloads dictionaries from google's cdn once</label>
+            <label class="check" id="updates-row" style="margin-top: 6px" hidden><input type="checkbox" id="check-updates" /> check for updates | github releases, every 6 hours</label>
+            <div class="hint" id="update-line" style="margin-top: 8px"></div>
+            <div class="meta" id="startup-line" style="margin-top: 8px"></div>
+            <div class="meta" id="version"></div>
+          </section>
+        </div>
+      </div>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,50 @@
+{
+  "name": "jollyboat",
+  "productName": "Jollyboat",
+  "version": "0.1.0",
+  "description": "Desktop client for Sharkord servers: screen sharing with sound, global hotkeys, tray, no tracking",
+  "homepage": "https://github.com/innovativefluid/jollyboat",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/innovativefluid/jollyboat.git"
+  },
+  "bugs": "https://github.com/innovativefluid/jollyboat/issues",
+  "keywords": [
+    "sharkord",
+    "chat",
+    "voice",
+    "screen-share",
+    "electron",
+    "desktop"
+  ],
+  "main": "./out/main/index.js",
+  "author": "innovativefluid",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "pack": "electron-vite build && electron-builder --dir",
+    "dist:win": "electron-vite build && electron-builder --win nsis msi --publish never",
+    "dist:linux": "electron-vite build && electron-builder --linux flatpak --publish never"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9",
+    "ws": "^8.22.0"
+  },
+  "optionalDependencies": {
+    "@vencord/venmic": "^7.2.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "@types/ws": "^8.18.2",
+    "electron": "^44.9.1",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^6.0.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.4"
+  }
+}

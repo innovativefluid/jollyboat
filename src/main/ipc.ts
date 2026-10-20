@@ -1,0 +1,226 @@
+import { ipcMain, net, safeStorage, type BrowserWindow, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
+import type { TServerInput, TSettings, TTestResult, TVoiceState } from '../shared/types';
+import { getAutoStart, isAutoStartSupported, setAutoStart } from './autostart';
+import { basicHeaderFor } from './basic-auth';
+import { getBridgeStatus, getBridgeToken } from './hotkeys/bridge';
+import { isOwnPageUrl } from './paths';
+import { applySpellcheck } from './privacy';
+import { buildExport, exportToFile, importFromFile, importShared, parseShared, toCode } from './share';
+import {
+  canExcludeOwnAudioOnWindows,
+  describeScreenAudio,
+  getScreenAudioMode,
+  startPipeWireShare,
+  stopPipeWireShare,
+  unmutePipeWireShare,
+  VIRTUAL_MIC_LABEL
+} from './screen-audio';
+import { addUnread, setVoiceState } from './tray';
+import { getUpdateStatus, installUpdateNow, onUpdateStatus, startUpdater } from './updater';
+import {
+  decryptPassword,
+  findServerByUrl,
+  getSettings,
+  normalizeUrl,
+  publicServers,
+  recordTest,
+  removeServer,
+  saveSettings,
+  upsertServer
+} from './settings';
+
+type THandlers = { connectToServer: (id: string) => void; getMainWindow: () => BrowserWindow | null; quit: () => void; spellcheckAtStart: boolean };
+
+let spellcheckAtStartup = false;
+
+const trusted = (event: IpcMainInvokeEvent | IpcMainEvent) => isOwnPageUrl(event.senderFrame?.url ?? '');
+
+const guard =
+  <T extends unknown[], R>(fn: (event: IpcMainInvokeEvent, ...args: T) => R) =>
+  (event: IpcMainInvokeEvent, ...args: T): R => {
+    if (!trusted(event)) throw new Error('not allowed from this page');
+
+    return fn(event, ...args);
+  };
+
+// only these keys, only these shapes, from our own launcher
+const pickSettingsPatch = (patch: unknown): Partial<TSettings> => {
+  const p = (patch ?? {}) as Record<string, unknown>;
+  const out: Partial<TSettings> = {};
+
+  if (typeof p.spellcheck === 'boolean') out.spellcheck = p.spellcheck;
+  if (typeof p.checkUpdates === 'boolean') out.checkUpdates = p.checkUpdates;
+  if (typeof p.minimizeToTray === 'boolean') out.minimizeToTray = p.minimizeToTray;
+  if (typeof p.notifyTray === 'boolean') out.notifyTray = p.notifyTray;
+  if (p.autoConnectServerId === null) out.autoConnectServerId = null;
+  if (typeof p.autoConnectServerId === 'string' && getSettings().servers.some((s) => s.id === p.autoConnectServerId)) {
+    out.autoConnectServerId = p.autoConnectServerId;
+  }
+
+  return out;
+};
+
+const pickServerInput = (input: unknown): TServerInput => {
+  const i = (input ?? {}) as Record<string, unknown>;
+  const auth = i.basicAuth as Record<string, unknown> | null | undefined;
+
+  return {
+    id: typeof i.id === 'string' ? i.id : undefined,
+    url: String(i.url ?? '').slice(0, 2000),
+    name: String(i.name ?? '').slice(0, 100),
+    basicAuth:
+      auth && typeof auth.username === 'string'
+        ? { username: auth.username.slice(0, 200), password: String(auth.password ?? '').slice(0, 500) }
+        : null
+  };
+};
+
+const testServer = async (input: TServerInput): Promise<TTestResult> => {
+  let origin: string;
+
+  try {
+    origin = normalizeUrl(input.url);
+  } catch {
+    return { ok: false, error: 'that is not a valid url' };
+  }
+
+  const headers: Record<string, string> = {};
+
+  if (input.basicAuth?.username) {
+    // an empty password on edit means "keep the stored one"
+    let password = input.basicAuth.password;
+
+    if (!password && input.id) {
+      const stored = getSettings().servers.find((s) => s.id === input.id)?.basicAuth;
+      if (stored) password = decryptPassword(stored.passwordEnc);
+    }
+
+    headers['Authorization'] = basicHeaderFor(input.basicAuth.username, password);
+  }
+
+  try {
+    const res = await net.fetch(`${origin}/info`, { headers, signal: AbortSignal.timeout(8000) });
+
+    if (res.status === 401) return { ok: false, status: 401, error: 'the proxy asks for basic auth | wrong or missing user and password' };
+    if (!res.ok) return { ok: false, status: res.status, error: `server answered ${res.status}` };
+
+    const info = await res.json();
+
+    if (typeof info?.serverId !== 'string') return { ok: false, error: 'that url does not look like a sharkord server' };
+
+    return { ok: true, info, version: res.headers.get('x-sharkord-version') ?? undefined };
+  } catch (err) {
+    return { ok: false, error: `could not reach the server | ${(err as Error).message.toLowerCase()}` };
+  }
+};
+
+/** a message from a page: only honoured when the frame belongs to a saved server */
+const fromSavedServer = (event: IpcMainEvent) => !!findServerByUrl(event.senderFrame?.url ?? '');
+
+const idList = (ids: unknown): string[] | null =>
+  Array.isArray(ids) ? ids.filter((i): i is string => typeof i === 'string') : null;
+
+export const registerIpc = ({ connectToServer, quit, getMainWindow, spellcheckAtStart }: THandlers) => {
+  spellcheckAtStartup = spellcheckAtStart;
+
+  // sync bootstrap for the preload. the bridge token and the capture patch go only to pages
+  // of a saved server, never to whatever else the window may have been navigated to
+  ipcMain.on('shell:bootstrap', (event) => {
+    const url = event.senderFrame?.url ?? '';
+    const own = isOwnPageUrl(url);
+    const server = own ? undefined : findServerByUrl(url);
+    const bridge = getBridgeStatus();
+
+    event.returnValue = {
+      isOwnPage: own,
+      isSavedServer: !!server,
+      platform: process.platform,
+      version: __APP_VERSION__,
+      bridge: server && bridge.ownedByUs ? { ownedByUs: true, token: getBridgeToken() } : null,
+      screenAudio: server
+        ? {
+            pipewire: getScreenAudioMode() === 'pipewire',
+            virtualMic: VIRTUAL_MIC_LABEL,
+            // windows before 22H2: loopbackWithoutChrome fails, so the restrict constraint is dropped
+            dropRestrict: process.platform === 'win32' && !canExcludeOwnAudioOnWindows()
+          }
+        : null
+    };
+  });
+
+  // from saved server pages only: voice state for the tray, and new-message notifications
+  ipcMain.on('server:voice', (event, state: TVoiceState) => {
+    if (!fromSavedServer(event)) return;
+
+    setVoiceState({
+      connected: state?.connected === true,
+      inVoice: state?.inVoice === true,
+      micMuted: state?.micMuted === true,
+      deafened: state?.deafened === true
+    });
+  });
+  ipcMain.on('server:notification', (event) => {
+    if (!fromSavedServer(event) || !getSettings().notifyTray) return;
+
+    const win = getMainWindow();
+    if (!win || !win.isFocused() || !win.isVisible()) addUnread();
+  });
+  // pipewire screen-share audio, driven by the page's getDisplayMedia wrapper
+  ipcMain.handle('server:screen-audio', (event, step: unknown) => {
+    if (!findServerByUrl(event.senderFrame?.url ?? '')) return false;
+    if (step === 'start') return startPipeWireShare();
+    if (step === 'unmute') return unmutePipeWireShare(), true;
+    if (step === 'stop') return stopPipeWireShare(), true;
+    return false;
+  });
+
+  ipcMain.on('server:notification-click', (event) => {
+    if (!fromSavedServer(event)) return;
+
+    const win = getMainWindow();
+    if (!win) return;
+    if (win.isMinimized()) win.restore();
+    win.show();
+    win.focus();
+  });
+
+  ipcMain.handle('settings:get', guard(() => ({ ...getSettings(), secureStorage: safeStorage.isEncryptionAvailable(), spellcheckAtStart: spellcheckAtStartup })));
+  ipcMain.handle('settings:save', guard((_e, patch: unknown) => {
+    const picked = pickSettingsPatch(patch);
+    const saved = saveSettings(picked);
+    if (picked.spellcheck !== undefined) applySpellcheck(saved.spellcheck);
+    if (picked.checkUpdates === true) startUpdater();
+    return saved;
+  }));
+  ipcMain.handle('servers:list', guard(() => publicServers()));
+  // saving also tests the connection and records the outcome on the entry
+  ipcMain.handle('servers:save', guard(async (_e, input: unknown) => {
+    const entry = upsertServer(pickServerInput(input));
+    const test = await testServer({ ...pickServerInput(input), id: entry.id });
+
+    recordTest(entry.id, { ok: test.ok, status: test.ok ? undefined : test.status });
+
+    const saved = getSettings().servers.find((s) => s.id === entry.id)!;
+    const { basicAuth, ...safe } = saved;
+
+    return { server: { ...safe, basicAuth: basicAuth ? { username: basicAuth.username, passwordEnc: '' } : undefined }, test };
+  }));
+  ipcMain.handle('servers:remove', guard((_e, id: unknown) => removeServer(String(id))));
+  ipcMain.handle('servers:test', guard((_e, input: unknown) => testServer(pickServerInput(input))));
+  ipcMain.handle('servers:connect', guard((_e, id: unknown) => connectToServer(String(id))));
+  ipcMain.handle('bridge:status', guard(() => getBridgeStatus()));
+  ipcMain.handle('screenAudio:info', guard(() => describeScreenAudio()));
+
+  // sharing: ids null = every server; passwords only when asked
+  ipcMain.handle('share:code', guard((_e, ids: unknown, withPasswords: unknown) => toCode(buildExport(idList(ids), withPasswords === true))));
+  ipcMain.handle('share:exportFile', guard((_e, ids: unknown, withPasswords: unknown) => exportToFile(getMainWindow(), buildExport(idList(ids), withPasswords === true))));
+  ipcMain.handle('share:importText', guard((_e, text: unknown) => importShared(parseShared(String(text ?? '').slice(0, 200_000)))));
+  ipcMain.handle('share:importFile', guard(() => importFromFile(getMainWindow())));
+  ipcMain.handle('app:quit', guard(() => quit()));
+  ipcMain.handle('autostart:get', guard(() => ({ supported: isAutoStartSupported(), enabled: getAutoStart() })));
+  ipcMain.handle('autostart:set', guard((_e, enabled: unknown) => setAutoStart(enabled === true)));
+  ipcMain.handle('update:status', guard(() => getUpdateStatus()));
+  ipcMain.handle('update:install', guard(() => installUpdateNow()));
+
+  onUpdateStatus((status) => getMainWindow()?.webContents.send('update:status', status));
+};
