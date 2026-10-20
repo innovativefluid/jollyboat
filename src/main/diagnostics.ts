@@ -10,6 +10,12 @@ import { getSettings } from './settings';
 import { getUpdateStatus } from './updater';
 import { describeTray } from './tray';
 
+// what chromium decided about the gpu: compositing and video decode/encode (screen shares)
+const gpuLine = () => {
+  const f = app.getGPUFeatureStatus() as unknown as Record<string, string>;
+  return ['gpu_compositing', 'video_decode', 'video_encode'].map((k) => `${k.replace('gpu_', '')} ${f[k] ?? '?'}`).join(' | ');
+};
+
 export const diagnostics = () => {
   const s = getSettings();
   const bridge = getBridgeStatus();
@@ -23,6 +29,7 @@ export const diagnostics = () => {
     `electron ${process.versions.electron} | chromium ${process.versions.chrome} | node ${process.versions.node}`,
     `${process.platform} ${process.arch} | ${type()} ${release()}${session ? ` | ${session}` : ''}${process.env.FLATPAK_ID ? ' | flatpak' : ''}${process.env.XDG_CURRENT_DESKTOP ? ` | ${process.env.XDG_CURRENT_DESKTOP}` : ''}`,
     `screen audio: ${getScreenAudioMode()}`,
+    `gpu: ${gpuLine()}`,
     `hotkey bridge: ${bridge.ownedByUs ? `ours on ${bridge.port}, ${bridge.bindings.length} bindings` : `port ${bridge.port} taken`}`,
     describeTray(),
     `updates: ${getUpdateStatus().state}${getUpdateStatus().version ? ` ${getUpdateStatus().version}` : ''}`,

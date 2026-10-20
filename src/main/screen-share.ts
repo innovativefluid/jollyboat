@@ -72,12 +72,14 @@ const listSources = async (withThumbnails: boolean): Promise<TCaptureSource[]> =
 
 export const installDisplayMediaHandler = (getMainWindow: () => BaseWindow | null) => {
   session.defaultSession.setDisplayMediaRequestHandler(async (request, callback) => {
+    log('screen-share', `request (audio ${request.audioRequested ? 'asked' : 'not asked'}, ${isWaylandSession() ? 'portal' : 'own picker'})`);
     try {
       if (isWaylandSession()) {
         // wayland / pipewire: the portal dialog is shown by getSources itself and the user's
         // pick comes back as the only entry (none if they cancelled). on x11 every screen and
-        // window comes back instead, so that path falls through to our own picker
-        const [source] = await desktopCapturer.getSources({ types: ['screen', 'window'] });
+        // window comes back instead, so that path falls through to our own picker.
+        // no thumbnail: it would cost a captured frame nobody sees
+        const [source] = await desktopCapturer.getSources({ types: ['screen', 'window'], thumbnailSize: { width: 0, height: 0 } });
 
         if (source) markShareGranted();
         return callback(source ? { video: source, audio: loopbackForRequest(request.audioRequested) } : {});
@@ -88,7 +90,8 @@ export const installDisplayMediaHandler = (getMainWindow: () => BaseWindow | nul
 
       if (!pick) return callback({});
 
-      const raw = await desktopCapturer.getSources({ types: ['screen', 'window'] });
+      // only the id is needed now: no thumbnails, which would capture every window again
+      const raw = await desktopCapturer.getSources({ types: ['screen', 'window'], thumbnailSize: { width: 0, height: 0 } });
       const source = raw.find((s) => s.id === pick.sourceId);
 
       if (!source) return callback({});

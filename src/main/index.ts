@@ -21,8 +21,14 @@ if (process.platform === 'win32') app.setAppUserModelId('io.github.innovativeflu
 // GlobalShortcutsPortal: lets globalShortcut work on Wayland through xdg-desktop-portal
 // (KDE Plasma, newer GNOME). WebRTCPipeWireCapturer: screen capture through the portal.
 // PulseaudioLoopbackForScreenShare: system audio for screen shares on linux when pipewire/venmic
-// is not available (see screen-audio.ts)
-app.commandLine.appendSwitch('enable-features', 'GlobalShortcutsPortal,WebRTCPipeWireCapturer,PulseaudioLoopbackForScreenShare');
+// is not available (see screen-audio.ts). AcceleratedVideoEncoder: on linux, screen shares (and
+// webcams) are encoded on the gpu through VA-API when the driver can do the codec sharkord picked;
+// otherwise chromium falls back to software. hardware decoding is already chromium's default.
+// (chromium honours only the last --enable-features, so everything goes in this one)
+app.commandLine.appendSwitch(
+  'enable-features',
+  ['GlobalShortcutsPortal', 'WebRTCPipeWireCapturer', 'PulseaudioLoopbackForScreenShare', ...(process.platform === 'linux' ? ['AcceleratedVideoEncoder'] : [])].join(',')
+);
 // privacy: nothing talks to google or anyone else in the background. electron already ships
 // without safe browsing, sync, variations or crash upload; these close what is left
 app.commandLine.appendSwitch('disable-component-update');
@@ -480,6 +486,8 @@ const connectToServer = (id: string, show = true) => {
   const win = mainWindow ?? createMainWindow();
 
   win.setTitle(`${server.name} — Jollyboat`);
+  const loadStart = performance.now();
+  page()?.once('did-finish-load', () => log('start', `server page loaded in ${Math.round(performance.now() - loadStart)} ms (${Math.round(process.uptime() * 1000)} ms since launch)`));
   serverName = server.name;
   setServerName(server.name);
   sendBarState();
@@ -524,7 +532,9 @@ if (!app.requestSingleInstanceLock()) {
     // dns: the operating system's resolver (hosts file, mdns .local names, vpn split dns), no doh upgrade
     app.configureHostResolver({ enableBuiltInResolver: false, secureDnsMode: 'off' });
     applySpellcheck(getSettings().spellcheck);
-    initScreenAudio();
+    const audioStart = performance.now();
+    log('start', `ready after ${Math.round(process.uptime() * 1000)} ms`);
+    log('start', `screen audio: ${initScreenAudio()} in ${Math.round(performance.now() - audioStart)} ms`);
 
     installBasicAuth();
     onServersChanged(refreshBasicAuth);

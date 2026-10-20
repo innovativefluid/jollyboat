@@ -24,9 +24,16 @@ const readColours = () => {
 const canvas = document.querySelector<HTMLCanvasElement>('canvas.mark')!;
 const ctx = canvas.getContext('2d')!;
 
-const drawMark = (t = performance.now() / 1000) => {
+let shown = '';
+
+const drawMark = (t = performance.now() / 1000, force = false) => {
   const bob = Math.sin((t * Math.PI * 2) / 3.2) > 0.2 ? 1 : 0; // down a pixel for part of each swell
   const drift = Math.floor(t * 2.5); // the water moves a pixel every 0.4 s
+
+  // only an actual change is drawn: about three frames a second instead of ten
+  const key = `${bob}:${drift % 4}`;
+  if (key === shown && !force) return;
+  shown = key;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   boat.forEach((row, y) =>
@@ -42,7 +49,7 @@ const drawMark = (t = performance.now() / 1000) => {
 
 const repaint = () => {
   readColours();
-  drawMark();
+  drawMark(undefined, true);
 };
 
 repaint();

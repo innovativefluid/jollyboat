@@ -2,7 +2,9 @@
 // + sheared lattice + a glare band that crosses every ~24 s, then ink on top: the jolly boat riding
 // slow horizontal waves, drifting toward the pointer.
 //
-// performance: the plasma is four sines, but none of them is evaluated per cell per frame.
+// performance: the canvas is one pixel per cell and css scales it up (image-rendering: pixelated),
+// so nothing full-size is drawn per frame; frames are capped at 30 fps (15 without focus).
+// the plasma is four sines, but none of them is evaluated per cell per frame.
 // sin(a + b) = sin a·cos b + cos a·sin b, so the two separable terms become per-column and
 // per-row tables rebuilt each frame (O(w + h) trig), and the radial term uses sin/cos(r·.09)
 // tables built once per resize. the per-cell loop is multiplies and adds only.
@@ -25,8 +27,6 @@ const WAVES = 3;
 
 export const createPaper = (canvas: HTMLCanvasElement) => {
   const ctx = canvas.getContext('2d')!;
-  const cells = document.createElement('canvas');
-  const cctx = cells.getContext('2d')!;
 
   let cw = 0;
   let ch = 0;
@@ -55,13 +55,13 @@ export const createPaper = (canvas: HTMLCanvasElement) => {
   let frameCost = 0; // ms, exponential average, for the dev console
 
   const resize = () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    cw = Math.ceil(canvas.width / CELL);
-    ch = Math.ceil(canvas.height / CELL);
-    cells.width = cw;
-    cells.height = ch;
-    image = cctx.createImageData(cw, ch);
+    cw = Math.ceil(window.innerWidth / CELL);
+    ch = Math.ceil(window.innerHeight / CELL);
+    canvas.width = cw;
+    canvas.height = ch;
+    canvas.style.width = `${cw * CELL}px`;
+    canvas.style.height = `${ch * CELL}px`;
+    image = ctx.createImageData(cw, ch);
 
     const n = cw * ch;
     ink = new Float32Array(n);
@@ -195,9 +195,7 @@ export const createPaper = (canvas: HTMLCanvasElement) => {
       }
     }
 
-    cctx.putImageData(image, 0, 0);
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(cells, 0, 0, cw, ch, 0, 0, cw * CELL, ch * CELL);
+    ctx.putImageData(image, 0, 0);
 
     frameCost = frameCost * 0.9 + (performance.now() - t0) * 0.1;
   };
@@ -205,11 +203,15 @@ export const createPaper = (canvas: HTMLCanvasElement) => {
   const start = performance.now();
   const now = () => (performance.now() - start) / 1000;
 
-  let tick = 0;
-  const loop = () => {
+  let last = 0;
+  const loop = (ms: number) => {
     if (!running) return;
-    // half rate while another window has focus: the glass still breathes, at half the cost
-    if (document.hasFocus() || (tick++ & 1) === 0) frame(now());
+    // 30 fps, 15 while another window has focus: the glass drifts slowly enough for either
+    const gap = document.hasFocus() ? 1000 / 30 : 1000 / 15;
+    if (ms - last >= gap - 2) {
+      last = ms;
+      frame(now());
+    }
     raf = requestAnimationFrame(loop);
   };
 
