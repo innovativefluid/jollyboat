@@ -51,7 +51,11 @@ shareBtn.onclick = share;
 document.getElementById('cancel')!.onclick = () => window.shell.pickerChoose(null);
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') window.shell.pickerChoose(null);
-  if (e.ctrlKey && e.key === 'Enter') share();
+  // enter shares the selection, unless the focus is on cancel
+  if (e.key === 'Enter' && document.activeElement?.id !== 'cancel') {
+    e.preventDefault();
+    share();
+  }
 });
 
 window.shell.onPickerSources((list, lastName) => {

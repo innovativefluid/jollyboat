@@ -8,8 +8,8 @@ export const iconPath = () => join(__dirname, '../../resources/icon.png');
 
 const rendererRoot = () => pathToFileURL(join(__dirname, '../renderer/')).toString();
 
-/** URL of one of our renderer pages (launcher | picker | prompt), dev server or built file. */
-export const pageUrl = (page: 'launcher' | 'picker' | 'prompt') => {
+/** URL of one of our renderer pages (launcher | picker | prompt | bar), dev server or built file. */
+export const pageUrl = (page: 'launcher' | 'picker' | 'prompt' | 'bar') => {
   const dev = process.env.ELECTRON_RENDERER_URL;
 
   if (dev) return `${dev}/${page}/index.html`;

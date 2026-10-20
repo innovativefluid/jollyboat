@@ -1,6 +1,6 @@
 // a modal yes/no window in the app's own look (src/renderer/prompt), replacing native message boxes
 
-import { BrowserWindow, ipcMain } from 'electron';
+import { BrowserWindow, ipcMain, type BaseWindow } from 'electron';
 import { iconPath, isOwnPageUrl, pageUrl, preloadPath } from './paths';
 
 type TPrompt = { message: string; detail?: string; yes: string; no: string };
@@ -8,7 +8,7 @@ type TPrompt = { message: string; detail?: string; yes: string; no: string };
 let promptWindow: BrowserWindow | null = null;
 let resolveAnswer: ((answer: boolean) => void) | null = null;
 
-export const askPrompt = (parent: BrowserWindow | undefined, prompt: TPrompt) =>
+export const askPrompt = (parent: BaseWindow | undefined, prompt: TPrompt) =>
   new Promise<boolean>((resolve) => {
     // one question at a time; a second one gets the first one's "no"
     if (promptWindow) return resolve(false);

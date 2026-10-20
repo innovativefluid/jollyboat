@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'" />
+    <title>Jollyboat</title>
+    <link rel="stylesheet" href="../theme/theme.css" />
+    <style>
+      /* the bar above a server: the lcd look, light or dark with the system (the neg scheme) */
+      /* dark when the sharkord page below is dark (data-theme), else when the system is */
+      :root[data-theme='dark'] {
+        --bg: #18201c; --panel: #202a24; --fg: #c4d6a6; --dim: #869672; --mute: #5e6c52;
+        --faint: #384438; --line: #303c32; --spark: #ecf8ce; --shadow-a: 0.45;
+        --fg-rgb: 196, 214, 166; --dim-rgb: 134, 150, 114;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme]) {
+          --bg: #18201c; --panel: #202a24; --fg: #c4d6a6; --dim: #869672; --mute: #5e6c52;
+          --faint: #384438; --line: #303c32; --spark: #ecf8ce; --shadow-a: 0.45;
+          --fg-rgb: 196, 214, 166; --dim-rgb: 134, 150, 114;
+        }
+      }
+      html, body { height: 100%; }
+      body { background: var(--bg); border-bottom: 2px solid var(--fg); box-sizing: border-box; }
+      .bar { height: 100%; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 10px; }
+      canvas.mark { width: 28px; height: 28px; image-rendering: pixelated; flex: none; }
+      .name { font: 600 15px/1 var(--px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .name .app { color: var(--dim); font-weight: 400; }
+      .spacer { flex: 1; }
+      .chip {
+        height: 22px; padding: 0 10px; border-radius: 12px 6px 6px 12px; font: 600 13px/1 var(--px); cursor: pointer;
+        background: transparent; color: var(--fg); border: 2px solid var(--dim); display: inline-flex; align-items: center;
+      }
+      .chip:nth-of-type(even) { border-radius: 6px 12px 12px 6px; }
+      .chip:hover { border-color: var(--fg); }
+      .chip:active { transform: translate(1px, 1px); }
+      .chip.fill { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+      .zoom { display: flex; align-items: center; gap: 2px; }
+      .zoom .chip { padding: 0 7px; }
+      .zoom span { font: 400 13px/1 var(--px); color: var(--dim); min-width: 40px; text-align: center; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <div class="bar">
+      <canvas class="mark" width="14" height="14"></canvas>
+      <div class="name"><span id="server"></span> <span class="app">| Jollyboat</span></div>
+      <span class="spacer"></span>
+      <div class="zoom" title="zoom (ctrl + / − / 0)">
+        <button class="chip" id="zoom-out" aria-label="zoom out">−</button>
+        <span id="zoom" title="actual size">100%</span>
+        <button class="chip" id="zoom-in" aria-label="zoom in">+</button>
+      </div>
+      <button class="chip fill" id="settings" title="ctrl+shift+s">servers and settings</button>
+      <button class="chip" id="more" aria-label="more">⋯</button>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

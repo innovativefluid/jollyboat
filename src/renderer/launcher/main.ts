@@ -20,11 +20,19 @@ const autoRow = $('auto-connect-row');
 const autoBox = $<HTMLInputElement>('auto-connect');
 const keepBox = $<HTMLInputElement>('keep-login');
 const shareRow = $('share-row');
+const authBox = $<HTMLInputElement>('use-auth');
+const authFields = $('auth-fields');
+const right = $('right');
 
 let editingId: string | undefined;
 let servers: TServerEntry[] = [];
 let autoConnectId: string | null = null;
 let confirmingRemove = false;
+
+// a server that failed to open comes back here with its id and the reason; the row shows it
+const query = new URLSearchParams(location.search);
+const failures = new Map<string, string>();
+if (query.get('server') && query.get('error')) failures.set(query.get('server')!, query.get('error')!);
 
 // ---- servers list ---------------------------------------------------------------------------
 
@@ -38,7 +46,7 @@ const startsInto = (s: TServerEntry) => s.id === autoConnectId || servers.length
 
 const renderStartup = () => {
   const auto = servers.find(startsInto);
-  $('startup-line').textContent = `${auto ? `opens ${auto.name} at start | ` : ''}this window: Jollyboat menu on the server page or ctrl+shift+s`;
+  $('startup-line').textContent = `${auto ? `| opens ${auto.name} at start ` : ''}| ctrl+shift+s opens this window`;
 };
 
 const renderServers = async () => {
@@ -46,7 +54,6 @@ const renderServers = async () => {
   autoConnectId = (await window.shell.getSettings()).autoConnectServerId;
   renderStartup();
   list.innerHTML = '';
-  $('server-count').textContent = servers.length ? `${servers.length} ${servers.length === 1 ? 'server' : 'servers'}` : '';
   $<HTMLButtonElement>('export-all').hidden = servers.length === 0;
 
   if (servers.length === 0) {
@@ -56,15 +63,17 @@ const renderServers = async () => {
 
   for (const server of servers) {
     const row = document.createElement('div');
-    row.className = `item${server.id === editingId ? ' on' : ''}`;
+    const failure = failures.get(server.id);
+    row.className = `item${server.id === editingId ? ' on' : ''}${failure ? ' failed' : ''}`;
     row.innerHTML = `
       <span class="dot"></span>
       <div class="grow"><div class="name"></div><div class="meta"></div></div>
       <button class="pill small alt connect">open</button>`;
-    row.querySelector('.dot')!.className = `dot ${server.lastTest ? (server.lastTest.ok ? 'ok' : 'bad') : 'none'}`;
+    row.querySelector('.dot')!.className = `dot ${failure ? 'bad' : server.lastTest ? (server.lastTest.ok ? 'ok' : 'bad') : 'none'}`;
     row.querySelector('.name')!.textContent = server.name;
-    row.querySelector('.meta')!.textContent =
-      `${server.url.replace(/^https?:\/\//, '')}${server.basicAuth ? ' | basic auth' : ''}${startsInto(server) ? ' | opens at start' : ''}${testLabel(server)}`;
+    row.querySelector('.meta')!.textContent = failure
+      ? `! ${failure}`
+      : `${server.url.replace(/^https?:\/\//, '')}${server.basicAuth ? ' | proxy login' : ''}${startsInto(server) ? ' | opens at start' : ''}${testLabel(server)}`;
     row.querySelector<HTMLButtonElement>('.connect')!.onclick = (e) => {
       e.stopPropagation();
       window.shell.connect(server.id);
@@ -80,7 +89,7 @@ const formInput = (): TServerInput => ({
   id: editingId,
   url: fUrl.value,
   name: fName.value,
-  basicAuth: fUser.value ? { username: fUser.value, password: fPass.value } : null,
+  basicAuth: authBox.checked && fUser.value ? { username: fUser.value, password: fPass.value } : null,
   keepLogin: keepBox.checked
 });
 
@@ -97,6 +106,8 @@ const openEditor = (server?: TServerEntry) => {
   fUser.value = server?.basicAuth?.username ?? '';
   fPass.value = '';
   fPass.placeholder = server?.basicAuth ? 'unchanged' : '';
+  authBox.checked = !!server?.basicAuth;
+  authFields.hidden = !authBox.checked;
   checkUrl();
   deleteBtn.hidden = !server;
   openBtn.hidden = !server;
@@ -111,7 +122,7 @@ const openEditor = (server?: TServerEntry) => {
   hint(shareStatus, '');
   editorPanel.hidden = false;
   editorPanel.classList.add('enter');
-  editorPanel.scrollIntoView({ block: 'nearest' });
+  right.classList.add('editing');
   renderServers();
   fUrl.focus();
 };
@@ -120,6 +131,7 @@ const closeEditor = () => {
   editingId = undefined;
   editorPanel.hidden = true;
   editorPanel.classList.remove('enter');
+  right.classList.remove('editing');
   $('editor-title').textContent = 'server';
   resetRemove();
   renderServers();
@@ -136,6 +148,7 @@ const save = async () => {
     const { server, test } = await window.shell.saveServer(formInput());
     fx.burstAt($('save'), 10);
     toast('saved');
+    failures.delete(server.id);
     openEditor(server);
     if (test.ok) {
       hint(testStatus, `saved | ${test.info.name}${test.version ? ` | sharkord ${test.version}` : ''}`, 'good');
@@ -148,6 +161,11 @@ const save = async () => {
 };
 
 $('add-server').onclick = () => openEditor();
+$('editor-close').onclick = () => closeEditor();
+authBox.onchange = () => {
+  authFields.hidden = !authBox.checked;
+  if (authBox.checked) fUser.focus();
+};
 $('save').onclick = save;
 openBtn.onclick = () => editingId && window.shell.connect(editingId);
 for (const input of [fUrl, fName, fUser, fPass]) {
@@ -234,6 +252,7 @@ const afterImport = (names: string[] | null) => {
   toast(`imported ${names.length} ${names.length === 1 ? 'server' : 'servers'}`);
   hint(listStatus, `imported | ${names.join(' | ')}`, 'good');
   $<HTMLInputElement>('import-code').value = '';
+  $('import-row').hidden = true;
   closeEditor(); // an imported server may have replaced the one being edited
 };
 
@@ -247,6 +266,11 @@ const importText = async () => {
   }
 };
 
+$('import-toggle').onclick = () => {
+  const row = $('import-row');
+  row.hidden = !row.hidden;
+  if (!row.hidden) $<HTMLInputElement>('import-code').focus();
+};
 $('import-go').onclick = importText;
 $<HTMLInputElement>('import-code').addEventListener('keydown', (e) => e.key === 'Enter' && importText());
 $('import-file').onclick = async () => {
@@ -262,7 +286,7 @@ $('import-file').onclick = async () => {
 const renderBridge = async () => {
   const status = await window.shell.bridgeStatus();
   if (status.ownedByUs) {
-    hint($('bridge-text'), `hotkeys ready${status.keyUp ? '' : ' | no push to talk yet'}`, 'good');
+    hint($('bridge-text'), 'hotkeys ready', 'good');
   } else {
     hint($('bridge-text'), `hotkeys | port ${status.port} taken, using the sharkord bridge`, '');
   }
@@ -333,16 +357,17 @@ const renderSettings = async () => {
     window.shell.onUpdateStatus(showUpdate);
   }
 
-  $('version').textContent = `Jollyboat ${window.shell.version}${settings.secureStorage ? '' : ' | no keyring, passwords unencrypted'}`;
+  $('version').textContent = `Jollyboat ${window.shell.version}`;
+  hint($('keyring'), settings.secureStorage ? '' : 'no keyring | passwords stored unencrypted', 'bad');
 };
 
 $('website').onclick = () => window.shell.openWebsite();
 
-// a server that failed to load sends us back here with the reason in the query
-const failed = new URLSearchParams(location.search).get('error');
+// a failure without a known server (a crash, say) has no row to sit on
+const failed = query.get('error');
 if (failed) {
   toast('could not open the server');
-  hint($('list-status'), `could not open the server | ${failed}`, 'bad');
+  if (!query.get('server')) hint(listStatus, `could not open the server | ${failed}`, 'bad');
 }
 
 renderServers();

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, Menu, screen, session, shell } from 'electron';
+import { app, BaseWindow, BrowserWindow, clipboard, ipcMain, Menu, nativeTheme, screen, session, shell, WebContentsView } from 'electron';
 import { join } from 'node:path';
 import { installBasicAuth, refreshBasicAuth } from './basic-auth';
 import { startBridge, stopBridge } from './hotkeys/bridge';
@@ -40,17 +40,22 @@ if (!app.isPackaged) app.setPath('userData', join(app.getPath('appData'), 'jolly
 const spellcheckAtStart = getSettings().spellcheck;
 if (!spellcheckAtStart) blockDictionaryDownloads();
 
-// two windows: the server page lives in mainWindow and is never unloaded for settings;
-// the launcher (servers + settings) is its own small window, opened on demand
-let mainWindow: BrowserWindow | null = null;
+// two windows. the server window is a frame holding our bar on top and the server page below;
+// the page is never unloaded for settings. the launcher (servers + settings) is its own window
+let mainWindow: BaseWindow | null = null;
+let serverView: WebContentsView | null = null;
+let barView: WebContentsView | null = null;
 let launcherWindow: BrowserWindow | null = null;
 let quitting = false;
 let crashes: number[] = [];
 // the action sharkord's in-call guard interrupted, re-run with the guard waived after "leave"
 let interrupted: (() => void) | null = null;
 let waiveGuard = false;
-// --hidden (autostart): stay in the tray until the user asks for the window
-let startHidden = process.argv.includes('--hidden');
+
+const BAR_HEIGHT = 34;
+
+// the server page's contents, while there is a server window
+const page = () => (serverView && !serverView.webContents.isDestroyed() ? serverView.webContents : null);
 
 // last bounds are reused only when they still land on a display
 const restoredBounds = () => {
@@ -73,39 +78,135 @@ const rememberBounds = () => {
   }, 400);
 };
 
+// the bar sits on top; full screen hides it so a stream gets the whole screen
+const layout = () => {
+  if (!mainWindow || !serverView || !barView) return;
+  const { width, height } = mainWindow.getContentBounds();
+  const bar = mainWindow.isFullScreen() ? 0 : BAR_HEIGHT;
+  barView.setBounds({ x: 0, y: 0, width, height: bar });
+  serverView.setBounds({ x: 0, y: bar, width, height: Math.max(0, height - bar) });
+};
+
+let serverName = '';
+// the bar takes the theme of the sharkord page under it (sharkord has its own light/dark switch);
+// until the page says, the system's
+let pageTheme: 'light' | 'dark' | null = null;
+const barDark = () => (pageTheme ? pageTheme === 'dark' : nativeTheme.shouldUseDarkColors);
+const sendBarState = () => {
+  const wc = barView?.webContents;
+  if (!wc || wc.isDestroyed()) return;
+  wc.send('bar:state', { server: serverName, zoom: page()?.getZoomFactor() ?? 1, theme: pageTheme });
+  const bg = barDark() ? '#18201c' : '#a6b08a';
+  barView?.setBackgroundColor(bg);
+  mainWindow?.setBackgroundColor(bg);
+};
+ipcMain.on('server:theme', (event, theme: unknown) => {
+  if (event.sender !== page() || !findServerByUrl(event.senderFrame?.url ?? '')) return;
+  const next = theme === 'dark' || theme === 'light' ? theme : null;
+  if (next === pageTheme) return;
+  pageTheme = next;
+  sendBarState();
+});
+nativeTheme.on('updated', sendBarState);
+
+const zoom = (delta: number) => {
+  const wc = page();
+  if (!wc) return;
+  wc.setZoomLevel(Math.max(-3, Math.min(3, wc.getZoomLevel() + delta)));
+  sendBarState();
+};
+const zoomReset = () => {
+  page()?.setZoomLevel(0);
+  sendBarState();
+};
+const toggleFullScreen = () => mainWindow?.setFullScreen(!mainWindow.isFullScreen());
+
+// runs an action that may unload the server page, remembering it for the in-call prompt
+const guarded = (action: () => void) => {
+  interrupted = action;
+  action();
+  setTimeout(() => (interrupted = null), 1000);
+};
+const reloadPage = () => guarded(() => page()?.reload());
+
+const webPreferences = { preload: preloadPath(), sandbox: true, contextIsolation: true, nodeIntegration: false };
+
+// the app's shortcuts, on the server page and the bar (there is no application menu)
+const handleShortcuts = (wc: Electron.WebContents) =>
+  wc.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown') return;
+    const ctrl = input.control || input.meta;
+    const key = input.key.toLowerCase();
+    const action =
+      ctrl && input.shift && key === 's' ? () => showLauncher()
+      : ctrl && input.shift && key === 'i' ? () => page()?.toggleDevTools()
+      : (ctrl && !input.shift && key === 'r') || input.key === 'F5' ? reloadPage
+      : ctrl && (key === '=' || key === '+') ? () => zoom(+0.5)
+      : ctrl && key === '-' ? () => zoom(-0.5)
+      : ctrl && key === '0' ? zoomReset
+      : input.key === 'F11' ? toggleFullScreen
+      : ctrl && !input.shift && key === 'q' ? quit
+      : null;
+
+    if (action) {
+      event.preventDefault();
+      action();
+    }
+  });
+
 const createMainWindow = () => {
-  mainWindow = new BrowserWindow({
+  const dark = barDark();
+
+  const win = new BaseWindow({
     width: 1360,
     height: 860,
     ...restoredBounds(),
     minWidth: 1120,
     minHeight: 720,
     show: false,
-    autoHideMenuBar: false,
     icon: iconPath(),
     title: 'Jollyboat',
-    backgroundColor: '#0a0a0a',
-    webPreferences: {
-      preload: preloadPath(),
-      sandbox: true,
-      contextIsolation: true,
-      nodeIntegration: false
-    }
+    backgroundColor: dark ? '#18201c' : '#a6b08a'
   });
+  const server = new WebContentsView({ webPreferences });
+  const barv = new WebContentsView({ webPreferences });
+  mainWindow = win;
+  serverView = server;
+  barView = barv;
+  server.setBackgroundColor('#0a0a0a');
+  barv.setBackgroundColor(dark ? '#18201c' : '#a6b08a');
+  win.contentView.addChildView(server);
+  win.contentView.addChildView(barv);
+  layout();
 
-  mainWindow.once('ready-to-show', () => {
-    if (startHidden) startHidden = false;
-    else mainWindow?.show();
+  const wc = server.webContents;
+  const bar = barv.webContents;
+
+  bar.loadURL(pageUrl('bar'));
+  bar.on('did-finish-load', sendBarState);
+  bar.setWindowOpenHandler(() => ({ action: 'deny' }));
+  bar.on('will-navigate', (event) => event.preventDefault());
+  handleShortcuts(wc);
+  handleShortcuts(bar);
+
+  // reading the window clears the unread marker; typing goes to the page, not the bar
+  win.on('focus', () => {
+    clearUnread();
+    if (!wc.isDestroyed()) wc.focus();
   });
-
-  // reading the window clears the unread marker
-  mainWindow.on('focus', clearUnread);
-  mainWindow.on('resize', rememberBounds);
-  mainWindow.on('move', rememberBounds);
+  win.on('resize', () => {
+    layout();
+    rememberBounds();
+  });
+  win.on('move', rememberBounds);
+  win.on('enter-full-screen', layout);
+  win.on('leave-full-screen', layout);
+  wc.on('zoom-changed', (_e, direction) => zoom(direction === 'in' ? +0.5 : -0.5));
+  wc.on('page-title-updated', (_e, title) => win.setTitle(`${title} — Jollyboat`));
 
   // links Sharkord opens in a new window go to the system browser
   let lastExternal = 0;
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+  wc.setWindowOpenHandler(({ url }) => {
     // at most one external tab per second, so a page cannot flood the browser
     if (/^https?:/i.test(url) && Date.now() - lastExternal > 1000) {
       lastExternal = Date.now();
@@ -115,48 +216,48 @@ const createMainWindow = () => {
     return { action: 'deny' };
   });
 
-  // the window only ever shows our pages and http(s). an OIDC login may bounce through the
-  // identity provider, so other https origins are allowed in-window; anything else is not
   // a pipewire share never outlives the page that started it
-  mainWindow.webContents.on('did-start-navigation', (details) => details.isMainFrame && !details.isSameDocument && stopPipeWireShare());
+  wc.on('did-start-navigation', (details) => details.isMainFrame && !details.isSameDocument && stopPipeWireShare());
   // a crashed or hung page comes back on its own; three crashes in two minutes go to the launcher
-  mainWindow.webContents.on('render-process-gone', (_e, details) => {
+  wc.on('render-process-gone', (_e, details) => {
     stopPipeWireShare();
     log('window', 'renderer gone:', details.reason, details.exitCode);
 
-    if (details.reason === 'clean-exit' || details.reason === 'killed') return;
+    if (details.reason === 'clean-exit' || details.reason === 'killed' || quitting) return;
 
     const now = Date.now();
     crashes = crashes.filter((t) => now - t < 120_000).concat(now);
 
-    const url = mainWindow?.webContents.getURL() ?? '';
-    const server = findServerByUrl(url);
+    const url = wc.getURL();
+    const saved = findServerByUrl(url);
 
-    if (crashes.length >= 3 || !server) dropServer(`${server ? `${server.name} | ` : ''}page crashed (${details.reason})`);
-    else mainWindow?.loadURL(url);
+    if (crashes.length >= 3 || !saved) dropServer(`page crashed (${details.reason})`, saved?.id);
+    else wc.loadURL(url);
   });
 
   let hangTimer: NodeJS.Timeout | null = null;
-  mainWindow.on('unresponsive', () => {
+  wc.on('unresponsive', () => {
     log('window', 'unresponsive');
     hangTimer = setTimeout(() => {
       log('window', 'still unresponsive after 30 s, reloading');
-      mainWindow?.webContents.forcefullyCrashRenderer();
+      wc.forcefullyCrashRenderer();
     }, 30_000);
   });
-  mainWindow.on('responsive', () => {
+  wc.on('responsive', () => {
     if (hangTimer) clearTimeout(hangTimer);
     hangTimer = null;
   });
 
-  mainWindow.webContents.on('will-navigate', (event, url) => {
+  // the server page only ever shows http(s). an OIDC login may bounce through the identity
+  // provider, so other https origins are allowed in-window; anything else is not
+  wc.on('will-navigate', (event, url) => {
     if (!/^https?:/i.test(url)) event.preventDefault();
   });
 
   // sharkord guards leaving while in a call (beforeunload). electron would silently stay, which
   // looked like a lost click. the page stays for now and our own prompt asks; "leave" re-runs
   // whatever was interrupted with the guard waived. applies to reload, switching servers, quitting
-  mainWindow.webContents.on('will-prevent-unload', (event) => {
+  wc.on('will-prevent-unload', (event) => {
     if (waiveGuard) {
       waiveGuard = false;
       event.preventDefault();
@@ -165,11 +266,11 @@ const createMainWindow = () => {
 
     log('window', 'page asks to stay (beforeunload)');
     const wasQuitting = quitting;
-    const again = interrupted ?? (wasQuitting ? quit : () => mainWindow?.webContents.reload());
+    const again = interrupted ?? (wasQuitting ? quit : reloadPage);
     interrupted = null;
     quitting = false;
 
-    askPrompt(mainWindow!, { message: 'still in a call', detail: wasQuitting ? 'leave it and quit?' : 'leave it?', yes: 'leave', no: 'stay' }).then((leave) => {
+    askPrompt(win, { message: 'still in a call', detail: wasQuitting ? 'leave it and quit?' : 'leave it?', yes: 'leave', no: 'stay' }).then((leave) => {
       if (!leave) return;
       waiveGuard = true;
       again();
@@ -179,66 +280,86 @@ const createMainWindow = () => {
   });
 
   // a server that cannot be reached bounces back to the launcher with the reason
-  mainWindow.webContents.on('did-fail-load', (_e, code, description, url, isMainFrame) => {
+  wc.on('did-fail-load', (_e, code, description, url, isMainFrame) => {
     log('window', 'load failed', code, description, isMainFrame ? 'main' : 'sub', url.slice(0, 80));
     if (!isMainFrame || code === -3 /* aborted: a new navigation started */) return;
 
-    const server = findServerByUrl(url);
     const text = description.toLowerCase().replace(/^err_/, '').replace(/_/g, ' ');
-    const reason = `${server ? `${server.name} | ` : ''}${text === 'too many retries' ? 'proxy login refused, check the basic auth fields' : text}`;
-
-    dropServer(reason);
+    dropServer(text === 'too many retries' ? 'proxy login refused | check the proxy login' : text, findServerByUrl(url)?.id);
   });
 
   // an http error page from the server itself (did-fail-load does not fire for those)
-  mainWindow.webContents.on('did-navigate', (_e, url, httpResponseCode) => {
-    const server = findServerByUrl(url);
-    if (!server || httpResponseCode < 400) return;
+  wc.on('did-navigate', (_e, url, httpResponseCode) => {
+    const saved = findServerByUrl(url);
+    if (!saved || httpResponseCode < 400) return;
     log('window', 'server answered', httpResponseCode, 'for the page');
-    if (httpResponseCode === 401 || httpResponseCode === 407) dropServer(`${server.name} | proxy login refused, check the basic auth fields`);
-    else if (httpResponseCode >= 500) dropServer(`${server.name} | server error ${httpResponseCode}`);
+    if (httpResponseCode === 401 || httpResponseCode === 407) dropServer('proxy login refused | check the proxy login', saved.id);
+    else if (httpResponseCode >= 500) dropServer(`server error ${httpResponseCode}`, saved.id);
   });
 
-  // closing the server window: minimize (default), hide into the tray, or quit
-  mainWindow.on('close', (event) => {
-    if (quitting) return;
-    const { onClose } = getSettings();
-
-    if (onClose === 'minimize') {
-      event.preventDefault();
-      mainWindow?.minimize();
-    } else if (onClose === 'tray' && hasTray()) {
-      event.preventDefault();
-      mainWindow?.hide();
-    } else {
-      quit();
+  // closing: minimize (default), hide into the tray, or quit. quitting closes the page first so
+  // sharkord's in-call guard gets its say; the frame follows once the page is gone
+  win.on('close', (event) => {
+    if (quitting) {
+      if (!wc.isDestroyed()) {
+        event.preventDefault();
+        wc.close({ waitForBeforeUnload: true });
+      }
+      return;
     }
+
+    const { onClose } = getSettings();
+    event.preventDefault();
+
+    if (onClose === 'minimize') win.minimize();
+    else if (onClose === 'tray' && hasTray()) win.hide();
+    else quit();
+  });
+  wc.on('destroyed', () => {
+    if (!quitting || win.isDestroyed()) return;
+    win.destroy();
+    app.quit();
   });
 
-  mainWindow.on('closed', () => {
+  win.on('closed', () => {
+    if (!bar.isDestroyed()) bar.close();
+    if (!wc.isDestroyed()) wc.close();
     mainWindow = null;
+    serverView = null;
+    barView = null;
   });
 
-  return mainWindow;
+  return win;
 };
 
-const focusWindow = (win: BrowserWindow) => {
+const focusWindow = (win: BaseWindow) => {
   if (win.isMinimized()) win.restore();
   win.show();
   win.focus();
 };
 
-// a server page is loaded (or loading) in the main window
-const hasServer = () => !!mainWindow && !!findServerByUrl(mainWindow.webContents.getURL());
+// a server page is loaded (or loading) in the server window
+const hasServer = () => !!findServerByUrl(page()?.getURL() ?? '');
 
-// tray click / second instance: the server if there is one, otherwise the launcher
+// second instance / dock: the server if there is one, otherwise the launcher
 const showWindow = () => {
   if (mainWindow && hasServer()) focusWindow(mainWindow);
   else showLauncher();
 };
 
+// tray click: show, or put it away when it is already in front
+const toggleWindow = () => {
+  const win = mainWindow && hasServer() ? mainWindow : launcherWindow;
+  if (win && win.isVisible() && !win.isMinimized() && win.isFocused()) {
+    if (win === mainWindow && getSettings().onClose !== 'tray') win.minimize();
+    else win.hide();
+  } else {
+    showWindow();
+  }
+};
+
 const createLauncherWindow = () => {
-  launcherWindow = new BrowserWindow({
+  const win = new BrowserWindow({
     width: 1200,
     height: 780,
     minWidth: 1000,
@@ -248,105 +369,92 @@ const createLauncherWindow = () => {
     icon: iconPath(),
     title: 'Jollyboat',
     backgroundColor: '#a6b08a',
-    webPreferences: {
-      preload: preloadPath(),
-      sandbox: true,
-      contextIsolation: true,
-      nodeIntegration: false
-    }
+    webPreferences
   });
-  launcherWindow.setMenuBarVisibility(false);
-  launcherWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-  launcherWindow.webContents.on('will-navigate', (event, url) => {
+  launcherWindow = win;
+  win.setMenuBarVisibility(false);
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  win.webContents.on('will-navigate', (event, url) => {
     if (!isOwnPageUrl(url)) event.preventDefault();
   });
-  launcherWindow.on('closed', () => {
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.type === 'keyDown' && (input.control || input.meta) && input.key.toLowerCase() === 'q') {
+      event.preventDefault();
+      quit();
+    }
+  });
+  win.on('closed', () => {
     launcherWindow = null;
   });
 
-  return launcherWindow;
+  return win;
 };
 
-const showLauncher = (error?: string) => {
+const showLauncher = (error?: string, serverId?: string, show = true) => {
+  if (!show && !error && !launcherWindow) return;
+
   const win = launcherWindow ?? createLauncherWindow();
-  const url = error ? `${pageUrl('launcher')}?error=${encodeURIComponent(error)}` : pageUrl('launcher');
+  const query = new URLSearchParams();
+
+  if (error) query.set('error', error);
+  if (error && serverId) query.set('server', serverId);
 
   const fresh = !win.webContents.getURL().startsWith(pageUrl('launcher'));
 
   // an open launcher is only reloaded when there is something new to say
-  if (error || fresh) win.loadURL(url);
-  if (startHidden) return;
+  if (error || fresh) win.loadURL(query.size ? `${pageUrl('launcher')}?${query}` : pageUrl('launcher'));
+  if (!show) return;
   if (fresh) win.webContents.once('did-finish-load', () => focusWindow(win));
   else focusWindow(win);
 };
 
-// a server page that failed: the window goes away and the launcher says why
-const dropServer = (reason: string) => {
+// a server page that failed: the window goes away and the launcher says why (it pops up only
+// when the server window was on screen; a start into the tray stays there)
+const dropServer = (reason: string, serverId?: string) => {
+  const visible = !!mainWindow?.isVisible() || !!launcherWindow?.isVisible();
+
   if (mainWindow) {
     mainWindow.hide();
     mainWindow.setTitle('Jollyboat');
-    mainWindow.loadURL('about:blank');
+    page()?.loadURL('about:blank');
   }
+  serverName = '';
   setServerName('');
-  showLauncher(reason);
+  showLauncher(reason, serverId, visible);
 };
 
 const WEBSITE = 'https://innovativefluid.net';
 
-const zoom = (delta: number) => {
-  const wc = mainWindow?.webContents;
-  if (wc) wc.setZoomLevel(Math.max(-3, Math.min(3, wc.getZoomLevel() + delta)));
-};
+// the bar's ⋯ menu: everything the old menu bar had that the bar does not show
+const barMenu = () =>
+  Menu.buildFromTemplate([
+    { label: 'Reload', accelerator: 'CommandOrControl+R', click: reloadPage },
+    { label: 'Full screen', accelerator: 'F11', click: toggleFullScreen },
+    { label: 'Developer tools', accelerator: 'CommandOrControl+Shift+I', click: () => page()?.toggleDevTools() },
+    { type: 'separator' },
+    { label: 'Copy diagnostics', click: () => clipboard.writeText(diagnostics()) },
+    { label: 'Jollyboat on GitHub', click: () => shell.openExternal('https://github.com/innovativefluid/jollyboat') },
+    { label: 'Releases', click: () => shell.openExternal('https://github.com/innovativefluid/jollyboat/releases') },
+    { label: 'innovativefluid.net', click: () => shell.openExternal(WEBSITE) },
+    { label: `Version ${__APP_VERSION__}`, enabled: false },
+    { type: 'separator' },
+    { label: 'Quit', accelerator: 'CommandOrControl+Q', click: quit }
+  ]);
 
-// shown while a server page is open (the way back to the app's own screens); hidden on the setup screen
-const createMenu = () => {
-  Menu.setApplicationMenu(
-    Menu.buildFromTemplate([
-      {
-        label: '&Jollyboat',
-        submenu: [
-          { label: '&Servers and settings…', accelerator: 'CommandOrControl+Shift+S', click: () => showLauncher() },
-          { type: 'separator' },
-          { label: 'Copy &diagnostics', click: () => clipboard.writeText(diagnostics()) },
-          { type: 'separator' },
-          { label: '&Quit', accelerator: 'CommandOrControl+Q', click: quit }
-        ]
-      },
-      {
-        label: '&View',
-        submenu: [
-          { label: '&Reload', accelerator: 'CommandOrControl+R', click: () => guarded(() => mainWindow?.webContents.reload()) },
-          { type: 'separator' },
-          { label: 'Zoom &in', accelerator: 'CommandOrControl+=', click: () => zoom(+0.5) },
-          { label: 'Zoom &out', accelerator: 'CommandOrControl+-', click: () => zoom(-0.5) },
-          { label: '&Actual size', accelerator: 'CommandOrControl+0', click: () => mainWindow?.webContents.setZoomLevel(0) },
-          { type: 'separator' },
-          { label: '&Full screen', accelerator: 'F11', click: () => mainWindow?.setFullScreen(!mainWindow.isFullScreen()) },
-          { label: 'Developer &tools', accelerator: 'CommandOrControl+Shift+I', click: () => mainWindow?.webContents.toggleDevTools() }
-        ]
-      },
-      {
-        label: '&Help',
-        submenu: [
-          { label: 'Jollyboat on &GitHub', click: () => shell.openExternal('https://github.com/innovativefluid/jollyboat') },
-          { label: '&Releases', click: () => shell.openExternal('https://github.com/innovativefluid/jollyboat/releases') },
-          { label: 'innovativefluid.&net', click: () => shell.openExternal(WEBSITE) },
-          { type: 'separator' },
-          { label: `Version ${__APP_VERSION__}`, enabled: false }
-        ]
-      }
-    ])
-  );
-};
+ipcMain.on('bar:action', (event, action: unknown, at: unknown) => {
+  if (!barView || event.sender !== barView.webContents) return;
 
-// runs an action that may unload the server page, remembering it for the in-call prompt
-const guarded = (action: () => void) => {
-  interrupted = action;
-  action();
-  setTimeout(() => (interrupted = null), 1000);
-};
+  if (action === 'settings') showLauncher();
+  else if (action === 'zoom-in') zoom(+0.5);
+  else if (action === 'zoom-out') zoom(-0.5);
+  else if (action === 'zoom-reset') zoomReset();
+  else if (action === 'menu' && mainWindow) {
+    const p = (at ?? {}) as { x?: unknown; y?: unknown };
+    barMenu().popup({ window: mainWindow, x: typeof p.x === 'number' ? p.x : 0, y: typeof p.y === 'number' ? p.y : BAR_HEIGHT });
+  }
+});
 
-const connectToServer = (id: string) => {
+const connectToServer = (id: string, show = true) => {
   const server = getSettings().servers.find((s) => s.id === id);
 
   if (!server) return;
@@ -356,10 +464,12 @@ const connectToServer = (id: string) => {
   const win = mainWindow ?? createMainWindow();
 
   win.setTitle(`${server.name} — Jollyboat`);
+  serverName = server.name;
   setServerName(server.name);
-  win.loadURL(server.url);
-  if (!startHidden) focusWindow(win);
-  // the launcher has done its job; it comes back from the menu bar or the tray
+  sendBarState();
+  page()?.loadURL(server.url);
+  if (show) focusWindow(win);
+  // the launcher has done its job; it comes back from the bar or the tray
   launcherWindow?.close();
 };
 
@@ -410,22 +520,26 @@ if (!app.requestSingleInstanceLock()) {
       quit,
       spellcheckAtStart
     });
-    createMenu();
+    // no application menu: the bar above the server page and its shortcuts replace it
+    Menu.setApplicationMenu(null);
     createTray({
+      toggle: toggleWindow,
       show: showWindow,
       showLauncher: () => showLauncher(),
       quit,
-      voiceAction: (action) => mainWindow?.webContents.send('shell:voice-action', action),
+      voiceAction: (action) => page()?.send('shell:voice-action', action),
       getMainWindow: () => mainWindow
     });
     startUpdater();
 
-    // auto-connect is chosen in the launcher; a lone server opens without being asked
+    // auto-connect is chosen in the launcher; a lone server opens without being asked.
+    // --hidden (autostart): stay in the tray until the user asks for a window
+    const hidden = process.argv.includes('--hidden');
     const { autoConnectServerId, servers } = getSettings();
     const auto = servers.find((s) => s.id === autoConnectServerId) ?? (servers.length === 1 ? servers[0] : undefined);
 
-    if (auto) connectToServer(auto.id);
-    else showLauncher();
+    if (auto) connectToServer(auto.id, !hidden);
+    else showLauncher(undefined, undefined, !hidden);
   });
 
   app.on('before-quit', () => {

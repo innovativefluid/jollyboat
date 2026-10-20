@@ -39,6 +39,8 @@ declare global {
       onUpdateStatus: (cb: (s: TUpdateStatus) => void) => void;
       onPickerSources: (cb: (sources: TCaptureSource[], lastName: string | null) => void) => void;
       promptAnswer: (answer: boolean) => void;
+      barAction: (action: 'settings' | 'zoom-in' | 'zoom-out' | 'zoom-reset' | 'menu', at?: { x: number; y: number }) => void;
+      onBarState: (cb: (state: { server: string; zoom: number; theme: 'light' | 'dark' | null }) => void) => void;
       pickerChoose: (result: TPickerResult) => void;
     };
   }

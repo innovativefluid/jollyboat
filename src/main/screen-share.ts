@@ -4,7 +4,7 @@
 //         or as the linux fallback; pipewire shares are video-only here and get their audio
 //         track from the virtual mic in the preload.
 
-import { BrowserWindow, desktopCapturer, ipcMain, session } from 'electron';
+import { BrowserWindow, desktopCapturer, ipcMain, session, type BaseWindow } from 'electron';
 import type { TCaptureSource, TPickerResult } from '../shared/types';
 import { log } from './log';
 import { loopbackForRequest, markShareGranted } from './screen-audio';
@@ -17,7 +17,7 @@ const isWaylandSession = () =>
 let pickerWindow: BrowserWindow | null = null;
 let resolvePick: ((r: TPickerResult) => void) | null = null;
 
-const openPicker = (parent: BrowserWindow | undefined, sources: TCaptureSource[]) =>
+const openPicker = (parent: BaseWindow | undefined, sources: TCaptureSource[]) =>
   new Promise<TPickerResult>((resolve) => {
     resolvePick = resolve;
 
@@ -70,7 +70,7 @@ const listSources = async (withThumbnails: boolean): Promise<TCaptureSource[]> =
   }));
 };
 
-export const installDisplayMediaHandler = (getMainWindow: () => BrowserWindow | null) => {
+export const installDisplayMediaHandler = (getMainWindow: () => BaseWindow | null) => {
   session.defaultSession.setDisplayMediaRequestHandler(async (request, callback) => {
     try {
       if (isWaylandSession()) {

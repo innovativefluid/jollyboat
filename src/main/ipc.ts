@@ -1,4 +1,4 @@
-import { ipcMain, net, safeStorage, shell, type BrowserWindow, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
+import { BrowserWindow, ipcMain, net, safeStorage, shell, webContents, type BaseWindow, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
 import type { TServerInput, TSettings, TTestResult, TVoiceState } from '../shared/types';
 import { getAutoStart, isAutoStartSupported, setAutoStart } from './autostart';
 import { basicHeaderFor } from './basic-auth';
@@ -34,7 +34,7 @@ import {
   upsertServer
 } from './settings';
 
-type THandlers = { connectToServer: (id: string) => void; getMainWindow: () => BrowserWindow | null; quit: () => void; spellcheckAtStart: boolean };
+type THandlers = { connectToServer: (id: string) => void; getMainWindow: () => BaseWindow | null; quit: () => void; spellcheckAtStart: boolean };
 
 let spellcheckAtStartup = false;
 
@@ -244,9 +244,10 @@ export const registerIpc = ({ connectToServer, quit, getMainWindow, spellcheckAt
 
   // sharing: ids null = every server; passwords only when asked
   ipcMain.handle('share:code', guard((_e, ids: unknown, withPasswords: unknown) => toCode(buildExport(idList(ids), withPasswords === true))));
-  ipcMain.handle('share:exportFile', guard((_e, ids: unknown, withPasswords: unknown) => exportToFile(getMainWindow(), buildExport(idList(ids), withPasswords === true))));
+  // file dialogs belong to the window that asked (the launcher)
+  ipcMain.handle('share:exportFile', guard((e, ids: unknown, withPasswords: unknown) => exportToFile(BrowserWindow.fromWebContents(e.sender), buildExport(idList(ids), withPasswords === true))));
   ipcMain.handle('share:importText', guard((_e, text: unknown) => importShared(parseShared(String(text ?? '').slice(0, 200_000)))));
-  ipcMain.handle('share:importFile', guard(() => importFromFile(getMainWindow())));
+  ipcMain.handle('share:importFile', guard((e) => importFromFile(BrowserWindow.fromWebContents(e.sender))));
   ipcMain.handle('app:quit', guard(() => quit()));
   ipcMain.handle('app:website', guard(() => shell.openExternal('https://innovativefluid.net')));
   ipcMain.handle('autostart:get', guard(() => ({ supported: isAutoStartSupported(), enabled: getAutoStart() })));
@@ -256,5 +257,8 @@ export const registerIpc = ({ connectToServer, quit, getMainWindow, spellcheckAt
   ipcMain.handle('update:open', guard(() => openReleasePage()));
   ipcMain.handle('diag:text', guard(() => diagnostics()));
 
-  onUpdateStatus((status) => getMainWindow()?.webContents.send('update:status', status));
+  // update news goes to whichever of our pages are open (the launcher shows it)
+  onUpdateStatus((status) => {
+    for (const wc of webContents.getAllWebContents()) if (isOwnPageUrl(wc.getURL())) wc.send('update:status', status);
+  });
 };

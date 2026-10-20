@@ -1,17 +1,18 @@
 // The tray shows the voice state (mic muted, deafened) and whether there are unread messages,
 // and lets the user toggle mic / deafen from its menu (the preload clicks the buttons).
 
-import { app, Menu, nativeImage, Tray, type BrowserWindow } from 'electron';
+import { app, Menu, nativeImage, Tray, type BaseWindow } from 'electron';
 import { join } from 'node:path';
 import type { TVoiceState } from '../shared/types';
 import { log } from './log';
 
 type TTrayActions = {
+  toggle: () => void;
   show: () => void;
   showLauncher: () => void;
   quit: () => void;
-  voiceAction: (action: 'mic' | 'sound') => void;
-  getMainWindow: () => BrowserWindow | null;
+  voiceAction: (action: 'mic' | 'sound' | 'leave') => void;
+  getMainWindow: () => BaseWindow | null;
 };
 
 // unread has two sources: notifications that arrived while the window was in the background
@@ -96,8 +97,9 @@ const render = () => {
   tray.setToolTip(tooltip());
   tray.setContextMenu(
     Menu.buildFromTemplate([
-      { label: state.serverName ? `Show ${state.serverName}` : 'Show Jollyboat', click: actions.show },
-      { label: 'Servers…', click: actions.showLauncher },
+      ...(state.serverName ? [{ label: state.serverName, enabled: false }] : []),
+      { label: 'Show', click: actions.show },
+      { label: 'Servers and settings…', click: actions.showLauncher },
       { type: 'separator' },
       {
         label: state.micMuted ? 'Unmute microphone' : 'Mute microphone',
@@ -109,6 +111,7 @@ const render = () => {
         enabled: state.connected,
         click: () => actions?.voiceAction('sound')
       },
+      ...(state.inVoice ? [{ label: 'Leave call', click: () => actions?.voiceAction('leave') }] : []),
       { type: 'separator' },
       { label: 'Quit', click: actions.quit }
     ])
@@ -120,7 +123,8 @@ const render = () => {
 export const createTray = (a: TTrayActions) => {
   actions = a;
   tray = new Tray(nativeImage.createEmpty());
-  tray.on('click', a.show);
+  // left click shows the window, or puts it away when it is already in front
+  tray.on('click', a.toggle);
   render();
 
   return tray;

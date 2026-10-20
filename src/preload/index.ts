@@ -52,6 +52,11 @@ if (boot.isOwnPage) {
       ipcRenderer.on('picker:sources', (_e, sources, lastName) => cb(sources, lastName));
     },
     pickerChoose: (result: TPickerResult) => ipcRenderer.send('picker:choose', result),
+    // bar above the server page
+    barAction: (action: string, at?: { x: number; y: number }) => ipcRenderer.send('bar:action', action, at),
+    onBarState: (cb: (state: { server: string; zoom: number; theme: 'light' | 'dark' | null }) => void) => {
+      ipcRenderer.on('bar:state', (_e, state) => cb(state));
+    },
     // prompt window
     promptAnswer: (answer: boolean) => ipcRenderer.send('prompt:answer', answer)
   });
@@ -287,6 +292,22 @@ if (boot.isSavedServer) {
     requestAnimationFrame(report);
   };
 
+  // sharkord's own light/dark choice sits as a class on <html>; the bar above takes it over
+  let lastTheme = '';
+  const reportTheme = () => {
+    const c = document.documentElement.classList;
+    const theme = c.contains('dark') ? 'dark' : c.contains('light') ? 'light' : '';
+    if (theme === lastTheme) return;
+    lastTheme = theme;
+    ipcRenderer.send('server:theme', theme || null);
+  };
+  const watchTheme = () => {
+    new MutationObserver(reportTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    reportTheme();
+  };
+  if (document.documentElement) watchTheme();
+  else window.addEventListener('DOMContentLoaded', watchTheme, { once: true });
+
   // sharkord keeps its unread total in the title: "name (3)"
   let lastTitle = '';
   const reportTitle = () => {
@@ -328,7 +349,11 @@ if (boot.isSavedServer) {
   });
 
   // tray menu actions: click Sharkord's own buttons
-  ipcRenderer.on('shell:voice-action', (_e, action: 'mic' | 'sound') => {
+  ipcRenderer.on('shell:voice-action', (_e, action: 'mic' | 'sound' | 'leave') => {
+    if (action === 'leave') {
+      document.querySelector('svg.lucide-phone-off')?.closest('button')?.click();
+      return;
+    }
     const bar = controlBar();
     if (!bar) return;
     const icon = action === 'mic' ? 'svg.lucide-mic, svg.lucide-mic-off' : 'svg.lucide-headphones, svg.lucide-headphone-off';

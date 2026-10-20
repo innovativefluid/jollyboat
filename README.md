@@ -21,7 +21,7 @@ From [releases](../../releases):
 | Windows | `Jollyboat-Setup-x.y.z.exe` |
 | Linux | `flatpak install ./Jollyboat-x.y.z-x86_64.flatpak` (or `-aarch64`) |
 
-Add your server's address; if a proxy asks for a login first, fill in the basic auth fields.
+Add your server's address; if a proxy asks for a login first, tick **proxy login / basic auth** and fill it in. On a server, the bar at the top (or ctrl+shift+s) brings back servers and settings.
 
 ## Build
 

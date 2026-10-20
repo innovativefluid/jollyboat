@@ -25,7 +25,8 @@ export default defineConfig({
         input: {
           launcher: resolve('src/renderer/launcher/index.html'),
           picker: resolve('src/renderer/picker/index.html'),
-          prompt: resolve('src/renderer/prompt/index.html')
+          prompt: resolve('src/renderer/prompt/index.html'),
+          bar: resolve('src/renderer/bar/index.html')
         }
       }
     }
