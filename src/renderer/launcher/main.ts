@@ -37,9 +37,7 @@ const testLabel = (s: TServerEntry) => {
 
 const renderStartup = () => {
   const auto = servers.find((s) => s.id === autoConnectId);
-  $('startup-line').textContent = auto
-    ? `starts with ${auto.name} | ctrl+shift+s brings this screen back | ctrl+q quit`
-    : 'starts with this screen | tick open at start on a server to skip it | ctrl+q quit';
+  $('startup-line').textContent = auto ? `opens ${auto.name} at start | ctrl+shift+s for this screen` : 'ctrl+shift+s for this screen';
 };
 
 const renderServers = async () => {
@@ -123,9 +121,9 @@ const closeEditor = () => {
 // saving tests the connection too; a failed test still saves
 const save = async () => {
   if (form.hidden) return;
-  if (!fUrl.value.trim()) return hint(testStatus, 'a url is needed', 'bad');
+  if (!fUrl.value.trim()) return hint(testStatus, 'url missing', 'bad');
 
-  hint(testStatus, 'saving and testing');
+  hint(testStatus, 'testing');
 
   try {
     const { server, test } = await window.shell.saveServer(formInput());
@@ -166,7 +164,7 @@ autoBox.onchange = async () => {
   if (!editingId) return;
   autoConnectId = autoBox.checked ? editingId : null;
   await window.shell.saveSettings({ autoConnectServerId: autoConnectId });
-  toast(autoBox.checked ? 'opens at start' : 'saved');
+  toast('saved');
   renderServers();
 };
 
@@ -186,7 +184,7 @@ $('share-copy').onclick = async () => {
     const code = await window.shell.shareCode([editingId], withPasswords());
     await navigator.clipboard.writeText(code);
     fx.burstAt($('share-copy'), 10);
-    hint(shareStatus, `code copied${withPasswords() ? ' | password included, share with care' : ''}`, 'good');
+    hint(shareStatus, `copied${withPasswords() ? ' with password' : ''}`, 'good');
   } catch (err) {
     hint(shareStatus, (err as Error).message, 'bad');
   }
@@ -205,7 +203,7 @@ $('share-file').onclick = async () => {
 $('export-all').onclick = async () => {
   try {
     const path = await window.shell.exportFile(null, false);
-    if (path) hint(listStatus, `saved all servers without passwords | ${path}`, 'good');
+    if (path) hint(listStatus, `saved | ${path}`, 'good');
   } catch (err) {
     hint(listStatus, (err as Error).message, 'bad');
   }
@@ -221,7 +219,7 @@ const afterImport = (names: string[] | null) => {
 
 const importText = async () => {
   const text = $<HTMLInputElement>('import-code').value.trim();
-  if (!text) return hint(listStatus, 'paste a code first', 'bad');
+  if (!text) return hint(listStatus, 'no code', 'bad');
   try {
     afterImport(await window.shell.importText(text));
   } catch (err) {
@@ -244,9 +242,9 @@ $('import-file').onclick = async () => {
 const renderBridge = async () => {
   const status = await window.shell.bridgeStatus();
   if (status.ownedByUs) {
-    hint($('bridge-text'), `hotkeys | built-in bridge on port ${status.port}, pairing is automatic | bind keys in sharkord under user settings, hotkeys${status.keyUp ? '' : ' | push to talk not available yet'}`, 'good');
+    hint($('bridge-text'), `hotkeys ready${status.keyUp ? '' : ' | no push to talk yet'}`, 'good');
   } else {
-    hint($('bridge-text'), `hotkeys | port ${status.port} is in use, the official sharkord bridge will handle them with its own token`, '');
+    hint($('bridge-text'), `hotkeys | port ${status.port} taken, using the sharkord bridge`, '');
   }
 };
 
@@ -262,13 +260,13 @@ const renderSettings = async () => {
   spell.onchange = () => {
     window.shell.saveSettings({ spellcheck: spell.checked });
     // the dictionary host is only unblocked on the next start
-    toast(spell.checked && !settings.spellcheckAtStart ? 'spellcheck on after a restart' : spell.checked ? 'spellcheck on' : 'spellcheck off');
+    toast(spell.checked && !settings.spellcheckAtStart ? 'on after restart' : 'saved');
   };
 
   const updates = $<HTMLInputElement>('check-updates');
   $('updates-row').hidden = platform !== 'win32';
   updates.checked = settings.checkUpdates;
-  updates.onchange = () => { window.shell.saveSettings({ checkUpdates: updates.checked }); toast(updates.checked ? 'checks for updates' : 'no update checks'); };
+  updates.onchange = () => { window.shell.saveSettings({ checkUpdates: updates.checked }); toast('saved'); };
 
   const tray = $<HTMLInputElement>('minimize-to-tray');
   tray.checked = settings.minimizeToTray;
@@ -284,7 +282,7 @@ const renderSettings = async () => {
   autostart.checked = auto.enabled;
   autostart.onchange = async () => {
     autostart.checked = await window.shell.setAutoStart(autostart.checked);
-    toast(autostart.checked ? 'starts with the system' : 'saved');
+    toast('saved');
   };
 
   const updateLine = $('update-line');
@@ -292,8 +290,8 @@ const renderSettings = async () => {
     const text = {
       idle: '',
       checking: 'checking for updates',
-      available: `update ${s.version ?? ''} found | downloading`,
-      downloaded: `update ${s.version ?? ''} ready | click to install now, or it installs when you quit`,
+      available: `downloading ${s.version ?? 'update'}`,
+      downloaded: `${s.version ?? 'update'} ready | click to install`,
       none: 'up to date',
       error: `update check failed | ${s.message ?? ''}`
     }[s.state];
@@ -302,14 +300,14 @@ const renderSettings = async () => {
     updateLine.style.cursor = s.state === 'downloaded' ? 'pointer' : '';
   };
   if (platform === 'win32') {
-    if (!settings.checkUpdates) hint(updateLine, 'update checks are off | new versions on the github releases page');
+    if (!settings.checkUpdates) hint(updateLine, 'update checks off');
     else showUpdate(await window.shell.updateStatus());
     window.shell.onUpdateStatus(showUpdate);
   } else if (platform === 'linux') {
-    hint(updateLine, 'updates come through flatpak | or the releases page for other installs');
+    hint(updateLine, 'updates via flatpak');
   }
 
-  $('version').textContent = `jollyboat ${window.shell.version} | ${platform}${settings.secureStorage ? '' : ' | no keyring found, passwords are stored unencrypted'}`;
+  $('version').textContent = `jollyboat ${window.shell.version}${settings.secureStorage ? '' : ' | no keyring, passwords unencrypted'}`;
 };
 
 // a server that failed to load sends us back here with the reason in the query

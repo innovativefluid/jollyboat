@@ -48,13 +48,13 @@ export const parseShared = (text: string): TShared => {
   try {
     parsed = JSON.parse(json);
   } catch {
-    throw new Error('that is not a share code or a server file');
+    throw new Error('not a share code');
   }
 
   const doc = parsed as Partial<TShared>;
 
   if (doc?.jollyboat !== FORMAT || !Array.isArray(doc.servers)) {
-    throw new Error('that is not a jollyboat server file');
+    throw new Error('not a jollyboat share');
   }
 
   const servers = doc.servers.slice(0, 50).map((raw) => {
@@ -76,7 +76,7 @@ export const parseShared = (text: string): TShared => {
     };
   });
 
-  if (servers.length === 0) throw new Error('the file holds no servers');
+  if (servers.length === 0) throw new Error('no servers in it');
 
   return { jollyboat: FORMAT, servers };
 };
@@ -125,7 +125,7 @@ export const importFromFile = async (win: BrowserWindow | null) => {
 
   const text = await readFile(filePaths[0], 'utf8');
 
-  if (text.length > 200_000) throw new Error('that file is too large to be a server file');
+  if (text.length > 200_000) throw new Error('file too large');
 
   return importShared(parseShared(text));
 };

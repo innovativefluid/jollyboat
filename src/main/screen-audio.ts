@@ -127,11 +127,11 @@ export const stopPipeWireShare = () => {
 /** one line for the launcher */
 export const describeScreenAudio = () =>
   ({
-    'loopback-own-excluded': { ok: true, text: "screen share audio | everything you hear except sharkord's own sound | windows loopback" },
+    'loopback-own-excluded': { ok: true, text: 'share audio ready' },
     loopback:
       process.platform === 'win32'
-        ? { ok: false, text: "screen share audio | windows before 10 22h2 also captures sharkord's own sound, others may hear themselves" }
-        : { ok: false, text: "screen share audio | pipewire not found, sharing the default output including sharkord's own sound" },
-    pipewire: { ok: true, text: "screen share audio | everything you hear except sharkord's own sound | pipewire" },
-    none: { ok: false, text: 'screen share audio | not available on this platform' }
+        ? { ok: false, text: 'share audio | others may hear themselves (windows older than 10 22h2)' }
+        : { ok: false, text: 'share audio | others may hear themselves (no pipewire)' },
+    pipewire: { ok: true, text: 'share audio ready' },
+    none: { ok: false, text: 'share audio unavailable' }
   })[mode];

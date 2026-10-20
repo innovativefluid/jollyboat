@@ -81,7 +81,7 @@ const testServer = async (input: TServerInput): Promise<TTestResult> => {
   try {
     origin = normalizeUrl(input.url);
   } catch {
-    return { ok: false, error: 'that is not a valid url' };
+    return { ok: false, error: 'not a url' };
   }
 
   const headers: Record<string, string> = {};
@@ -101,16 +101,16 @@ const testServer = async (input: TServerInput): Promise<TTestResult> => {
   try {
     const res = await net.fetch(`${origin}/info`, { headers, signal: AbortSignal.timeout(8000) });
 
-    if (res.status === 401) return { ok: false, status: 401, error: 'the proxy asks for basic auth | wrong or missing user and password' };
-    if (!res.ok) return { ok: false, status: res.status, error: `server answered ${res.status}` };
+    if (res.status === 401) return { ok: false, status: 401, error: 'proxy login wrong or missing' };
+    if (!res.ok) return { ok: false, status: res.status, error: `http ${res.status}` };
 
     const info = await res.json();
 
-    if (typeof info?.serverId !== 'string') return { ok: false, error: 'that url does not look like a sharkord server' };
+    if (typeof info?.serverId !== 'string') return { ok: false, error: 'not a sharkord server' };
 
     return { ok: true, info, version: res.headers.get('x-sharkord-version') ?? undefined };
   } catch (err) {
-    return { ok: false, error: `could not reach the server | ${(err as Error).message.toLowerCase()}` };
+    return { ok: false, error: `unreachable | ${(err as Error).message.toLowerCase().replace(/^net::err_/, '').replace(/_/g, ' ')}` };
   }
 };
 
