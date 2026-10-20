@@ -53,6 +53,7 @@ jobs:
       - uses: actions/download-artifact@v8
         with: { pattern: 'linux-*', path: artifacts }
       - uses: actions/download-artifact@v8
+        continue-on-error: true # the experimental mac build may be missing
         with: { name: mac-experimental, path: artifacts/mac }
       - uses: softprops/action-gh-release@v3
         with:

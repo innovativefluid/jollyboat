@@ -39,6 +39,9 @@ app.commandLine.appendSwitch('disable-features', 'MediaRouter,DialMediaRouteProv
 app.userAgentFallback = app.userAgentFallback.replace(/\s(jollyboat|Electron)\/\S+/g, '');
 
 
+// smoke runs in CI: a mac runner has no one to answer a keychain dialog
+if (process.env.JOLLYBOAT_SMOKE && process.platform === 'darwin') app.commandLine.appendSwitch('use-mock-keychain');
+
 // dev runs would otherwise share ~/.config/Electron with every other electron app in development
 if (!app.isPackaged) app.setPath('userData', join(app.getPath('appData'), 'jollyboat-dev'));
 
@@ -512,11 +515,17 @@ const runSmokeTest = async () => {
     app.exit(1);
   }, 60_000);
 
+  // progress lines, so a hang in CI shows where it stopped
+  const step = (text: string) => console.log(`[smoke-step] ${Math.round(process.uptime() * 1000)} ms ${text}`);
+
   try {
+    step('ready');
     createMainWindow();
+    step('server window created');
     const launcher = createLauncherWindow();
-    const loaded = (wc: Electron.WebContents) => new Promise<void>((resolve) => wc.once('did-finish-load', () => resolve()));
-    const ready = Promise.all([loaded(barView!.webContents), loaded(launcher.webContents)]);
+    const loaded = (name: string, wc: Electron.WebContents) =>
+      new Promise<void>((resolve) => wc.once('did-finish-load', () => (step(`${name} loaded`), resolve())));
+    const ready = Promise.all([loaded('bar', barView!.webContents), loaded('setup window', launcher.webContents)]);
 
     launcher.loadURL(pageUrl('launcher'));
     await ready;
