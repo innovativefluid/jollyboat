@@ -152,9 +152,19 @@ const createMainWindow = () => {
     if (!isMainFrame || code === -3 /* aborted: a new navigation started */) return;
 
     const server = findServerByUrl(url);
-    const reason = `${server ? `${server.name} | ` : ''}${description.toLowerCase().replace(/^err_/, '').replace(/_/g, ' ')}`;
+    const text = description.toLowerCase().replace(/^err_/, '').replace(/_/g, ' ');
+    const reason = `${server ? `${server.name} | ` : ''}${text === 'too many retries' ? 'proxy login refused, check the basic auth fields' : text}`;
 
     showLauncher(reason);
+  });
+
+  // an http error page from the server itself (did-fail-load does not fire for those)
+  mainWindow.webContents.on('did-navigate', (_e, url, httpResponseCode) => {
+    const server = findServerByUrl(url);
+    if (!server || httpResponseCode < 400) return;
+    log('window', 'server answered', httpResponseCode, 'for the page');
+    if (httpResponseCode === 401 || httpResponseCode === 407) showLauncher(`${server.name} | proxy login refused, check the basic auth fields`);
+    else if (httpResponseCode >= 500) showLauncher(`${server.name} | server error ${httpResponseCode}`);
   });
 
   mainWindow.on('close', (event) => {
