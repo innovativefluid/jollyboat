@@ -1,5 +1,5 @@
-// Auto-update on Windows through electron-updater and GitHub Releases (needs the NSIS installer;
-// the MSI cannot update itself). Linux updates come through Flatpak. Checked once at startup
+// Auto-update on Windows through electron-updater and GitHub Releases. Linux updates come
+// through Flatpak. Checked once at startup
 // and every six hours; downloaded updates install on quit.
 
 import { app } from 'electron';

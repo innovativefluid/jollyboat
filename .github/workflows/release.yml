@@ -55,7 +55,7 @@ jobs:
           files: artifacts/**/*
           body: |
             **Download one file:**
-            - Windows: `Jollyboat-Setup-${{ inputs.version }}.exe` (updates itself) — or the `.msi` if you prefer, it doesn't update itself
+            - Windows: `Jollyboat-Setup-${{ inputs.version }}.exe`
             - Linux: `Jollyboat-${{ inputs.version }}-x86_64.flatpak`
 
             `latest.yml` and `.blockmap` are read by installed copies when they check for updates; ignore them.

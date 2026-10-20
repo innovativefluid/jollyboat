@@ -28,7 +28,7 @@ electronFuses:
   enableEmbeddedAsarIntegrityValidation: true
   onlyLoadAppFromAsar: true
 
-# updates: electron-updater reads latest.yml from the GitHub release; only the NSIS installer updates itself
+# updates: electron-updater reads latest.yml from the GitHub release
 publish:
   provider: github
   owner: innovativefluid
@@ -37,7 +37,6 @@ publish:
 win:
   target:
     - nsis
-    - msi
   icon: build/icon.ico
 nsis:
   oneClick: false
@@ -45,11 +44,6 @@ nsis:
   allowToChangeInstallationDirectory: true
   runAfterFinish: true
   artifactName: ${productName}-Setup-${version}.${ext}
-msi:
-  oneClick: false
-  perMachine: false
-  runAfterFinish: true
-  artifactName: ${productName}-${version}.${ext}
 
 linux:
   target:
