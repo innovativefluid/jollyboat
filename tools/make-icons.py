@@ -86,32 +86,35 @@ def main():
     tray.mkdir(parents=True, exist_ok=True)
 
     def fin():
-        return stamp(glass(32, 2, 6, 5), 'tray-32.txt', 2)
+        # 1 px frame, the boat fills the rest
+        return stamp(glass(32, 1, 6, 5), 'tray-32.txt', 0)
 
     def slash(img, d):
+        # a bold bar corner to corner with a glass-coloured outline, so it reads over anything
         px = img.load()
-        for t in range(6, 27):
-            x, y = t, (t if d == 1 else 32 - t)
-            for k in (-1, 0, 1):
-                if 3 <= x + k <= 28 and 3 <= y <= 28:
-                    px[x + k, y] = BG
-                if 3 <= x <= 28 and 3 <= y + k <= 28:
-                    px[x, y + k] = BG
+        for width, colour in ((3, BG), (1, FG)):
+            for t in range(4, 28):
+                x, y = t, (t if d == 1 else 31 - t)
+                for k in range(-width, width + 1):
+                    for (xx, yy) in ((x + k, y), (x, y + k)):
+                        if 2 <= xx <= 29 and 2 <= yy <= 29:
+                            px[xx, yy] = colour
         return img
 
     def dot(img):
+        # unread: a spark dot with an ink ring in the empty top-left corner
         px = img.load()
-        for y in range(2, 12):
-            for x in range(2, 12):
+        for y in range(1, 14):
+            for x in range(1, 14):
                 r2 = (x - 7) ** 2 + (y - 7) ** 2
-                if r2 <= 9:
+                if r2 <= 13:
                     px[x, y] = SPARK
-                elif r2 <= 16:
+                elif r2 <= 25:
                     px[x, y] = FG
         return img
 
     def sail(img, colour):
-        # in voice the sail goes dim, talking fills it with ink
+        # in voice the sail is hollow, talking fills it with ink (idle keeps the light sail)
         px = img.load()
         for y in range(32):
             for x in range(32):
@@ -121,10 +124,10 @@ def main():
 
     variants = {
         'normal': lambda i: i,
-        'voice': lambda i: sail(i, DIM),
+        'voice': lambda i: sail(i, BG),
         'talking': lambda i: sail(i, FG),
-        'muted': lambda i: slash(sail(i, DIM), 1),
-        'deafened': lambda i: slash(slash(sail(i, DIM), 1), -1),
+        'muted': lambda i: slash(sail(i, BG), 1),
+        'deafened': lambda i: slash(slash(sail(i, BG), 1), -1),
     }
     for name, f in variants.items():
         for suffix, g in (('', lambda i: i), ('-unread', dot)):
