@@ -2,7 +2,7 @@
 
 # Jollyboat
 
-A desktop client for [Sharkord](https://sharkord.com) servers, for Windows and Linux. Not affiliated with Sharkord.
+A desktop client for [Sharkord](https://sharkord.com) servers, for Windows and Linux, on x64 and ARM. Not affiliated with Sharkord.
 
 ![setup screen](docs/launcher.png)
 
@@ -18,7 +18,7 @@ From [releases](../../releases):
 
 | | |
 |---|---|
-| Windows | `Jollyboat-Setup-x.y.z.exe` |
+| Windows (x64 or ARM) | `Jollyboat-Setup-x.y.z.exe` |
 | Linux | `flatpak install ./Jollyboat-x.y.z-x86_64.flatpak` (or `-aarch64`) |
 
 Add your server's address; if a proxy asks for a login first, tick **proxy login / basic auth** and fill it in. On a server, the bar at the top (or ctrl+shift+s) brings back servers and settings.

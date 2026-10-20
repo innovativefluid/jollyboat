@@ -19,8 +19,8 @@ export const bootTheme = () => {
 
   document.querySelectorAll<HTMLCanvasElement>('canvas.strip').forEach(createStrip);
 
-  // for tuning from devtools: window.__paperCost()
-  (window as unknown as { __paperCost: () => number }).__paperCost = () => paper.cost();
+  // for tuning from devtools: window.__paperCost(), window.__paperFrames()
+  Object.assign(window, { __paperCost: () => paper.cost(), __paperFrames: () => paper.frames() });
 
   // intro: the page fades in while scaling from .96, panels stream in 30 ms apart
   const page = document.querySelector<HTMLElement>('.page');

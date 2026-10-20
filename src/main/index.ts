@@ -502,6 +502,35 @@ const quit = () => {
   app.quit();
 };
 
+// CI only (JOLLYBOAT_SMOKE=1): the packaged app starts, renders the setup window and the server
+// window's bar, prints what it is running on and exits 0 — or 1 if something did not come up
+const runSmokeTest = async () => {
+  const timer = setTimeout(() => {
+    console.error('[smoke] timed out');
+    app.exit(1);
+  }, 60_000);
+
+  try {
+    createMainWindow();
+    const launcher = createLauncherWindow();
+    const loaded = (wc: Electron.WebContents) => new Promise<void>((resolve) => wc.once('did-finish-load', () => resolve()));
+    const ready = Promise.all([loaded(barView!.webContents), loaded(launcher.webContents)]);
+
+    launcher.loadURL(pageUrl('launcher'));
+    await ready;
+
+    const panels = await launcher.webContents.executeJavaScript("typeof window.shell === 'object' ? document.querySelectorAll('.panel').length : -1");
+    const bar = await barView!.webContents.executeJavaScript("document.getElementById('settings') ? 'ok' : 'missing'");
+
+    console.log(`[smoke] ${process.platform} ${process.arch} | electron ${process.versions.electron} | jollyboat ${__APP_VERSION__} | setup panels ${panels} | bar ${bar}`);
+    clearTimeout(timer);
+    app.exit(panels >= 3 && bar === 'ok' ? 0 : 1);
+  } catch (err) {
+    console.error('[smoke] failed', err);
+    app.exit(1);
+  }
+};
+
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
@@ -556,6 +585,8 @@ if (!app.requestSingleInstanceLock()) {
       voiceAction: (action) => page()?.send('shell:voice-action', action),
       getMainWindow: () => mainWindow
     });
+    if (process.env.JOLLYBOAT_SMOKE) return runSmokeTest();
+
     startUpdater();
 
     // auto-connect is chosen in the launcher; a lone server opens without being asked.

@@ -27,6 +27,10 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npm run dist:win
+      # the packaged app starts, renders the setup window and the bar, and exits (see runSmokeTest)
+      - name: Smoke test (x64)
+        shell: pwsh
+        run: ./tools/smoke/smoke-win.ps1 dist/win-unpacked
       - uses: actions/upload-artifact@v7
         with:
           name: windows
@@ -34,6 +38,23 @@ jobs:
             dist/*.exe
             dist/*.blockmap
             dist/latest.yml
+      # for the arm64 smoke test on an arm runner; not part of a release
+      - uses: actions/upload-artifact@v7
+        with:
+          name: smoke-windows-arm64
+          path: dist/win-arm64-unpacked
+          retention-days: 3
+
+  windows-arm64-smoke:
+    needs: windows
+    runs-on: windows-11-arm
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with: { name: smoke-windows-arm64, path: app }
+      - name: Smoke test (arm64)
+        shell: pwsh
+        run: ./tools/smoke/smoke-win.ps1 app
 
   linux-flatpak:
     needs: check
@@ -51,11 +72,18 @@ jobs:
       - name: Install flatpak tooling
         run: |
           sudo apt-get update
-          sudo apt-get install -y flatpak flatpak-builder elfutils
+          sudo apt-get install -y flatpak flatpak-builder elfutils xvfb
           sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
           sudo flatpak install -y flathub org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08 org.electronjs.Electron2.BaseApp//24.08
       - run: npm ci
       - run: npm run dist:linux -- --${{ matrix.arch }}
+      # the unpacked app the flatpak was made from: starts, renders, exits (see runSmokeTest)
+      - name: Smoke test (${{ matrix.arch }})
+        shell: bash # -o pipefail: the app's exit code counts, not tee's
+        run: |
+          app=$(ls -d dist/linux*-unpacked | head -1)
+          JOLLYBOAT_SMOKE=1 timeout 120 xvfb-run -a "$app/jollyboat" --no-sandbox 2>&1 | tee smoke.log
+          grep -q '^\[smoke\] linux' smoke.log
       - uses: actions/upload-artifact@v7
         with:
           name: linux-${{ matrix.arch }}

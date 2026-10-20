@@ -34,6 +34,8 @@ publish:
   owner: innovativefluid
   repo: jollyboat
 
+# x64 and arm64 go into one installer that installs the matching build (electron-updater reads a
+# single latest.yml on windows, so one installer is what keeps updates working on both)
 win:
   target:
     - nsis

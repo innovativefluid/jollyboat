@@ -47,15 +47,18 @@ jobs:
     needs: [tag, build]
     runs-on: ubuntu-latest
     steps:
+      # only the installers (the unpacked smoke-test build is not for release)
       - uses: actions/download-artifact@v8
-        with: { path: artifacts }
+        with: { name: windows, path: artifacts/windows }
+      - uses: actions/download-artifact@v8
+        with: { pattern: 'linux-*', path: artifacts }
       - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.tag.outputs.tag }}
           files: artifacts/**/*
           body: |
             **Download one file:**
-            - Windows: `Jollyboat-Setup-${{ inputs.version }}.exe`
+            - Windows: `Jollyboat-Setup-${{ inputs.version }}.exe` (x64 and ARM in one)
             - Linux: `Jollyboat-${{ inputs.version }}-x86_64.flatpak`, or `-aarch64` on ARM
 
             `latest.yml` and `.blockmap` are read by installed copies when they check for updates; ignore them.

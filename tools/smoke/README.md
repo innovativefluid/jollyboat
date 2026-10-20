@@ -48,3 +48,9 @@ attributes (`connect-identity-input`, `connect-password-input`, `connect-button`
 `channel-item`, `user-settings-trigger`), its icons are lucide (`svg.lucide-mic-off`,
 `svg.lucide-headphone-off`, `svg.lucide-phone-off`). With `JOLLYBOAT_DEBUG=1` every tray state
 change is logged as `[tray] <icon> | ...`.
+
+## smoke mode (CI)
+
+`JOLLYBOAT_SMOKE=1` makes the packaged app start, render the setup window and the server window's
+bar, print `[smoke] <platform> <arch> | ...` and exit 0 (1 if something did not come up, or after
+60 s). CI runs it on every build: Windows x64 and arm64 (`smoke-win.ps1`), Linux x64 and arm64.

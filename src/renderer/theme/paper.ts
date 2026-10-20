@@ -3,7 +3,7 @@
 // slow horizontal waves, drifting toward the pointer.
 //
 // performance: the canvas is one pixel per cell and css scales it up (image-rendering: pixelated),
-// so nothing full-size is drawn per frame; frames are capped at 30 fps (15 without focus).
+// so nothing full-size is drawn per frame; 60 fps with focus, 30 without.
 // the plasma is four sines, but none of them is evaluated per cell per frame.
 // sin(a + b) = sin a·cos b + cos a·sin b, so the two separable terms become per-column and
 // per-row tables rebuilt each frame (O(w + h) trig), and the radial term uses sin/cos(r·.09)
@@ -53,6 +53,7 @@ export const createPaper = (canvas: HTMLCanvasElement) => {
   let raf = 0;
   let running = true;
   let frameCost = 0; // ms, exponential average, for the dev console
+  let frames = 0;
 
   const resize = () => {
     cw = Math.ceil(window.innerWidth / CELL);
@@ -198,6 +199,7 @@ export const createPaper = (canvas: HTMLCanvasElement) => {
     ctx.putImageData(image, 0, 0);
 
     frameCost = frameCost * 0.9 + (performance.now() - t0) * 0.1;
+    frames++;
   };
 
   const start = performance.now();
@@ -206,8 +208,8 @@ export const createPaper = (canvas: HTMLCanvasElement) => {
   let last = 0;
   const loop = (ms: number) => {
     if (!running) return;
-    // 30 fps, 15 while another window has focus: the glass drifts slowly enough for either
-    const gap = document.hasFocus() ? 1000 / 30 : 1000 / 15;
+    // every frame with focus, every other frame while another window has it
+    const gap = document.hasFocus() ? 0 : 1000 / 30;
     if (ms - last >= gap - 2) {
       last = ms;
       frame(now());
@@ -234,6 +236,8 @@ export const createPaper = (canvas: HTMLCanvasElement) => {
   return {
     /** average ms spent per frame on the paper, for tuning */
     cost: () => frameCost,
+    /** frames drawn so far, for tuning */
+    frames: () => frames,
     stop: () => {
       running = false;
       cancelAnimationFrame(raf);
