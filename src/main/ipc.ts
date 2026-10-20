@@ -23,11 +23,14 @@ import {
   decryptPassword,
   findServerByUrl,
   getSettings,
+  loginTokenFor,
   normalizeUrl,
   publicServers,
   recordTest,
   removeServer,
   saveSettings,
+  setKeepLogin,
+  setLoginToken,
   upsertServer
 } from './settings';
 
@@ -73,7 +76,8 @@ const pickServerInput = (input: unknown): TServerInput => {
     basicAuth:
       auth && typeof auth.username === 'string'
         ? { username: auth.username.slice(0, 200), password: String(auth.password ?? '').slice(0, 500) }
-        : null
+        : null,
+    ...(typeof i.keepLogin === 'boolean' ? { keepLogin: i.keepLogin } : {})
   };
 };
 
@@ -139,6 +143,8 @@ export const registerIpc = ({ connectToServer, quit, getMainWindow, spellcheckAt
       platform: process.platform,
       version: __APP_VERSION__,
       bridge: server && bridge.ownedByUs ? { ownedByUs: true, token: getBridgeToken() } : null,
+      // sharkord's own login, kept across launches (the page would hold it in localStorage anyway)
+      login: server && server.keepLogin !== false ? { token: loginTokenFor(server) } : null,
       screenAudio: server
         ? {
             pipewire: getScreenAudioMode() === 'pipewire',
@@ -174,6 +180,14 @@ export const registerIpc = ({ connectToServer, quit, getMainWindow, spellcheckAt
     if (step === 'unmute') return unmutePipeWireShare(), true;
     if (step === 'stop') return stopPipeWireShare(), true;
     return false;
+  });
+
+  // the page reports sharkord's login token (or that the server rejected the held one)
+  ipcMain.on('server:login', (event, token: unknown) => {
+    const server = findServerByUrl(event.senderFrame?.url ?? '');
+    if (!server) return;
+    if (token === null) setLoginToken(server.id, null);
+    else if (typeof token === 'string' && token.length > 0 && token.length <= 4096) setLoginToken(server.id, token);
   });
 
   // sharkord's title carries its own unread total: "name (3)"
@@ -221,6 +235,7 @@ export const registerIpc = ({ connectToServer, quit, getMainWindow, spellcheckAt
     return { server: { ...safe, basicAuth: basicAuth ? { username: basicAuth.username, passwordEnc: '' } : undefined }, test };
   }));
   ipcMain.handle('servers:remove', guard((_e, id: unknown) => removeServer(String(id))));
+  ipcMain.handle('servers:keepLogin', guard((_e, id: unknown, keep: unknown) => setKeepLogin(String(id), keep === true)));
   ipcMain.handle('servers:test', guard((_e, input: unknown) => testServer(pickServerInput(input))));
   ipcMain.handle('servers:connect', guard((_e, id: unknown) => connectToServer(String(id))));
   ipcMain.handle('bridge:status', guard(() => getBridgeStatus()));

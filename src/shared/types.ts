@@ -12,6 +12,10 @@ export type TServerEntry = {
     /** Encrypted with Electron safeStorage, base64. Never leaves the main process. */
     passwordEnc: string;
   };
+  /** keep Sharkord's login token across launches (default on) */
+  keepLogin?: boolean;
+  /** Sharkord's 7-day login token, encrypted like the password; only handed to that server's page */
+  loginEnc?: string;
 };
 
 export type TServerInput = {
@@ -19,6 +23,7 @@ export type TServerInput = {
   name: string;
   url: string;
   basicAuth?: { username: string; password: string } | null;
+  keepLogin?: boolean;
 };
 
 export type TSettings = {

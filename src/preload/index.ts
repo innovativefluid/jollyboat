@@ -12,6 +12,7 @@ type TBootstrap = {
   platform: NodeJS.Platform;
   version: string;
   bridge: { ownedByUs: boolean; token: string } | null;
+  login: { token: string | null } | null;
   screenAudio: { pipewire: boolean; virtualMic: string; dropRestrict: boolean } | null;
 };
 
@@ -26,6 +27,7 @@ if (boot.isOwnPage) {
     listServers: () => ipcRenderer.invoke('servers:list'),
     saveServer: (input: TServerInput) => ipcRenderer.invoke('servers:save', input),
     removeServer: (id: string) => ipcRenderer.invoke('servers:remove', id),
+    setKeepLogin: (id: string, keep: boolean) => ipcRenderer.invoke('servers:keepLogin', id, keep),
     testServer: (input: TServerInput) => ipcRenderer.invoke('servers:test', input),
     connect: (id: string) => ipcRenderer.invoke('servers:connect', id),
     bridgeStatus: () => ipcRenderer.invoke('bridge:status'),
@@ -70,6 +72,45 @@ if (boot.isSavedServer) {
     } catch {
       /* storage blocked, hotkeys stay unpaired */
     }
+  }
+
+  // --- stay logged in: sharkord keeps a 7-day token in localStorage but drops it on any disconnect.
+  // we hold a copy, hand it back when the page starts without one, and pick up new logins.
+  if (boot.login) {
+    const FLAG = 'sharkord-auto-login';
+    const SAVED = 'sharkord-auto-login-token';
+    const SESSION = 'sharkord-token';
+    let held = boot.login.token;
+    let lastFlag: string | null = null;
+
+    try {
+      if (held && !localStorage.getItem(SAVED)) {
+        localStorage.setItem(FLAG, 'true');
+        localStorage.setItem(SAVED, held);
+      }
+      lastFlag = localStorage.getItem(FLAG);
+    } catch {
+      /* storage blocked */
+    }
+
+    setInterval(() => {
+      try {
+        const session = sessionStorage.getItem(SESSION);
+        const flag = localStorage.getItem(FLAG);
+
+        if (session && session !== held) {
+          held = session;
+          ipcRenderer.send('server:login', session);
+        } else if (held && !session && lastFlag === 'true' && flag === 'false') {
+          // sharkord flips the switch off itself when the server rejects the token (expired)
+          held = null;
+          ipcRenderer.send('server:login', null);
+        }
+        lastFlag = flag;
+      } catch {
+        /* storage blocked */
+      }
+    }, 2000);
   }
 
   // --- main-world patches: getDisplayMedia (screen-share audio) and Notification ----------------

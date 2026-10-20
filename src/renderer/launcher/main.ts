@@ -19,6 +19,7 @@ const deleteBtn = $<HTMLButtonElement>('delete');
 const openBtn = $<HTMLButtonElement>('open-now');
 const autoRow = $('auto-connect-row');
 const autoBox = $<HTMLInputElement>('auto-connect');
+const keepBox = $<HTMLInputElement>('keep-login');
 const shareRow = $('share-row');
 
 let editingId: string | undefined;
@@ -79,7 +80,8 @@ const formInput = (): TServerInput => ({
   id: editingId,
   url: fUrl.value,
   name: fName.value,
-  basicAuth: fUser.value ? { username: fUser.value, password: fPass.value } : null
+  basicAuth: fUser.value ? { username: fUser.value, password: fPass.value } : null,
+  keepLogin: keepBox.checked
 });
 
 const resetRemove = () => {
@@ -101,6 +103,7 @@ const openEditor = (server?: TServerEntry) => {
   autoRow.hidden = !server;
   shareRow.hidden = !server;
   autoBox.checked = !!server && server.id === autoConnectId;
+  keepBox.checked = !server || server.keepLogin !== false;
   resetRemove();
   hint(testStatus, '');
   hint(shareStatus, '');
@@ -174,6 +177,12 @@ autoBox.onchange = async () => {
   await window.shell.saveSettings({ autoConnectServerId: autoConnectId });
   toast('saved');
   renderServers();
+};
+
+keepBox.onchange = async () => {
+  if (!editingId) return;
+  await window.shell.setKeepLogin(editingId, keepBox.checked);
+  toast(keepBox.checked ? 'saved' : 'login forgotten');
 };
 
 window.addEventListener('keydown', (e) => {

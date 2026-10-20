@@ -45,7 +45,9 @@ const sanitize = (raw: unknown): TSettings => {
             : {}),
           ...(test && typeof test.ok === 'boolean' && typeof test.at === 'number'
             ? { lastTest: { ok: test.ok, at: test.at, ...(typeof test.status === 'number' ? { status: test.status } : {}) } }
-            : {})
+            : {}),
+          ...(e.keepLogin === false ? { keepLogin: false } : {}),
+          ...(e.keepLogin !== false && typeof e.loginEnc === 'string' ? { loginEnc: e.loginEnc } : {})
         }
       ];
     });
@@ -124,6 +126,11 @@ export const upsertServer = (input: TServerInput): TServerEntry => {
     url: normalizeUrl(input.url),
     ...(existing?.lastTest && existing.url === normalizeUrl(input.url) ? { lastTest: existing.lastTest } : {})
   };
+  const keepLogin = input.keepLogin ?? existing?.keepLogin ?? true;
+
+  if (!keepLogin) entry.keepLogin = false;
+  // the login token belongs to one origin
+  if (keepLogin && existing?.loginEnc && existing.url === entry.url) entry.loginEnc = existing.loginEnc;
 
   if (input.basicAuth && input.basicAuth.username) {
     entry.basicAuth = {
@@ -177,8 +184,39 @@ export const findServerByUrl = (url: string) => {
 };
 
 /** Servers as shown to the renderer: no secrets, only whether auth is set. */
+// sharkord's login token for a server page (null when none is held or keeping is off)
+export const loginTokenFor = (server: TServerEntry) =>
+  server.keepLogin !== false && server.loginEnc ? decryptPassword(server.loginEnc) : null;
+
+export const setLoginToken = (id: string, token: string | null) => {
+  const settings = getSettings();
+  const server = settings.servers.find((s) => s.id === id);
+
+  if (!server || server.keepLogin === false) return;
+  if (token ? server.loginEnc && decryptPassword(server.loginEnc) === token : !server.loginEnc) return;
+  saveSettings({
+    servers: settings.servers.map((s) => {
+      if (s.id !== id) return s;
+      const { loginEnc, ...rest } = s;
+      return token ? { ...rest, loginEnc: encrypt(token) } : rest;
+    })
+  });
+};
+
+export const setKeepLogin = (id: string, keep: boolean) => {
+  const settings = getSettings();
+
+  saveSettings({
+    servers: settings.servers.map((s) => {
+      if (s.id !== id) return s;
+      const { keepLogin, loginEnc, ...rest } = s;
+      return keep ? { ...rest, ...(loginEnc ? { loginEnc } : {}) } : { ...rest, keepLogin: false };
+    })
+  });
+};
+
 export const publicServers = () =>
-  getSettings().servers.map(({ basicAuth, ...rest }) => ({
+  getSettings().servers.map(({ basicAuth, loginEnc, ...rest }) => ({
     ...rest,
     basicAuth: basicAuth ? { username: basicAuth.username, passwordEnc: '' } : undefined
   }));

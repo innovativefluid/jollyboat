@@ -19,6 +19,7 @@ declare global {
       listServers: () => Promise<TServerEntry[]>;
       saveServer: (input: TServerInput) => Promise<{ server: TServerEntry; test: TTestResult }>;
       removeServer: (id: string) => Promise<void>;
+      setKeepLogin: (id: string, keep: boolean) => Promise<void>;
       testServer: (input: TServerInput) => Promise<TTestResult>;
       connect: (id: string) => Promise<void>;
       bridgeStatus: () => Promise<TBridgeStatus>;
