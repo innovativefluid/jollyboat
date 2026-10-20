@@ -2,7 +2,7 @@
   "name": "jollyboat",
   "productName": "Jollyboat",
   "version": "0.2.3",
-  "description": "Desktop client for Sharkord servers: screen sharing with sound, global hotkeys, tray, no tracking",
+  "description": "Sharkord client",
   "homepage": "https://github.com/innovativefluid/jollyboat",
   "repository": {
     "type": "git",
