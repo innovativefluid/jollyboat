@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, screen, session, shell } from 'electron';
+import { app, BrowserWindow, clipboard, Menu, screen, session, shell } from 'electron';
 import { join } from 'node:path';
 import { installBasicAuth, refreshBasicAuth } from './basic-auth';
 import { startBridge, stopBridge } from './hotkeys/bridge';
@@ -7,6 +7,7 @@ import { isOwnPageUrl, originOf, pageUrl, preloadPath } from './paths';
 import { installDisplayMediaHandler } from './screen-share';
 import { findServerByUrl, getSettings, onServersChanged, saveSettings } from './settings';
 import { log } from './log';
+import { diagnostics } from './diagnostics';
 import { clearUnread, createTray, hasTray, setServerName } from './tray';
 import { applySpellcheck, blockDictionaryDownloads } from './privacy';
 import { initScreenAudio, stopPipeWireShare } from './screen-audio';
@@ -75,7 +76,7 @@ const createMainWindow = () => {
     minWidth: 1120,
     minHeight: 720,
     show: false,
-    autoHideMenuBar: true,
+    autoHideMenuBar: false,
     icon: iconPath(),
     title: 'Jollyboat',
     backgroundColor: '#0a0a0a',
@@ -189,12 +190,16 @@ const showWindow = () => {
   win.focus();
 };
 
-const showLauncher = (error?: string) => {
+const showLauncher = (error?: string, panel?: 'app') => {
   const win = mainWindow ?? createMainWindow();
+  const query = new URLSearchParams();
 
+  if (error) query.set('error', error);
+  if (panel) query.set('panel', panel);
   win.setTitle('Jollyboat');
   setServerName('');
-  win.loadURL(error ? `${pageUrl('launcher')}?error=${encodeURIComponent(error)}` : pageUrl('launcher'));
+  win.setMenuBarVisibility(false); // the setup screen has it all; the bar comes back on a server page
+  win.loadURL(query.size ? `${pageUrl('launcher')}?${query}` : pageUrl('launcher'));
   if (!startHidden) showWindow();
 };
 
@@ -203,21 +208,41 @@ const zoom = (delta: number) => {
   if (wc) wc.setZoomLevel(Math.max(-3, Math.min(3, wc.getZoomLevel() + delta)));
 };
 
-// the menu bar stays hidden; this exists for its accelerators
+// shown while a server page is open (the way back to the app's own screens); hidden on the setup screen
 const createMenu = () => {
   Menu.setApplicationMenu(
     Menu.buildFromTemplate([
       {
-        label: 'Jollyboat',
+        label: '&Jollyboat',
         submenu: [
-          { label: 'Servers…', accelerator: 'CommandOrControl+Shift+S', click: () => showLauncher() },
-          { label: 'Reload', accelerator: 'CommandOrControl+R', click: () => mainWindow?.webContents.reload() },
-          { label: 'Zoom in', accelerator: 'CommandOrControl+=', click: () => zoom(+0.5) },
-          { label: 'Zoom out', accelerator: 'CommandOrControl+-', click: () => zoom(-0.5) },
-          { label: 'Actual size', accelerator: 'CommandOrControl+0', click: () => mainWindow?.webContents.setZoomLevel(0) },
-          { label: 'Toggle developer tools', accelerator: 'CommandOrControl+Shift+I', click: () => mainWindow?.webContents.toggleDevTools() },
+          { label: '&Servers…', accelerator: 'CommandOrControl+Shift+S', click: () => showLauncher() },
+          { label: 'Se&ttings…', accelerator: 'CommandOrControl+,', click: () => showLauncher(undefined, 'app') },
           { type: 'separator' },
-          { label: 'Quit', accelerator: 'CommandOrControl+Q', click: quit }
+          { label: 'Copy &diagnostics', click: () => clipboard.writeText(diagnostics()) },
+          { type: 'separator' },
+          { label: '&Quit', accelerator: 'CommandOrControl+Q', click: quit }
+        ]
+      },
+      {
+        label: '&View',
+        submenu: [
+          { label: '&Reload', accelerator: 'CommandOrControl+R', click: () => mainWindow?.webContents.reload() },
+          { type: 'separator' },
+          { label: 'Zoom &in', accelerator: 'CommandOrControl+=', click: () => zoom(+0.5) },
+          { label: 'Zoom &out', accelerator: 'CommandOrControl+-', click: () => zoom(-0.5) },
+          { label: '&Actual size', accelerator: 'CommandOrControl+0', click: () => mainWindow?.webContents.setZoomLevel(0) },
+          { type: 'separator' },
+          { label: '&Full screen', accelerator: 'F11', click: () => mainWindow?.setFullScreen(!mainWindow.isFullScreen()) },
+          { label: 'Developer &tools', accelerator: 'CommandOrControl+Shift+I', click: () => mainWindow?.webContents.toggleDevTools() }
+        ]
+      },
+      {
+        label: '&Help',
+        submenu: [
+          { label: 'Jollyboat on &GitHub', click: () => shell.openExternal('https://github.com/innovativefluid/jollyboat') },
+          { label: '&Releases', click: () => shell.openExternal('https://github.com/innovativefluid/jollyboat/releases') },
+          { type: 'separator' },
+          { label: `Version ${__APP_VERSION__}`, enabled: false }
         ]
       }
     ])
@@ -233,6 +258,7 @@ const connectToServer = (id: string) => {
 
   win.setTitle(`${server.name} — Jollyboat`);
   setServerName(server.name);
+  win.setMenuBarVisibility(true);
   win.loadURL(server.url);
   if (!startHidden) showWindow();
 };

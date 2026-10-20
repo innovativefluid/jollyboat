@@ -75,6 +75,7 @@ canvas.strip { display: block; width: 100%; height: 7px; image-rendering: pixela
 .panel.enter.alt { animation: panel-in 450ms ease-out both, breathe 9s ease-in-out infinite alternate-reverse; }
 @keyframes breathe { from { transform: translate(0, 0); } to { transform: translate(2px, -1.5px); } }
 @keyframes panel-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.panel.lit { box-shadow: 0 0 0 2px var(--fg), 0 0 18px var(--spark); transition: box-shadow 600ms; }
 .panel-title { font: 600 15px/1.2 var(--px); margin-bottom: 4px; }
 .panel-title::before { content: '# '; color: var(--dim); }
 .panel > .row + .row { margin-top: 4px; }

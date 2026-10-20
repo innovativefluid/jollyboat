@@ -37,7 +37,7 @@ const testLabel = (s: TServerEntry) => {
 
 const renderStartup = () => {
   const auto = servers.find((s) => s.id === autoConnectId);
-  $('startup-line').textContent = auto ? `opens ${auto.name} at start | ctrl+shift+s for this screen` : 'ctrl+shift+s for this screen';
+  $('startup-line').textContent = `${auto ? `opens ${auto.name} at start | ` : ''}back here: menu bar on a server page or ctrl+shift+s`;
 };
 
 const renderServers = async () => {
@@ -333,3 +333,11 @@ if (failed) {
 renderServers();
 renderBridge();
 renderSettings();
+
+// the Settings menu item lands on the app panel
+if (new URLSearchParams(location.search).get('panel') === 'app') {
+  const panel = $('app-panel');
+  panel.classList.add('lit');
+  panel.scrollIntoView({ block: 'center' });
+  setTimeout(() => panel.classList.remove('lit'), 1800);
+}
