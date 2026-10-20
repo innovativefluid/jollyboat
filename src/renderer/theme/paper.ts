@@ -1,5 +1,6 @@
 // the glass: one fragment per 5×5 px cell, scaled up with nearest filtering. plasma + bayer dither
-// + sheared lattice + a glare band that crosses every ~24 s, then ink (bubbles, ripples) on top.
+// + sheared lattice + a glare band that crosses every ~24 s, then ink on top: the jolly boat riding
+// slow horizontal waves in the middle third of the screen, drifting toward the pointer.
 //
 // performance: the plasma is four sines, but none of them is evaluated per cell per frame.
 // sin(a + b) = sin a·cos b + cos a·sin b, so the two separable terms become per-column and
@@ -7,19 +8,20 @@
 // tables built once per resize. the per-cell loop is multiplies and adds only.
 
 import { LCD } from './scheme';
+import boatMap from '../../../build/pixel/icon-32.txt?raw';
 
 const CELL = 5;
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
-const BUBBLES = 26;
-const RIPPLE_SLOTS = 40;
-const RIPPLE_LIFE = 2.1;
 
-type TRipple = { x: number; y: number; start: number };
-
-const hash = (a: number, b: number) => {
-  const v = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453;
-  return v - Math.floor(v);
-};
+// the boat from the icon map (sail and hull only; the icon's own water line is left out).
+// '#' ink, 'g' dim, 'w' spark — as ink units, spark brightens
+const BOAT = boatMap
+  .split('\n')
+  .slice(0, 23)
+  .map((row) => [...row].map((c) => (c === '#' ? 60 : c === 'g' ? 32 : c === 'w' ? -22 : 0)));
+const BOAT_W = Math.max(...BOAT.map((r) => r.length));
+const BOAT_H = BOAT.length;
+const WAVES = 3;
 
 export const createPaper = (canvas: HTMLCanvasElement) => {
   const ctx = canvas.getContext('2d')!;
@@ -44,9 +46,9 @@ export const createPaper = (canvas: HTMLCanvasElement) => {
   let rowS = new Float32Array(0); // sin(y·.07 + .5t')
   let rowC = new Float32Array(0); // cos(y·.07 + .5t')
 
-  const ripples: TRipple[] = [];
-  let rippleHead = 0;
-  let lastPointer = { x: 0, y: 0, t: 0 };
+  let pointerX: number | null = null; // in cells
+  let shipX = 0;
+  let lastT = 0;
   const params = LCD;
   let raf = 0;
   let running = true;
@@ -96,41 +98,43 @@ export const createPaper = (canvas: HTMLCanvasElement) => {
     }
   };
 
-  const stamp = (cx: number, cy: number, r: number, amount: number) => {
-    const x0 = Math.max(0, Math.floor(cx - r - 1));
-    const x1 = Math.min(cw - 1, Math.ceil(cx + r + 1));
-    const y0 = Math.max(0, Math.floor(cy - r - 1));
-    const y1 = Math.min(ch - 1, Math.ceil(cy + r + 1));
-
-    for (let y = y0; y <= y1; y++) {
-      const dy = y - cy;
-      for (let x = x0; x <= x1; x++) {
-        const dx = x - cx;
-        const d = Math.sqrt(dx * dx + dy * dy);
-        if (d > r - 0.6 && d < r + 0.6) ink[y * cw + x] += amount;
-      }
-    }
+  const put = (x: number, y: number, amount: number) => {
+    if (x >= 0 && x < cw && y >= 0 && y < ch) ink[y * cw + x] += amount;
   };
+
+  // water level breathes over ~25 s; each wave line is two slow sines, the lines fan out downward
+  const waterY = (t: number) => ch * 0.8 + 2.5 * Math.sin(t * 0.25);
+  const waveY = (k: number, x: number, t: number) =>
+    waterY(t) + k * 3 + 1.6 * Math.sin(x * 0.09 + t * 0.6 + k * 1.3) + 0.8 * Math.sin(x * 0.23 - t * 0.9 + k);
 
   const drawInk = (t: number) => {
     ink.fill(0);
 
-    for (let i = 0; i < BUBBLES; i++) {
-      const seed = i * 7.31;
-      const speed = 1.3 + hash(seed, 1) * 1.9; // cells per second
-      const r = 1 + Math.floor(hash(seed, 2) * 4);
-      const span = ch + 10;
-      const travelled = t * speed + hash(seed, 3) * span;
-      const wrap = Math.floor(travelled / span);
-      const y = ch + 5 - (travelled % span);
-      const x = hash(seed, 4 + wrap) * cw + Math.sin(t * 0.5 + seed) * (2 + hash(seed, 5) * 3);
-      stamp(x, y, r, 22);
+    const dt = Math.min(0.1, t - lastT);
+    lastT = t;
+
+    // the boat eases toward the pointer, never leaving the middle third
+    const target = Math.min((cw * 2) / 3, Math.max(cw / 3, pointerX ?? cw / 2));
+    shipX += (target - shipX) * Math.min(1, dt * 0.35);
+
+    for (let k = 0; k < WAVES; k++) {
+      const amount = 30 - k * 7;
+      let prev = Math.round(waveY(k, 0, t));
+      for (let x = 0; x < cw; x++) {
+        const y = Math.round(waveY(k, x, t));
+        // keep the line connected on steep bits
+        for (let yy = Math.min(prev, y); yy <= Math.max(prev, y); yy++) put(x, yy, amount);
+        prev = y;
+      }
     }
 
-    for (const rp of ripples) {
-      const age = t - rp.start;
-      if (age < 0 || age > RIPPLE_LIFE) continue;
-      stamp(rp.x, rp.y, 1 + 33 * age, 60 * Math.pow(0.95, 30 * age));
+    // hull sits on the first wave at the boat's centre, with a slight sway
+    const sway = Math.sin(t * 0.5) * 0.8;
+    const left = Math.round(shipX - BOAT_W / 2 + sway);
+    const top = Math.round(waveY(0, shipX, t)) - BOAT_H + 1;
+    for (let r = 0; r < BOAT_H; r++) {
+      const row = BOAT[r];
+      for (let c = 0; c < row.length; c++) if (row[c]) put(left + c, top + r, row[c]);
     }
   };
 
@@ -209,22 +213,9 @@ export const createPaper = (canvas: HTMLCanvasElement) => {
     raf = requestAnimationFrame(loop);
   };
 
-  const ripple = (px: number, py: number) => {
-    ripples[rippleHead] = { x: px / CELL, y: py / CELL, start: now() };
-    rippleHead = (rippleHead + 1) % RIPPLE_SLOTS;
-  };
-
-  // a tap on empty paper adds one; the pointer leaves one every 48 px, at most one per 120 ms
-  const onPaper = (e: PointerEvent) => !(e.target as HTMLElement).closest('.panel, .pill, .header .right');
-
-  window.addEventListener('pointerdown', (e) => onPaper(e) && ripple(e.clientX, e.clientY));
+  // the boat follows the pointer's horizontal position; it stays put when the pointer leaves
   window.addEventListener('pointermove', (e) => {
-    if (!onPaper(e)) return;
-    const ms = performance.now();
-    if (ms - lastPointer.t < 120) return;
-    if (Math.hypot(e.clientX - lastPointer.x, e.clientY - lastPointer.y) < 48) return;
-    lastPointer = { x: e.clientX, y: e.clientY, t: ms };
-    ripple(e.clientX, e.clientY);
+    pointerX = e.clientX / CELL;
   });
 
   // the page is hidden (tray, other tab): nothing to draw. rAF already pauses, this resumes it
@@ -235,10 +226,10 @@ export const createPaper = (canvas: HTMLCanvasElement) => {
   window.addEventListener('resize', resize);
 
   resize();
+  shipX = cw / 2;
   raf = requestAnimationFrame(loop);
 
   return {
-    ripple,
     /** average ms spent per frame on the paper, for tuning */
     cost: () => frameCost,
     stop: () => {
