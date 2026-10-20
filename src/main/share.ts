@@ -54,7 +54,7 @@ export const parseShared = (text: string): TShared => {
   const doc = parsed as Partial<TShared>;
 
   if (doc?.jollyboat !== FORMAT || !Array.isArray(doc.servers)) {
-    throw new Error('not a jollyboat share');
+    throw new Error('not a Jollyboat share');
   }
 
   const servers = doc.servers.slice(0, 50).map((raw) => {

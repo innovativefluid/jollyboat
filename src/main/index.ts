@@ -203,6 +203,8 @@ const showLauncher = (error?: string, panel?: 'app') => {
   if (!startHidden) showWindow();
 };
 
+const WEBSITE = 'https://innovativefluid.net';
+
 const zoom = (delta: number) => {
   const wc = mainWindow?.webContents;
   if (wc) wc.setZoomLevel(Math.max(-3, Math.min(3, wc.getZoomLevel() + delta)));
@@ -241,6 +243,7 @@ const createMenu = () => {
         submenu: [
           { label: 'Jollyboat on &GitHub', click: () => shell.openExternal('https://github.com/innovativefluid/jollyboat') },
           { label: '&Releases', click: () => shell.openExternal('https://github.com/innovativefluid/jollyboat/releases') },
+          { label: 'innovativefluid.&net', click: () => shell.openExternal(WEBSITE) },
           { type: 'separator' },
           { label: `Version ${__APP_VERSION__}`, enabled: false }
         ]
@@ -320,9 +323,9 @@ if (!app.requestSingleInstanceLock()) {
     });
     startUpdater();
 
-    // auto-connect is an explicit choice made in the launcher; otherwise it opens first
+    // auto-connect is chosen in the launcher; a lone server opens without being asked
     const { autoConnectServerId, servers } = getSettings();
-    const auto = servers.find((s) => s.id === autoConnectServerId);
+    const auto = servers.find((s) => s.id === autoConnectServerId) ?? (servers.length === 1 ? servers[0] : undefined);
 
     if (auto) connectToServer(auto.id);
     else showLauncher();

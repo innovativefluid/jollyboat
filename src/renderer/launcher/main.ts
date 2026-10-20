@@ -6,8 +6,7 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 const { fx } = bootTheme();
 
 const list = $('server-list');
-const form = $('editor-form');
-const empty = $('editor-empty');
+const editorPanel = $('editor');
 const fUrl = $<HTMLInputElement>('f-url');
 const fName = $<HTMLInputElement>('f-name');
 const fUser = $<HTMLInputElement>('f-user');
@@ -27,8 +26,6 @@ let servers: TServerEntry[] = [];
 let autoConnectId: string | null = null;
 let confirmingRemove = false;
 
-$('quit').onclick = () => window.shell.quit();
-
 // ---- servers list ---------------------------------------------------------------------------
 
 const testLabel = (s: TServerEntry) => {
@@ -36,8 +33,11 @@ const testLabel = (s: TServerEntry) => {
   return s.lastTest.status === 401 ? ' | auth problem' : ' | unreachable';
 };
 
+// a lone server opens at start without being asked
+const startsInto = (s: TServerEntry) => s.id === autoConnectId || servers.length === 1;
+
 const renderStartup = () => {
-  const auto = servers.find((s) => s.id === autoConnectId);
+  const auto = servers.find(startsInto);
   $('startup-line').textContent = `${auto ? `opens ${auto.name} at start | ` : ''}back here: menu bar on a server page or ctrl+shift+s`;
 };
 
@@ -64,7 +64,7 @@ const renderServers = async () => {
     row.querySelector('.dot')!.className = `dot ${server.lastTest ? (server.lastTest.ok ? 'ok' : 'bad') : 'none'}`;
     row.querySelector('.name')!.textContent = server.name;
     row.querySelector('.meta')!.textContent =
-      `${server.url.replace(/^https?:\/\//, '')}${server.basicAuth ? ' | basic auth' : ''}${server.id === autoConnectId ? ' | opens at start' : ''}${testLabel(server)}`;
+      `${server.url.replace(/^https?:\/\//, '')}${server.basicAuth ? ' | basic auth' : ''}${startsInto(server) ? ' | opens at start' : ''}${testLabel(server)}`;
     row.querySelector<HTMLButtonElement>('.connect')!.onclick = (e) => {
       e.stopPropagation();
       window.shell.connect(server.id);
@@ -102,21 +102,24 @@ const openEditor = (server?: TServerEntry) => {
   openBtn.hidden = !server;
   autoRow.hidden = !server;
   shareRow.hidden = !server;
-  autoBox.checked = !!server && server.id === autoConnectId;
+  autoBox.checked = !!server && startsInto(server);
+  autoBox.disabled = !!server && servers.length === 1;
+  autoRow.title = autoBox.disabled ? 'the only server opens at start' : '';
   keepBox.checked = !server || server.keepLogin !== false;
   resetRemove();
   hint(testStatus, '');
   hint(shareStatus, '');
-  empty.hidden = true;
-  form.hidden = false;
+  editorPanel.hidden = false;
+  editorPanel.classList.add('enter');
+  editorPanel.scrollIntoView({ block: 'nearest' });
   renderServers();
   fUrl.focus();
 };
 
 const closeEditor = () => {
   editingId = undefined;
-  form.hidden = true;
-  empty.hidden = false;
+  editorPanel.hidden = true;
+  editorPanel.classList.remove('enter');
   $('editor-title').textContent = 'server';
   resetRemove();
   renderServers();
@@ -124,7 +127,7 @@ const closeEditor = () => {
 
 // saving tests the connection too; a failed test still saves
 const save = async () => {
-  if (form.hidden) return;
+  if (editorPanel.hidden) return;
   if (!fUrl.value.trim()) return hint(testStatus, 'url missing', 'bad');
 
   hint(testStatus, 'testing');
@@ -188,7 +191,7 @@ keepBox.onchange = async () => {
 window.addEventListener('keydown', (e) => {
   if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); save(); }
   if (e.ctrlKey && e.key.toLowerCase() === 'q') { e.preventDefault(); window.shell.quit(); }
-  if (e.key === 'Escape' && !form.hidden) closeEditor();
+  if (e.key === 'Escape' && !editorPanel.hidden) closeEditor();
 });
 
 // ---- sharing ---------------------------------------------------------------------------------
@@ -329,14 +332,16 @@ const renderSettings = async () => {
     window.shell.onUpdateStatus(showUpdate);
   }
 
-  $('version').textContent = `jollyboat ${window.shell.version}${settings.secureStorage ? '' : ' | no keyring, passwords unencrypted'}`;
+  $('version').textContent = `Jollyboat ${window.shell.version}${settings.secureStorage ? '' : ' | no keyring, passwords unencrypted'}`;
 };
+
+$('website').onclick = () => window.shell.openWebsite();
 
 // a server that failed to load sends us back here with the reason in the query
 const failed = new URLSearchParams(location.search).get('error');
 if (failed) {
   toast('could not open the server');
-  hint(empty, `could not open the server | ${failed}`, 'bad');
+  hint($('list-status'), `could not open the server | ${failed}`, 'bad');
 }
 
 renderServers();

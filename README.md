@@ -1,6 +1,6 @@
 <p align="center"><img src="build/icons/128x128.png" width="96" alt=""></p>
 
-# jollyboat
+# Jollyboat
 
 A desktop client for [Sharkord](https://sharkord.com) servers, for Windows and Linux. Not affiliated with Sharkord.
 

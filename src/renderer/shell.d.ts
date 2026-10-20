@@ -25,6 +25,7 @@ declare global {
       bridgeStatus: () => Promise<TBridgeStatus>;
       screenAudioInfo: () => Promise<{ ok: boolean; text: string }>;
       quit: () => Promise<void>;
+      openWebsite: () => Promise<void>;
       shareCode: (ids: string[] | null, withPasswords: boolean) => Promise<string>;
       exportFile: (ids: string[] | null, withPasswords: boolean) => Promise<string | null>;
       importText: (text: string) => Promise<string[]>;

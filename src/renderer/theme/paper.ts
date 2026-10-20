@@ -10,7 +10,7 @@ import { LCD } from './scheme';
 
 const CELL = 5;
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
-const BUBBLES = 14;
+const BUBBLES = 26;
 const RIPPLE_SLOTS = 40;
 const RIPPLE_LIFE = 2.1;
 

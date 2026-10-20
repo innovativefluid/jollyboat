@@ -167,7 +167,7 @@ export const startBridge = async (): Promise<TBridgeStatus> => {
   if (httpServer) return getBridgeStatus();
 
   const server = createServer((_req, res) => {
-    res.writeHead(426).end('jollyboat hotkey bridge');
+    res.writeHead(426).end('Jollyboat hotkey bridge');
   });
   const wss = new WebSocketServer({ server, maxPayload: 64 * 1024 });
 

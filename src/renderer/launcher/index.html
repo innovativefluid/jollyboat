@@ -3,13 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'" />
-    <title>jollyboat</title>
+    <title>Jollyboat</title>
     <link rel="stylesheet" href="../theme/theme.css" />
     <style>
-      .dot { width: 10px; height: 10px; border-radius: 2px; flex: none; border: 2px solid var(--dim); }
+      .dot { width: 12px; height: 12px; border-radius: 2px; flex: none; border: 2px solid var(--dim); }
       .dot.ok { background: var(--fg); border-color: var(--fg); }
       .dot.bad { background: transparent; border-color: var(--dim); position: relative; }
-      .dot.bad::after { content: ''; position: absolute; left: -1px; top: 2px; width: 8px; height: 2px; background: var(--dim); transform: rotate(-45deg); }
+      .dot.bad::after { content: ''; position: absolute; left: -1px; top: 3px; width: 10px; height: 2px; background: var(--dim); transform: rotate(-45deg); }
       .dot.none { visibility: hidden; }
       .item { cursor: pointer; }
       .inputs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
@@ -19,17 +19,13 @@
     <main class="page">
       <header class="header">
         <div class="title-block">
-          <div class="title" data-text="jollyboat">jollyboat</div>
+          <div class="title" data-text="Jollyboat">Jollyboat</div>
           <canvas class="strip"></canvas>
-          <div class="subtitle">a sharkord client</div>
-        </div>
-        <div class="right">
-          <button class="pill minor small alt" id="quit">quit</button>
         </div>
       </header>
 
       <div class="columns">
-        <div class="col fixed">
+        <div class="col left">
           <section class="panel">
             <div class="panel-title">servers</div>
             <div class="list" id="server-list"></div>
@@ -45,13 +41,9 @@
             </div>
             <div class="hint" id="list-status" style="margin-top: 6px"></div>
           </section>
-        </div>
-
-        <div class="col fixed">
-          <section class="panel alt" id="editor">
+          <section class="panel alt" id="editor" hidden>
             <div class="panel-title" id="editor-title">server</div>
-            <div class="hint" id="editor-empty">pick a server on the left or add one</div>
-            <div id="editor-form" hidden>
+            <div id="editor-form">
               <div class="field">
                 <label for="f-url">url</label>
                 <div class="control"><input type="url" id="f-url" placeholder="https://chat.example.com" spellcheck="false" /><div class="note" id="url-note"></div></div>
@@ -85,10 +77,10 @@
               </div>
               <div id="share-row" hidden>
                 <div class="panel-title" style="margin-top: 12px">share</div>
-                <label class="check"><input type="checkbox" id="share-passwords" /> include password</label>
-                <div class="row" style="margin-top: 8px">
+                <div class="row">
                   <button class="pill minor small" id="share-copy">copy code</button>
                   <button class="pill minor small alt" id="share-file">save file</button>
+                  <label class="check"><input type="checkbox" id="share-passwords" /> include password</label>
                 </div>
                 <div class="hint" id="share-status" style="margin-top: 6px"></div>
               </div>
@@ -118,7 +110,7 @@
               <span class="meta">for bug reports | no server names or passwords</span>
             </div>
             <div class="meta" id="startup-line" style="margin-top: 8px"></div>
-            <div class="meta" id="version"></div>
+            <div class="meta"><span id="version"></span> | by <button class="link" id="website">innovativefluid.net</button></div>
           </section>
         </div>
       </div>

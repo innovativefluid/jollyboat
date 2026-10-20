@@ -33,6 +33,7 @@ if (boot.isOwnPage) {
     bridgeStatus: () => ipcRenderer.invoke('bridge:status'),
     screenAudioInfo: () => ipcRenderer.invoke('screenAudio:info'),
     quit: () => ipcRenderer.invoke('app:quit'),
+    openWebsite: () => ipcRenderer.invoke('app:website'),
     shareCode: (ids: string[] | null, withPasswords: boolean) => ipcRenderer.invoke('share:code', ids, withPasswords),
     exportFile: (ids: string[] | null, withPasswords: boolean) => ipcRenderer.invoke('share:exportFile', ids, withPasswords),
     importText: (text: string) => ipcRenderer.invoke('share:importText', text),

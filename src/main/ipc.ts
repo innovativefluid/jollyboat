@@ -1,4 +1,4 @@
-import { ipcMain, net, safeStorage, type BrowserWindow, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
+import { ipcMain, net, safeStorage, shell, type BrowserWindow, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
 import type { TServerInput, TSettings, TTestResult, TVoiceState } from '../shared/types';
 import { getAutoStart, isAutoStartSupported, setAutoStart } from './autostart';
 import { basicHeaderFor } from './basic-auth';
@@ -247,6 +247,7 @@ export const registerIpc = ({ connectToServer, quit, getMainWindow, spellcheckAt
   ipcMain.handle('share:importText', guard((_e, text: unknown) => importShared(parseShared(String(text ?? '').slice(0, 200_000)))));
   ipcMain.handle('share:importFile', guard(() => importFromFile(getMainWindow())));
   ipcMain.handle('app:quit', guard(() => quit()));
+  ipcMain.handle('app:website', guard(() => shell.openExternal('https://innovativefluid.net')));
   ipcMain.handle('autostart:get', guard(() => ({ supported: isAutoStartSupported(), enabled: getAutoStart() })));
   ipcMain.handle('autostart:set', guard((_e, enabled: unknown) => setAutoStart(enabled === true)));
   ipcMain.handle('update:status', guard(() => getUpdateStatus()));
