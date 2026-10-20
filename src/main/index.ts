@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, Menu, screen, session, shell } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, Menu, screen, session, shell } from 'electron';
 import { join } from 'node:path';
 import { installBasicAuth, refreshBasicAuth } from './basic-auth';
 import { startBridge, stopBridge } from './hotkeys/bridge';
@@ -39,7 +39,10 @@ if (!app.isPackaged) app.setPath('userData', join(app.getPath('appData'), 'jolly
 const spellcheckAtStart = getSettings().spellcheck;
 if (!spellcheckAtStart) blockDictionaryDownloads();
 
+// two windows: the server page lives in mainWindow and is never unloaded for settings;
+// the launcher (servers + settings) is its own small window, opened on demand
 let mainWindow: BrowserWindow | null = null;
+let launcherWindow: BrowserWindow | null = null;
 let quitting = false;
 let crashes: number[] = [];
 // --hidden (autostart): stay in the tray until the user asks for the window
@@ -127,7 +130,7 @@ const createMainWindow = () => {
     const url = mainWindow?.webContents.getURL() ?? '';
     const server = findServerByUrl(url);
 
-    if (crashes.length >= 3 || !server) showLauncher(`${server ? `${server.name} | ` : ''}page crashed (${details.reason})`);
+    if (crashes.length >= 3 || !server) dropServer(`${server ? `${server.name} | ` : ''}page crashed (${details.reason})`);
     else mainWindow?.loadURL(url);
   });
 
@@ -145,18 +148,36 @@ const createMainWindow = () => {
   });
 
   mainWindow.webContents.on('will-navigate', (event, url) => {
-    if (!isOwnPageUrl(url) && !/^https?:/i.test(url)) event.preventDefault();
+    if (!/^https?:/i.test(url)) event.preventDefault();
+  });
+
+  // sharkord guards leaving while in a call (beforeunload). electron would silently stay, which
+  // looked like a lost click; ask instead. applies to reload, switching servers and quitting
+  mainWindow.webContents.on('will-prevent-unload', (event) => {
+    log('window', 'page asks to stay (beforeunload)');
+    const choice = dialog.showMessageBoxSync(mainWindow!, {
+      type: 'question',
+      buttons: ['Leave', 'Stay'],
+      defaultId: 1,
+      cancelId: 1,
+      message: 'Still in a call',
+      detail: quitting ? 'Leave it and quit?' : 'Leave it?'
+    });
+
+    if (choice === 0) event.preventDefault();
+    else quitting = false;
   });
 
   // a server that cannot be reached bounces back to the launcher with the reason
   mainWindow.webContents.on('did-fail-load', (_e, code, description, url, isMainFrame) => {
+    log('window', 'load failed', code, description, isMainFrame ? 'main' : 'sub', url.slice(0, 80));
     if (!isMainFrame || code === -3 /* aborted: a new navigation started */) return;
 
     const server = findServerByUrl(url);
     const text = description.toLowerCase().replace(/^err_/, '').replace(/_/g, ' ');
     const reason = `${server ? `${server.name} | ` : ''}${text === 'too many retries' ? 'proxy login refused, check the basic auth fields' : text}`;
 
-    showLauncher(reason);
+    dropServer(reason);
   });
 
   // an http error page from the server itself (did-fail-load does not fire for those)
@@ -164,8 +185,8 @@ const createMainWindow = () => {
     const server = findServerByUrl(url);
     if (!server || httpResponseCode < 400) return;
     log('window', 'server answered', httpResponseCode, 'for the page');
-    if (httpResponseCode === 401 || httpResponseCode === 407) showLauncher(`${server.name} | proxy login refused, check the basic auth fields`);
-    else if (httpResponseCode >= 500) showLauncher(`${server.name} | server error ${httpResponseCode}`);
+    if (httpResponseCode === 401 || httpResponseCode === 407) dropServer(`${server.name} | proxy login refused, check the basic auth fields`);
+    else if (httpResponseCode >= 500) dropServer(`${server.name} | server error ${httpResponseCode}`);
   });
 
   mainWindow.on('close', (event) => {
@@ -182,25 +203,73 @@ const createMainWindow = () => {
   return mainWindow;
 };
 
-const showWindow = () => {
-  const win = mainWindow ?? createMainWindow();
-
+const focusWindow = (win: BrowserWindow) => {
   if (win.isMinimized()) win.restore();
   win.show();
   win.focus();
 };
 
-const showLauncher = (error?: string, panel?: 'app') => {
-  const win = mainWindow ?? createMainWindow();
-  const query = new URLSearchParams();
+// a server page is loaded (or loading) in the main window
+const hasServer = () => !!mainWindow && !!findServerByUrl(mainWindow.webContents.getURL());
 
-  if (error) query.set('error', error);
-  if (panel) query.set('panel', panel);
-  win.setTitle('Jollyboat');
+// tray click / second instance: the server if there is one, otherwise the launcher
+const showWindow = () => {
+  if (mainWindow && hasServer()) focusWindow(mainWindow);
+  else showLauncher();
+};
+
+const createLauncherWindow = () => {
+  launcherWindow = new BrowserWindow({
+    width: 1200,
+    height: 780,
+    minWidth: 1000,
+    minHeight: 680,
+    show: false,
+    autoHideMenuBar: true,
+    icon: iconPath(),
+    title: 'Jollyboat',
+    backgroundColor: '#a6b08a',
+    webPreferences: {
+      preload: preloadPath(),
+      sandbox: true,
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+  launcherWindow.setMenuBarVisibility(false);
+  launcherWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  launcherWindow.webContents.on('will-navigate', (event, url) => {
+    if (!isOwnPageUrl(url)) event.preventDefault();
+  });
+  launcherWindow.on('closed', () => {
+    launcherWindow = null;
+  });
+
+  return launcherWindow;
+};
+
+const showLauncher = (error?: string) => {
+  const win = launcherWindow ?? createLauncherWindow();
+  const url = error ? `${pageUrl('launcher')}?error=${encodeURIComponent(error)}` : pageUrl('launcher');
+
+  const fresh = !win.webContents.getURL().startsWith(pageUrl('launcher'));
+
+  // an open launcher is only reloaded when there is something new to say
+  if (error || fresh) win.loadURL(url);
+  if (startHidden) return;
+  if (fresh) win.webContents.once('did-finish-load', () => focusWindow(win));
+  else focusWindow(win);
+};
+
+// a server page that failed: the window goes away and the launcher says why
+const dropServer = (reason: string) => {
+  if (mainWindow) {
+    mainWindow.hide();
+    mainWindow.setTitle('Jollyboat');
+    mainWindow.loadURL('about:blank');
+  }
   setServerName('');
-  win.setMenuBarVisibility(false); // the setup screen has it all; the bar comes back on a server page
-  win.loadURL(query.size ? `${pageUrl('launcher')}?${query}` : pageUrl('launcher'));
-  if (!startHidden) showWindow();
+  showLauncher(reason);
 };
 
 const WEBSITE = 'https://innovativefluid.net';
@@ -217,8 +286,7 @@ const createMenu = () => {
       {
         label: '&Jollyboat',
         submenu: [
-          { label: '&Servers…', accelerator: 'CommandOrControl+Shift+S', click: () => showLauncher() },
-          { label: 'Se&ttings…', accelerator: 'CommandOrControl+,', click: () => showLauncher(undefined, 'app') },
+          { label: '&Servers and settings…', accelerator: 'CommandOrControl+Shift+S', click: () => showLauncher() },
           { type: 'separator' },
           { label: 'Copy &diagnostics', click: () => clipboard.writeText(diagnostics()) },
           { type: 'separator' },
@@ -261,9 +329,10 @@ const connectToServer = (id: string) => {
 
   win.setTitle(`${server.name} — Jollyboat`);
   setServerName(server.name);
-  win.setMenuBarVisibility(true);
   win.loadURL(server.url);
-  if (!startHidden) showWindow();
+  if (!startHidden) focusWindow(win);
+  // the launcher has done its job; it comes back from the menu bar or the tray
+  launcherWindow?.close();
 };
 
 const quit = () => {
@@ -342,7 +411,5 @@ if (!app.requestSingleInstanceLock()) {
     if (!hasTray()) app.quit();
   });
 
-  app.on('activate', () => {
-    if (!mainWindow) showLauncher();
-  });
+  app.on('activate', showWindow);
 }

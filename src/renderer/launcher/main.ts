@@ -38,7 +38,7 @@ const startsInto = (s: TServerEntry) => s.id === autoConnectId || servers.length
 
 const renderStartup = () => {
   const auto = servers.find(startsInto);
-  $('startup-line').textContent = `${auto ? `opens ${auto.name} at start | ` : ''}back here: menu bar on a server page or ctrl+shift+s`;
+  $('startup-line').textContent = `${auto ? `opens ${auto.name} at start | ` : ''}this window: Jollyboat menu on the server page or ctrl+shift+s`;
 };
 
 const renderServers = async () => {
@@ -347,11 +347,3 @@ if (failed) {
 renderServers();
 renderBridge();
 renderSettings();
-
-// the Settings menu item lands on the app panel
-if (new URLSearchParams(location.search).get('panel') === 'app') {
-  const panel = $('app-panel');
-  panel.classList.add('lit');
-  panel.scrollIntoView({ block: 'center' });
-  setTimeout(() => panel.classList.remove('lit'), 1800);
-}

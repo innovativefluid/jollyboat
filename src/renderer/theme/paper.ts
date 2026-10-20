@@ -1,6 +1,6 @@
 // the glass: one fragment per 5×5 px cell, scaled up with nearest filtering. plasma + bayer dither
 // + sheared lattice + a glare band that crosses every ~24 s, then ink on top: the jolly boat riding
-// slow horizontal waves in the middle third of the screen, drifting toward the pointer.
+// slow horizontal waves, drifting toward the pointer.
 //
 // performance: the plasma is four sines, but none of them is evaluated per cell per frame.
 // sin(a + b) = sin a·cos b + cos a·sin b, so the two separable terms become per-column and
@@ -113,8 +113,8 @@ export const createPaper = (canvas: HTMLCanvasElement) => {
     const dt = Math.min(0.1, t - lastT);
     lastT = t;
 
-    // the boat eases toward the pointer, never leaving the middle third
-    const target = Math.min((cw * 2) / 3, Math.max(cw / 3, pointerX ?? cw / 2));
+    // the boat eases toward the pointer, staying on screen
+    const target = Math.min(cw - BOAT_W / 2, Math.max(BOAT_W / 2, pointerX ?? cw / 2));
     shipX += (target - shipX) * Math.min(1, dt * 0.35);
 
     for (let k = 0; k < WAVES; k++) {
