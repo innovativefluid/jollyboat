@@ -63,7 +63,7 @@ jobs:
             **Download one file:**
             - Windows: `Jollyboat-Setup-${{ inputs.version }}.exe` (x64 and ARM in one)
             - Linux: `Jollyboat-${{ inputs.version }}-x86_64.flatpak`, or `-aarch64` on ARM
-            - macOS, **experimental**: `Jollyboat-${{ inputs.version }}-mac-universal-EXPERIMENTAL.dmg` (Intel and Apple Silicon, macOS 13+). Not signed by Apple and never tried on a real Mac by the developers: macOS will warn on first open, there are no automatic updates, and screen-share sound may include your own call. How to open it: see the README.
+            - Mac (experimental, untested): `Jollyboat-${{ inputs.version }}-mac-universal-EXPERIMENTAL.dmg`. To open it the first time: System Settings → Privacy & Security → Open Anyway.
 
             `latest.yml` and `.blockmap` are read by installed copies when they check for updates; ignore them.
 
