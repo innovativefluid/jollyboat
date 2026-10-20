@@ -1,0 +1,58 @@
+# Release from the Actions tab: Run workflow → version → the tag is created, both installers are
+# built, and a draft release with notes is opened. Publish it under Releases when it looks right.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: version to release (must match package.json), e.g. 0.1.0
+        required: true
+      prerelease:
+        description: mark as pre-release
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: tag
+        run: |
+          pkg=$(node -p "require('./package.json').version")
+          if [ "$pkg" != "${{ inputs.version }}" ]; then
+            echo "package.json says $pkg, you asked for ${{ inputs.version }}"; exit 1
+          fi
+          tag="v${{ inputs.version }}"
+          if git ls-remote --tags origin "$tag" | grep -q "$tag"; then
+            echo "tag $tag already exists"; exit 1
+          fi
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git tag -a "$tag" -m "Jollyboat ${{ inputs.version }}"
+          git push origin "$tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: tag
+    uses: ./.github/workflows/build.yml
+
+  release:
+    needs: [tag, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: artifacts }
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.tag.outputs.tag }}
+          files: artifacts/**/*
+          generate_release_notes: true
+          draft: true
+          prerelease: ${{ inputs.prerelease }}
