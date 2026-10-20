@@ -55,7 +55,7 @@ const pickSettingsPatch = (patch: unknown): Partial<TSettings> => {
 
   if (typeof p.spellcheck === 'boolean') out.spellcheck = p.spellcheck;
   if (typeof p.checkUpdates === 'boolean') out.checkUpdates = p.checkUpdates;
-  if (typeof p.minimizeToTray === 'boolean') out.minimizeToTray = p.minimizeToTray;
+  if (p.onClose === 'minimize' || p.onClose === 'tray' || p.onClose === 'quit') out.onClose = p.onClose;
   if (typeof p.notifyTray === 'boolean') out.notifyTray = p.notifyTray;
   if (p.autoConnectServerId === null) out.autoConnectServerId = null;
   if (typeof p.autoConnectServerId === 'string' && getSettings().servers.some((s) => s.id === p.autoConnectServerId)) {

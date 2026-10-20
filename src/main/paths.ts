@@ -3,6 +3,9 @@ import { pathToFileURL } from 'node:url';
 
 export const preloadPath = () => join(__dirname, '../preload/index.cjs');
 
+/** the app icon for window title bars (linux/windows); the packaged icon is used for the taskbar */
+export const iconPath = () => join(__dirname, '../../resources/icon.png');
+
 const rendererRoot = () => pathToFileURL(join(__dirname, '../renderer/')).toString();
 
 /** URL of one of our renderer pages (launcher | picker | prompt), dev server or built file. */

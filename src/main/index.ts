@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { installBasicAuth, refreshBasicAuth } from './basic-auth';
 import { startBridge, stopBridge } from './hotkeys/bridge';
 import { registerIpc } from './ipc';
-import { isOwnPageUrl, originOf, pageUrl, preloadPath } from './paths';
+import { iconPath, isOwnPageUrl, originOf, pageUrl, preloadPath } from './paths';
 import { installDisplayMediaHandler } from './screen-share';
 import { findServerByUrl, getSettings, onServersChanged, saveSettings } from './settings';
 import { log } from './log';
@@ -51,8 +51,6 @@ let interrupted: (() => void) | null = null;
 let waiveGuard = false;
 // --hidden (autostart): stay in the tray until the user asks for the window
 let startHidden = process.argv.includes('--hidden');
-
-const iconPath = () => join(__dirname, '../../resources/icon.png');
 
 // last bounds are reused only when they still land on a display
 const restoredBounds = () => {
@@ -201,10 +199,19 @@ const createMainWindow = () => {
     else if (httpResponseCode >= 500) dropServer(`${server.name} | server error ${httpResponseCode}`);
   });
 
+  // closing the server window: minimize (default), hide into the tray, or quit
   mainWindow.on('close', (event) => {
-    if (!quitting && getSettings().minimizeToTray && hasTray()) {
+    if (quitting) return;
+    const { onClose } = getSettings();
+
+    if (onClose === 'minimize') {
+      event.preventDefault();
+      mainWindow?.minimize();
+    } else if (onClose === 'tray' && hasTray()) {
       event.preventDefault();
       mainWindow?.hide();
+    } else {
+      quit();
     }
   });
 

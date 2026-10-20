@@ -30,7 +30,8 @@ export type TSettings = {
   servers: TServerEntry[];
   /** server opened at startup instead of the launcher; null = show the launcher */
   autoConnectServerId: string | null;
-  minimizeToTray: boolean;
+  /** what closing the server window does */
+  onClose: 'minimize' | 'tray' | 'quit';
   /** spellcheck in text fields; off by default because the dictionaries come from google's cdn */
   spellcheck: boolean;
   /** windows: look for updates on github releases */

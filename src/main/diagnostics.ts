@@ -8,6 +8,7 @@ import { recentLog } from './log';
 import { getScreenAudioMode } from './screen-audio';
 import { getSettings } from './settings';
 import { getUpdateStatus } from './updater';
+import { describeTray } from './tray';
 
 export const diagnostics = () => {
   const s = getSettings();
@@ -23,8 +24,9 @@ export const diagnostics = () => {
     `${process.platform} ${process.arch} | ${type()} ${release()}${session ? ` | ${session}` : ''}${process.env.FLATPAK_ID ? ' | flatpak' : ''}${process.env.XDG_CURRENT_DESKTOP ? ` | ${process.env.XDG_CURRENT_DESKTOP}` : ''}`,
     `screen audio: ${getScreenAudioMode()}`,
     `hotkey bridge: ${bridge.ownedByUs ? `ours on ${bridge.port}, ${bridge.bindings.length} bindings` : `port ${bridge.port} taken`}`,
+    describeTray(),
     `updates: ${getUpdateStatus().state}${getUpdateStatus().version ? ` ${getUpdateStatus().version}` : ''}`,
-    `settings: ${s.servers.length} servers | auto-connect ${s.autoConnectServerId ? 'on' : 'off'} | tray ${s.minimizeToTray} | notify ${s.notifyTray} | spellcheck ${s.spellcheck} | update checks ${s.checkUpdates}`,
+    `settings: ${s.servers.length} servers | auto-connect ${s.autoConnectServerId ? 'on' : 'off'} | on close ${s.onClose} | notify ${s.notifyTray} | spellcheck ${s.spellcheck} | update checks ${s.checkUpdates}`,
     '',
     '--- log',
     ...recentLog()

@@ -9,7 +9,7 @@ import type { TCaptureSource, TPickerResult } from '../shared/types';
 import { log } from './log';
 import { loopbackForRequest, markShareGranted } from './screen-audio';
 import { getSettings, saveSettings } from './settings';
-import { pageUrl, preloadPath } from './paths';
+import { pageUrl, preloadPath, iconPath } from './paths';
 
 const isWaylandSession = () =>
   process.platform === 'linux' && (!!process.env.WAYLAND_DISPLAY || process.env.XDG_SESSION_TYPE === 'wayland');
@@ -28,6 +28,7 @@ const openPicker = (parent: BrowserWindow | undefined, sources: TCaptureSource[]
       modal: !!parent,
       show: false,
       autoHideMenuBar: true,
+      icon: iconPath(),
       title: 'Share your screen',
       webPreferences: { preload: preloadPath(), sandbox: true, contextIsolation: true }
     });

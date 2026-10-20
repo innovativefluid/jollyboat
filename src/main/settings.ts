@@ -7,7 +7,7 @@ import type { TServerEntry, TServerInput, TSettings } from '../shared/types';
 const DEFAULTS: TSettings = {
   servers: [],
   autoConnectServerId: null,
-  minimizeToTray: true,
+  onClose: 'minimize',
   spellcheck: false,
   checkUpdates: true,
   notifyTray: true,
@@ -56,7 +56,8 @@ const sanitize = (raw: unknown): TSettings => {
   if (typeof r.autoConnectServerId === 'string' && out.servers.some((s) => s.id === r.autoConnectServerId)) {
     out.autoConnectServerId = r.autoConnectServerId;
   }
-  for (const key of ['minimizeToTray', 'spellcheck', 'checkUpdates', 'notifyTray'] as const) {
+  if (r.onClose === 'minimize' || r.onClose === 'tray' || r.onClose === 'quit') out.onClose = r.onClose;
+  for (const key of ['spellcheck', 'checkUpdates', 'notifyTray'] as const) {
     if (typeof r[key] === 'boolean') out[key] = r[key] as boolean;
   }
   const b = r.windowBounds as Record<string, unknown> | undefined;

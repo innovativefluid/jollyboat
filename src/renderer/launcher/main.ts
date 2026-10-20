@@ -1,5 +1,5 @@
 import type { TServerEntry, TServerInput, TUpdateStatus } from '../../shared/types';
-import { bootTheme, hint, toast } from '../theme/ui';
+import { bootTheme, hint, segment, toast } from '../theme/ui';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -294,9 +294,10 @@ const renderSettings = async () => {
   updates.checked = settings.checkUpdates;
   updates.onchange = () => { window.shell.saveSettings({ checkUpdates: updates.checked }); toast('saved'); };
 
-  const tray = $<HTMLInputElement>('minimize-to-tray');
-  tray.checked = settings.minimizeToTray;
-  tray.onchange = () => { window.shell.saveSettings({ minimizeToTray: tray.checked }); toast('saved'); };
+  segment($('on-close'), [{ value: 'minimize', label: 'minimizes' }, { value: 'tray', label: 'hides to tray' }, { value: 'quit', label: 'quits' }], settings.onClose, (v) => {
+    window.shell.saveSettings({ onClose: v });
+    toast('saved');
+  });
 
   const notify = $<HTMLInputElement>('notify-tray');
   notify.checked = settings.notifyTray;

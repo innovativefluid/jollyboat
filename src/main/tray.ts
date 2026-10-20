@@ -60,7 +60,7 @@ const renderBadge = () => {
 };
 
 const iconName = () => {
-  const base = state.deafened ? 'deafened' : state.micMuted ? 'muted' : 'normal';
+  const base = state.deafened ? 'deafened' : state.micMuted ? 'muted' : state.inVoice ? 'voice' : 'normal';
 
   return unread() > 0 ? `${base}-unread` : base;
 };
@@ -148,3 +148,7 @@ export const clearUnread = () => {
 };
 
 export const hasTray = () => !!tray;
+
+/** one line for diagnostics */
+export const describeTray = () =>
+  `tray: ${tray ? 'created' : 'none'} | icon ${iconName()} | page ${state.connected ? 'controls found' : 'no controls'} | voice ${state.inVoice} | mic muted ${state.micMuted} | deafened ${state.deafened} | unread ${unread()}`;

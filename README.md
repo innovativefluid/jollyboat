@@ -8,7 +8,7 @@ A desktop client for [Sharkord](https://sharkord.com) servers, for Windows and L
 
 - **Screen sharing with sound** — everything you hear except your own call, so nobody hears themselves. Linux needs PipeWire.
 - **Global hotkeys** — mute and deafen from any window; set them in Sharkord's user settings. Works on Wayland (KDE, GNOME 48+).
-- **Tray** — shows muted/deafened, marks new messages, closes to tray, starts with the system.
+- **Tray** — shows in voice, muted, deafened and new messages; closing the window minimizes, hides to the tray or quits — your choice; starts with the system.
 - **Servers** — several at once, proxy logins, stays logged in, one that opens at start, share codes for friends.
 - **Private** — talks to your servers and nobody else. No telemetry. Spellcheck and update checks are off/opt-in.
 

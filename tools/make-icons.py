@@ -110,10 +110,20 @@ def main():
                     px[x, y] = FG
         return img
 
+    def sail(img):
+        # in voice: the sail fills with ink
+        px = img.load()
+        for y in range(32):
+            for x in range(32):
+                if px[x, y] == SPARK:
+                    px[x, y] = FG
+        return img
+
     variants = {
         'normal': lambda i: i,
-        'muted': lambda i: slash(i, 1),
-        'deafened': lambda i: slash(slash(i, 1), -1),
+        'voice': sail,
+        'muted': lambda i: slash(sail(i), 1),
+        'deafened': lambda i: slash(slash(sail(i), 1), -1),
     }
     for name, f in variants.items():
         for suffix, g in (('', lambda i: i), ('-unread', dot)):
