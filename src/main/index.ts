@@ -153,6 +153,11 @@ const showLauncher = (error?: string) => {
   if (!startHidden) showWindow();
 };
 
+const zoom = (delta: number) => {
+  const wc = mainWindow?.webContents;
+  if (wc) wc.setZoomLevel(Math.max(-3, Math.min(3, wc.getZoomLevel() + delta)));
+};
+
 // the menu bar stays hidden; this exists for its accelerators
 const createMenu = () => {
   Menu.setApplicationMenu(
@@ -162,6 +167,9 @@ const createMenu = () => {
         submenu: [
           { label: 'Servers…', accelerator: 'CommandOrControl+Shift+S', click: () => showLauncher() },
           { label: 'Reload', accelerator: 'CommandOrControl+R', click: () => mainWindow?.webContents.reload() },
+          { label: 'Zoom in', accelerator: 'CommandOrControl+=', click: () => zoom(+0.5) },
+          { label: 'Zoom out', accelerator: 'CommandOrControl+-', click: () => zoom(-0.5) },
+          { label: 'Actual size', accelerator: 'CommandOrControl+0', click: () => mainWindow?.webContents.setZoomLevel(0) },
           { label: 'Toggle developer tools', accelerator: 'CommandOrControl+Shift+I', click: () => mainWindow?.webContents.toggleDevTools() },
           { type: 'separator' },
           { label: 'Quit', accelerator: 'CommandOrControl+Q', click: quit }

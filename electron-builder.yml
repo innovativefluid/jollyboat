@@ -73,4 +73,6 @@ flatpak:
     - --talk-name=org.freedesktop.Notifications
     - --talk-name=org.kde.StatusNotifierWatcher
     - --talk-name=org.freedesktop.portal.Desktop
+    # the keyring (safeStorage) behind libsecret; without it passwords fall back to plain storage
+    - --talk-name=org.freedesktop.secrets
     - --env=ELECTRON_OZONE_PLATFORM_HINT=auto
