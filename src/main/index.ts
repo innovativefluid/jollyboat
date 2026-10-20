@@ -78,13 +78,17 @@ const rememberBounds = () => {
   }, 400);
 };
 
-// the bar sits on top; full screen hides it so a stream gets the whole screen
+// the bar is the title bar on top; full screen hides it so a stream gets the whole screen. a
+// restored window keeps a 1 px edge in the bar's colour around the page, since a frameless
+// window has no border of its own
 const layout = () => {
   if (!mainWindow || !serverView || !barView) return;
   const { width, height } = mainWindow.getContentBounds();
-  const bar = mainWindow.isFullScreen() ? 0 : BAR_HEIGHT;
+  const full = mainWindow.isFullScreen();
+  const edge = full || mainWindow.isMaximized() ? 0 : 1;
+  const bar = full ? 0 : BAR_HEIGHT;
   barView.setBounds({ x: 0, y: 0, width, height: bar });
-  serverView.setBounds({ x: 0, y: bar, width, height: Math.max(0, height - bar) });
+  serverView.setBounds({ x: edge, y: bar, width: Math.max(0, width - 2 * edge), height: Math.max(0, height - bar - edge) });
 };
 
 let serverName = '';
@@ -95,7 +99,7 @@ const barDark = () => (pageTheme ? pageTheme === 'dark' : nativeTheme.shouldUseD
 const sendBarState = () => {
   const wc = barView?.webContents;
   if (!wc || wc.isDestroyed()) return;
-  wc.send('bar:state', { server: serverName, zoom: page()?.getZoomFactor() ?? 1, theme: pageTheme });
+  wc.send('bar:state', { server: serverName, zoom: page()?.getZoomFactor() ?? 1, theme: pageTheme, maximized: !!mainWindow?.isMaximized() });
   const bg = barDark() ? '#18201c' : '#a6b08a';
   barView?.setBackgroundColor(bg);
   mainWindow?.setBackgroundColor(bg);
@@ -164,6 +168,8 @@ const createMainWindow = () => {
     minWidth: 1120,
     minHeight: 720,
     show: false,
+    // no system title bar: our bar is the title bar, with its own window buttons
+    frame: false,
     icon: iconPath(),
     title: 'Jollyboat',
     backgroundColor: dark ? '#18201c' : '#a6b08a'
@@ -201,6 +207,12 @@ const createMainWindow = () => {
   win.on('move', rememberBounds);
   win.on('enter-full-screen', layout);
   win.on('leave-full-screen', layout);
+  const onMaximizeChange = () => {
+    layout();
+    sendBarState();
+  };
+  win.on('maximize', onMaximizeChange);
+  win.on('unmaximize', onMaximizeChange);
   wc.on('zoom-changed', (_e, direction) => zoom(direction === 'in' ? +0.5 : -0.5));
   wc.on('page-title-updated', (_e, title) => win.setTitle(`${title} — Jollyboat`));
 
@@ -443,11 +455,15 @@ const barMenu = () =>
 
 ipcMain.on('bar:action', (event, action: unknown, at: unknown) => {
   if (!barView || event.sender !== barView.webContents) return;
+  log('bar', String(action));
 
   if (action === 'settings') showLauncher();
   else if (action === 'zoom-in') zoom(+0.5);
   else if (action === 'zoom-out') zoom(-0.5);
   else if (action === 'zoom-reset') zoomReset();
+  else if (action === 'minimize') mainWindow?.minimize();
+  else if (action === 'maximize') mainWindow?.isMaximized() ? mainWindow.unmaximize() : mainWindow?.maximize();
+  else if (action === 'close') mainWindow?.close();
   else if (action === 'menu' && mainWindow) {
     const p = (at ?? {}) as { x?: unknown; y?: unknown };
     barMenu().popup({ window: mainWindow, x: typeof p.x === 'number' ? p.x : 0, y: typeof p.y === 'number' ? p.y : BAR_HEIGHT });

@@ -54,7 +54,7 @@ if (boot.isOwnPage) {
     pickerChoose: (result: TPickerResult) => ipcRenderer.send('picker:choose', result),
     // bar above the server page
     barAction: (action: string, at?: { x: number; y: number }) => ipcRenderer.send('bar:action', action, at),
-    onBarState: (cb: (state: { server: string; zoom: number; theme: 'light' | 'dark' | null }) => void) => {
+    onBarState: (cb: (state: { server: string; zoom: number; theme: 'light' | 'dark' | null; maximized: boolean }) => void) => {
       ipcRenderer.on('bar:state', (_e, state) => cb(state));
     },
     // prompt window

@@ -55,6 +55,13 @@ $('settings').onclick = () => window.shell.barAction('settings');
 $('zoom-in').onclick = () => window.shell.barAction('zoom-in');
 $('zoom-out').onclick = () => window.shell.barAction('zoom-out');
 $('zoom').onclick = () => window.shell.barAction('zoom-reset');
+$('minimize').onclick = () => window.shell.barAction('minimize');
+$('maximize').onclick = () => window.shell.barAction('maximize');
+$('close').onclick = () => window.shell.barAction('close');
+
+const MAXIMIZE = 'M1 1h10v10H1z M3 3v6h6V3z';
+const RESTORE = 'M3 1h8v8H9V3H3z M1 4h7v7H1z M3 6v3h3V6z';
+
 $('more').onclick = () => {
   const r = $('more').getBoundingClientRect();
   window.shell.barAction('menu', { x: Math.round(r.left), y: Math.round(r.bottom) });
@@ -65,5 +72,7 @@ window.shell.onBarState((state) => {
   else delete document.documentElement.dataset.theme;
   repaint();
   $('server').textContent = state.server;
+  $('max-icon').querySelector('path')!.setAttribute('d', state.maximized ? RESTORE : MAXIMIZE);
+  $('maximize').title = state.maximized ? 'restore' : 'maximize';
   $('zoom').textContent = `${Math.round(state.zoom * 100)}%`;
 });

@@ -22,7 +22,16 @@
       }
       html, body { height: 100%; }
       body { background: var(--bg); border-bottom: 2px solid var(--fg); box-sizing: border-box; }
-      .bar { height: 100%; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 10px; }
+      /* the bar is the window's title bar: drag it to move; buttons stay clickable */
+      .bar { height: 100%; display: flex; align-items: center; gap: 8px; padding: 0 0 0 10px; -webkit-app-region: drag; }
+      button, .zoom span { -webkit-app-region: no-drag; }
+      .controls { display: flex; align-self: stretch; margin-left: 6px; border-left: 2px solid var(--faint); }
+      .controls button {
+        width: 40px; height: 100%; display: grid; place-items: center; background: transparent; border: 0; cursor: pointer; color: var(--dim);
+      }
+      .controls button:hover { background: var(--faint); color: var(--fg); }
+      .controls button#close:hover { background: var(--fg); color: var(--bg); }
+      .controls svg { width: 12px; height: 12px; shape-rendering: crispEdges; }
       canvas.mark { width: 28px; height: 28px; image-rendering: pixelated; flex: none; }
       .name { font: 600 15px/1 var(--px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .name .app { color: var(--dim); font-weight: 400; }
@@ -52,6 +61,17 @@
       </div>
       <button class="chip fill" id="settings" title="ctrl+shift+s">servers and settings</button>
       <button class="chip" id="more" aria-label="more">⋯</button>
+      <div class="controls">
+        <button id="minimize" aria-label="minimize" title="minimize">
+          <svg viewBox="0 0 12 12"><rect x="1" y="9" width="10" height="2" fill="currentColor" /></svg>
+        </button>
+        <button id="maximize" aria-label="maximize" title="maximize">
+          <svg viewBox="0 0 12 12" id="max-icon"><path d="M1 1h10v10H1z M3 3v6h6V3z" fill="currentColor" fill-rule="evenodd" /></svg>
+        </button>
+        <button id="close" aria-label="close" title="close">
+          <svg viewBox="0 0 12 12"><path d="M1 1h2v2H1zM3 3h2v2H3zM5 5h2v2H5zM7 3h2v2H7zM9 1h2v2H9zM3 7h2v2H3zM1 9h2v2H1zM7 7h2v2H7zM9 9h2v2H9z" fill="currentColor" /></svg>
+        </button>
+      </div>
     </div>
     <script type="module" src="./main.ts"></script>
   </body>
