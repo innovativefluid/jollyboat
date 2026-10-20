@@ -32,6 +32,9 @@
       .controls button:hover { background: var(--faint); color: var(--fg); }
       .controls button#close:hover { background: var(--fg); color: var(--bg); }
       .controls svg { width: 12px; height: 12px; shape-rendering: crispEdges; }
+      /* mac: the native traffic lights sit at the left of the bar */
+      body.mac .bar { padding-left: 80px; padding-right: 8px; }
+      body.mac .controls { display: none; }
       canvas.mark { width: 28px; height: 28px; image-rendering: pixelated; flex: none; }
       .name { font: 600 15px/1 var(--px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .name .app { color: var(--dim); font-weight: 400; }

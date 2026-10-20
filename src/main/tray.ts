@@ -2,6 +2,7 @@
 // and lets the user toggle mic / deafen from its menu (the preload clicks the buttons).
 
 import { app, Menu, nativeImage, Tray, type BaseWindow } from 'electron';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { TVoiceState } from '../shared/types';
 import { log } from './log';
@@ -41,7 +42,9 @@ const iconFor = (name: string) => {
 
   if (!img) {
     const ext = process.platform === 'win32' ? 'ico' : 'png';
-    img = nativeImage.createFromPath(join(__dirname, `../../resources/tray/${name}.${ext}`));
+    const path = join(__dirname, `../../resources/tray/${name}.${ext}`);
+    // the mac menu bar is 16 pt tall: the 32 px icon goes in as its @2x
+    img = process.platform === 'darwin' ? nativeImage.createFromBuffer(readFileSync(path), { scaleFactor: 2 }) : nativeImage.createFromPath(path);
     icons.set(name, img);
   }
 

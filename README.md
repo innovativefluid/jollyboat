@@ -2,7 +2,7 @@
 
 # Jollyboat
 
-A desktop client for [Sharkord](https://sharkord.com) servers, for Windows and Linux, on x64 and ARM. Not affiliated with Sharkord.
+A desktop client for [Sharkord](https://sharkord.com) servers, for Windows and Linux on x64 and ARM (macOS experimental). Not affiliated with Sharkord.
 
 ![setup screen](docs/launcher.png)
 
@@ -20,8 +20,18 @@ From [releases](../../releases):
 |---|---|
 | Windows (x64 or ARM) | `Jollyboat-Setup-x.y.z.exe` |
 | Linux | `flatpak install ./Jollyboat-x.y.z-x86_64.flatpak` (or `-aarch64`) |
+| macOS 13+ (**experimental**) | `Jollyboat-x.y.z-mac-universal-EXPERIMENTAL.dmg` |
 
 Add your server's address; if a proxy asks for a login first, tick **proxy login / basic auth** and fill it in. On a server, the bar at the top (or ctrl+shift+s) brings back servers and settings.
+
+### macOS is experimental
+
+The Mac build is made by CI and has never run on a real Mac on our side. It is not signed by Apple,
+so macOS refuses it on first open: drag Jollyboat to Applications, try to open it once, then
+**System Settings → Privacy & Security → Open Anyway** (or `xattr -dr com.apple.quarantine /Applications/Jollyboat.app`).
+It does not update itself (it tells you when there is a new release), macOS asks for microphone,
+camera and screen permissions again after each update, and screen-share sound may include your own
+call. Reports welcome.
 
 ## Build
 
@@ -30,6 +40,7 @@ npm install
 npm run dev
 npm run dist:win     # on Windows
 npm run dist:linux   # needs flatpak-builder
+npm run dist:mac     # on a mac (experimental)
 ```
 
 MIT — see [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

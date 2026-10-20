@@ -174,8 +174,9 @@ const createMainWindow = () => {
     minWidth: 1120,
     minHeight: 720,
     show: false,
-    // no system title bar: our bar is the title bar, with its own window buttons
-    frame: false,
+    // no system title bar: our bar is the title bar, with its own window buttons. on mac the
+    // native traffic lights stay, centred in our bar, and the bar leaves room for them
+    ...(process.platform === 'darwin' ? { titleBarStyle: 'hidden' as const, trafficLightPosition: { x: 12, y: 10 } } : { frame: false }),
     icon: iconPath(),
     title: 'Jollyboat',
     backgroundColor: dark ? '#18201c' : '#a6b08a'
@@ -607,8 +608,11 @@ if (!app.requestSingleInstanceLock()) {
       quit,
       spellcheckAtStart
     });
-    // no application menu: the bar above the server page and its shortcuts replace it
-    Menu.setApplicationMenu(null);
+    // no application menu: the bar above the server page and its shortcuts replace it. a mac
+    // needs one anyway (cmd+c / cmd+v in text fields go through the edit menu)
+    Menu.setApplicationMenu(
+      process.platform === 'darwin' ? Menu.buildFromTemplate([{ role: 'appMenu' }, { role: 'editMenu' }, { role: 'windowMenu' }]) : null
+    );
     createTray({
       toggle: toggleWindow,
       show: showWindow,

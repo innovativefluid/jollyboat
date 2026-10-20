@@ -56,6 +56,46 @@ jobs:
         shell: pwsh
         run: ./tools/smoke/smoke-win.ps1 app
 
+  # EXPERIMENTAL mac build: universal dmg, ad-hoc signed; the smoke test runs both slices (arm64
+  # natively, x64 under rosetta) since nobody on the project has a mac
+  mac:
+    needs: check
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run dist:mac
+      - name: Smoke test (arm64 and x64)
+        shell: bash
+        run: |
+          app=$(ls -d dist/mac-universal/*.app | head -1)
+          bin="$app/Contents/MacOS/Jollyboat"
+          lipo -archs "$bin"
+          # macos has no gnu timeout: kill after two minutes by hand
+          smoke() {
+            local log=$1; shift
+            JOLLYBOAT_SMOKE=1 "$@" > "$log" 2>&1 & local pid=$!
+            ( sleep 120; kill -9 $pid 2>/dev/null ) & local guard=$!
+            wait $pid; local rc=$?
+            kill $guard 2>/dev/null || true
+            grep smoke "$log" || true
+            return $rc
+          }
+          smoke smoke-arm64.log "$bin"
+          grep -q '^\[smoke\] darwin arm64' smoke-arm64.log
+          if arch -x86_64 /usr/bin/true 2>/dev/null; then
+            smoke smoke-x64.log arch -x86_64 "$bin"
+            grep -q '^\[smoke\] darwin x64' smoke-x64.log
+          else
+            echo "::warning::rosetta is not installed on this runner, the x64 slice was not started"
+          fi
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mac-experimental
+          path: dist/*.dmg
+
   linux-flatpak:
     needs: check
     strategy:

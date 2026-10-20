@@ -21,7 +21,7 @@ const linuxExec = () => {
 };
 
 export const getAutoStart = (): boolean => {
-  if (process.platform === 'win32') return app.getLoginItemSettings().openAtLogin;
+  if (process.platform === 'win32' || process.platform === 'darwin') return app.getLoginItemSettings().openAtLogin;
   if (process.platform === 'linux') return existsSync(join(autostartDir(), DESKTOP_FILE));
 
   return false;
@@ -30,6 +30,11 @@ export const getAutoStart = (): boolean => {
 export const setAutoStart = (enabled: boolean) => {
   if (process.platform === 'win32') {
     app.setLoginItemSettings({ openAtLogin: enabled, args: ['--hidden'] });
+    return getAutoStart();
+  }
+
+  if (process.platform === 'darwin') {
+    app.setLoginItemSettings({ openAtLogin: enabled });
     return getAutoStart();
   }
 
@@ -64,4 +69,4 @@ export const setAutoStart = (enabled: boolean) => {
   return false;
 };
 
-export const isAutoStartSupported = () => process.platform === 'win32' || process.platform === 'linux';
+export const isAutoStartSupported = () => ['win32', 'linux', 'darwin'].includes(process.platform);

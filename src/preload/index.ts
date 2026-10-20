@@ -200,12 +200,20 @@ if (boot.isSavedServer) {
         try {
           return await original(c);
         } catch (err) {
-          // a loopback device that cannot open must not cost the whole share
-          if (wantsAudio && err && err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
-            warn('share with audio failed, sharing without audio', err);
-            return original({ ...c, audio: false });
+          // a loopback device that cannot open must not cost the whole share: first without the
+          // own-audio exclusion (some systems cannot do it), then without audio at all
+          if (!wantsAudio || !err || err.name === 'NotAllowedError' || err.name === 'AbortError') throw err;
+          if (c.audio && typeof c.audio === 'object' && 'restrictOwnAudio' in c.audio) {
+            const { restrictOwnAudio, suppressLocalAudioPlayback, ...rest } = c.audio;
+            try {
+              warn('share audio without own-audio exclusion', err);
+              return await original({ ...c, audio: Object.keys(rest).length ? rest : true });
+            } catch (again) {
+              err = again;
+            }
           }
-          throw err;
+          warn('share with audio failed, sharing without audio', err);
+          return original({ ...c, audio: false });
         }
       };
     }

@@ -46,7 +46,7 @@ const startsInto = (s: TServerEntry) => s.id === autoConnectId || servers.length
 
 const renderStartup = () => {
   const auto = servers.find(startsInto);
-  $('startup-line').textContent = `${auto ? `| opens ${auto.name} at start ` : ''}| ctrl+shift+s opens this window`;
+  $('startup-line').textContent = `${auto ? `| opens ${auto.name} at start ` : ''}| ${window.shell.platform === 'darwin' ? 'cmd' : 'ctrl'}+shift+s opens this window`;
 };
 
 const renderServers = async () => {
@@ -314,7 +314,7 @@ const renderSettings = async () => {
   };
 
   const updates = $<HTMLInputElement>('check-updates');
-  $('updates-row').hidden = platform !== 'win32' && platform !== 'linux';
+  $('updates-row').hidden = !['win32', 'linux', 'darwin'].includes(platform);
   updates.checked = settings.checkUpdates;
   updates.onchange = () => { window.shell.saveSettings({ checkUpdates: updates.checked }); toast('saved'); };
 
@@ -346,18 +346,18 @@ const renderSettings = async () => {
       none: 'up to date',
       error: `update check failed | ${s.message ?? ''}`
     }[s.state];
-    const clickable = s.state === 'downloaded' || (platform === 'linux' && s.state === 'available');
-    hint(updateLine, text, s.state === 'downloaded' || (platform === 'linux' && s.state === 'available') ? 'good' : s.state === 'error' ? 'bad' : '');
+    const clickable = s.state === 'downloaded' || (platform !== 'win32' && s.state === 'available');
+    hint(updateLine, text, clickable ? 'good' : s.state === 'error' ? 'bad' : '');
     updateLine.onclick = !clickable ? null : s.state === 'downloaded' ? () => window.shell.installUpdate() : () => window.shell.openReleasePage();
     updateLine.style.cursor = clickable ? 'pointer' : '';
   };
-  if (platform === 'win32' || platform === 'linux') {
+  if (['win32', 'linux', 'darwin'].includes(platform)) {
     if (!settings.checkUpdates) hint(updateLine, 'update checks off');
     else showUpdate(await window.shell.updateStatus());
     window.shell.onUpdateStatus(showUpdate);
   }
 
-  $('version').textContent = `Jollyboat ${window.shell.version}`;
+  $('version').textContent = `Jollyboat ${window.shell.version}${platform === 'darwin' ? ' (experimental mac build)' : ''}`;
   hint($('keyring'), settings.secureStorage ? '' : 'no keyring | passwords stored unencrypted', 'bad');
 };
 

@@ -1,7 +1,7 @@
 // Updates. Windows: electron-updater against GitHub Releases, downloads in the background and
-// installs on quit. Linux: only a notice that a newer release exists (a .flatpak file has no
-// update channel; Flathub will). Both run only in packaged builds, every six hours, behind the
-// "check for updates" toggle. 0.x releases are pre-releases, so those count.
+// installs on quit. Linux and the experimental mac build: only a notice that a newer release
+// exists (a .flatpak file has no update channel; an unsigned mac app cannot update itself). All
+// run only in packaged builds, every six hours, behind the "check for updates" toggle.
 
 import { app, net, shell } from 'electron';
 import type { TUpdateStatus } from '../shared/types';
@@ -32,8 +32,8 @@ const newer = (a: string, b: string) => {
   return false;
 };
 
-/** linux: look at github, say so if there is something newer */
-const checkLinux = async () => {
+/** linux and mac: look at github, say so if there is something newer */
+const checkGitHub = async () => {
   set({ state: 'checking' });
 
   try {
@@ -70,12 +70,12 @@ const startWindows = async () => {
 
 export const startUpdater = async () => {
   if (started || !app.isPackaged || !getSettings().checkUpdates) return;
-  if (process.platform !== 'win32' && process.platform !== 'linux') return;
+  if (!['win32', 'linux', 'darwin'].includes(process.platform)) return;
 
   started = true;
 
   try {
-    const run = process.platform === 'win32' ? await startWindows() : checkLinux;
+    const run = process.platform === 'win32' ? await startWindows() : checkGitHub;
     // the toggle is read on every round, so turning it off stops the next check
     const check = () => (getSettings().checkUpdates ? run() : undefined);
 

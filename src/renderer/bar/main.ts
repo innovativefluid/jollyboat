@@ -4,6 +4,7 @@
 import boatMap from '../../../build/pixel/icon-16.txt?raw';
 
 const $ = (id: string) => document.getElementById(id)!;
+if (window.shell.platform === 'darwin') document.body.classList.add('mac');
 const dark = window.matchMedia('(prefers-color-scheme: dark)');
 
 // the mark: the boat from the icon map bobbing a pixel on a line of water that drifts by.

@@ -75,6 +75,13 @@ export const initScreenAudio = () => {
     return mode;
   }
 
+  // macos (experimental build): system audio through the screen-capture loopback, macos 13+.
+  // whether chromium can leave our own call out of it there is untested
+  if (process.platform === 'darwin') {
+    mode = 'loopback';
+    return mode;
+  }
+
   mode = 'none';
   return mode;
 };
@@ -143,7 +150,9 @@ export const describeScreenAudio = () =>
     loopback:
       process.platform === 'win32'
         ? { ok: false, text: 'share audio | others may hear themselves (windows older than 10 22h2)' }
-        : { ok: false, text: 'share audio | others may hear themselves (no pipewire)' },
+        : process.platform === 'darwin'
+          ? { ok: false, text: 'share audio | experimental on mac, others may hear themselves' }
+          : { ok: false, text: 'share audio | others may hear themselves (no pipewire)' },
     pipewire: { ok: true, text: 'share audio ready' },
     none: { ok: false, text: 'share audio unavailable' }
   })[mode];
