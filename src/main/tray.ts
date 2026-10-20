@@ -22,6 +22,7 @@ const state: TVoiceState & { notified: number; titled: number; serverName: strin
   inVoice: false,
   micMuted: false,
   deafened: false,
+  speaking: false,
   notified: 0,
   titled: 0,
   serverName: ''
@@ -60,7 +61,7 @@ const renderBadge = () => {
 };
 
 const iconName = () => {
-  const base = state.deafened ? 'deafened' : state.micMuted ? 'muted' : state.inVoice ? 'voice' : 'normal';
+  const base = state.deafened ? 'deafened' : state.micMuted ? 'muted' : state.inVoice ? (state.speaking ? 'talking' : 'voice') : 'normal';
 
   return unread() > 0 ? `${base}-unread` : base;
 };
@@ -75,14 +76,23 @@ const tooltip = () => {
   return parts.join(' | ');
 };
 
+// the icon alone: talking flips many times a minute and needs no new menu or tooltip
+let shownIcon = '';
+const renderIcon = () => {
+  if (!tray) return;
+  const name = iconName();
+  if (name === shownIcon) return;
+  shownIcon = name;
+  log('tray', 'icon', name);
+  const img = iconFor(name);
+  tray.setImage(img.isEmpty() ? nativeImage.createEmpty() : img);
+};
+
 const render = () => {
   if (!tray || !actions) return;
 
-  log('tray', iconName(), '|', tooltip());
-
-  const img = iconFor(iconName());
-
-  tray.setImage(img.isEmpty() ? nativeImage.createEmpty() : img);
+  log('tray', tooltip());
+  renderIcon();
   tray.setToolTip(tooltip());
   tray.setContextMenu(
     Menu.buildFromTemplate([
@@ -116,9 +126,28 @@ export const createTray = (a: TTrayActions) => {
   return tray;
 };
 
+// the sail stays filled for a moment after the voice stops, so pauses between words do not flicker
+let releaseTimer: NodeJS.Timeout | null = null;
+
 export const setVoiceState = (next: TVoiceState) => {
-  Object.assign(state, next);
-  render();
+  const { speaking, ...rest } = next;
+  const onlySpeaking = (Object.keys(rest) as (keyof typeof rest)[]).every((k) => state[k] === rest[k]);
+
+  if (releaseTimer) clearTimeout(releaseTimer);
+  releaseTimer = null;
+
+  if (speaking || !state.speaking || !onlySpeaking) {
+    Object.assign(state, next);
+    if (onlySpeaking) renderIcon();
+    else render();
+    return;
+  }
+
+  Object.assign(state, rest);
+  releaseTimer = setTimeout(() => {
+    state.speaking = false;
+    renderIcon();
+  }, 400);
 };
 
 export const setServerName = (name: string) => {
@@ -151,4 +180,4 @@ export const hasTray = () => !!tray;
 
 /** one line for diagnostics */
 export const describeTray = () =>
-  `tray: ${tray ? 'created' : 'none'} | icon ${iconName()} | page ${state.connected ? 'controls found' : 'no controls'} | voice ${state.inVoice} | mic muted ${state.micMuted} | deafened ${state.deafened} | unread ${unread()}`;
+  `tray: ${tray ? 'created' : 'none'} | icon ${iconName()} | page ${state.connected ? 'controls found' : 'no controls'} | voice ${state.inVoice} | talking ${state.speaking} | mic muted ${state.micMuted} | deafened ${state.deafened} | unread ${unread()}`;

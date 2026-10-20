@@ -44,7 +44,7 @@ export type TSettings = {
   lastSourceName: string | null;
 };
 
-export type TVoiceState = { connected: boolean; inVoice: boolean; micMuted: boolean; deafened: boolean };
+export type TVoiceState = { connected: boolean; inVoice: boolean; micMuted: boolean; deafened: boolean; speaking: boolean };
 
 export type TUpdateStatus = { state: 'idle' | 'checking' | 'available' | 'downloaded' | 'none' | 'error'; version?: string; message?: string; url?: string };
 

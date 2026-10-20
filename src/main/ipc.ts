@@ -164,7 +164,8 @@ export const registerIpc = ({ connectToServer, quit, getMainWindow, spellcheckAt
       connected: state?.connected === true,
       inVoice: state?.inVoice === true,
       micMuted: state?.micMuted === true,
-      deafened: state?.deafened === true
+      deafened: state?.deafened === true,
+      speaking: state?.speaking === true
     });
   });
   ipcMain.on('server:notification', (event) => {

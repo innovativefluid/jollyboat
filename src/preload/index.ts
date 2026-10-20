@@ -236,14 +236,39 @@ if (boot.isSavedServer) {
   const controlBar = () => document.querySelector('[data-testid="user-settings-trigger"]')?.parentElement ?? null;
   let last = '';
 
+  // own name, from the user control next to the buttons (the avatar's initials are a span too,
+  // the name is the one in medium weight)
+  const ownName = (bar: Element) => {
+    const spans = Array.from(bar.parentElement?.querySelectorAll('span') ?? []);
+    const name = spans.find((s) => s.className.includes('font-medium')) ?? spans[0];
+    return name?.textContent?.trim() ?? '';
+  };
+  // sharkord puts speaking-effect-* on the avatar of whoever is talking; ours is the one whose
+  // row (a few levels up at most) carries our name
+  const ownSpeaking = (bar: Element) => {
+    const name = ownName(bar);
+    if (!name) return false;
+    for (const el of Array.from(document.querySelectorAll('[class*="speaking-effect-"]'))) {
+      let row: Element | null = el;
+      for (let up = 0; up < 4 && row; up++) {
+        if (Array.from(row.querySelectorAll('span')).some((s) => s.textContent?.trim() === name)) return true;
+        row = row.parentElement;
+      }
+    }
+    return false;
+  };
+
   const readVoice = (): TVoiceState => {
     const bar = controlBar();
+    const inVoice = !!document.querySelector('svg.lucide-phone-off');
+    const micMuted = !!bar?.querySelector('svg.lucide-mic-off');
 
     return {
       connected: !!bar,
-      inVoice: !!document.querySelector('svg.lucide-phone-off'),
-      micMuted: !!bar?.querySelector('svg.lucide-mic-off'),
-      deafened: !!bar?.querySelector('svg.lucide-headphone-off')
+      inVoice,
+      micMuted,
+      deafened: !!bar?.querySelector('svg.lucide-headphone-off'),
+      speaking: inVoice && !micMuted && !!bar && ownSpeaking(bar)
     };
   };
 
@@ -273,14 +298,21 @@ if (boot.isSavedServer) {
   // the mic/deafen bar is watched closely (class changes included); the in-voice marker sits
   // elsewhere in the sidebar, so any added/removed node in the document also re-reads the
   // state — once per animation frame at most, and only reported when it changed
+  // the sidebar (channels, voice rows, the bar) is watched for class changes too: that is
+  // where the speaking ring appears. the chat column is left alone
   let watchedBar: Element | null = null;
   const barObserver = new MutationObserver(schedule);
+  const sidebarOf = (bar: Element) => {
+    let el: Element | null = bar;
+    while (el && !el.querySelector('[data-testid="channel-item"]')) el = el.parentElement;
+    return el ?? bar;
+  };
   const rescope = () => {
     const bar = controlBar();
     if (bar === watchedBar) return;
     barObserver.disconnect();
     watchedBar = bar;
-    if (bar) barObserver.observe(bar, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+    if (bar) barObserver.observe(sidebarOf(bar), { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
   };
 
   window.addEventListener('DOMContentLoaded', () => {
