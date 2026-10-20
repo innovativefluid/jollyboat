@@ -38,6 +38,7 @@ declare global {
       diagnostics: () => Promise<string>;
       onUpdateStatus: (cb: (s: TUpdateStatus) => void) => void;
       onPickerSources: (cb: (sources: TCaptureSource[], lastName: string | null) => void) => void;
+      promptAnswer: (answer: boolean) => void;
       pickerChoose: (result: TPickerResult) => void;
     };
   }

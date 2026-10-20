@@ -24,7 +24,8 @@ export default defineConfig({
       rollupOptions: {
         input: {
           launcher: resolve('src/renderer/launcher/index.html'),
-          picker: resolve('src/renderer/picker/index.html')
+          picker: resolve('src/renderer/picker/index.html'),
+          prompt: resolve('src/renderer/prompt/index.html')
         }
       }
     }

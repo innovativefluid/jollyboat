@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'" />
+    <title>Jollyboat</title>
+    <link rel="stylesheet" href="../theme/theme.css" />
+    <style>
+      .page { padding: 14px 16px; justify-content: center; }
+      .panel { gap: 8px; }
+      .question { font: 600 20px/1.2 var(--px); }
+      .detail { font: 500 15px/1.2 var(--body); color: var(--dim); }
+      .buttons { display: flex; gap: 10px; margin-top: 6px; }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="panel">
+        <div class="question" id="message"></div>
+        <div class="detail" id="detail"></div>
+        <div class="buttons">
+          <button class="pill" id="yes"></button>
+          <button class="pill minor alt" id="no"></button>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

@@ -51,7 +51,9 @@ if (boot.isOwnPage) {
     onPickerSources: (cb: (sources: unknown[], lastName: string | null) => void) => {
       ipcRenderer.on('picker:sources', (_e, sources, lastName) => cb(sources, lastName));
     },
-    pickerChoose: (result: TPickerResult) => ipcRenderer.send('picker:choose', result)
+    pickerChoose: (result: TPickerResult) => ipcRenderer.send('picker:choose', result),
+    // prompt window
+    promptAnswer: (answer: boolean) => ipcRenderer.send('prompt:answer', answer)
   });
 } else {
   contextBridge.exposeInMainWorld('jollyboat', {

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, dialog, Menu, screen, session, shell } from 'electron';
+import { app, BrowserWindow, clipboard, Menu, screen, session, shell } from 'electron';
 import { join } from 'node:path';
 import { installBasicAuth, refreshBasicAuth } from './basic-auth';
 import { startBridge, stopBridge } from './hotkeys/bridge';
@@ -12,6 +12,7 @@ import { clearUnread, createTray, hasTray, setServerName } from './tray';
 import { applySpellcheck, blockDictionaryDownloads } from './privacy';
 import { initScreenAudio, stopPipeWireShare } from './screen-audio';
 import { startUpdater } from './updater';
+import { askPrompt } from './prompt';
 
 // windows: toast notifications and taskbar grouping need the same AppUserModelId the installer
 // writes into the start-menu shortcut (electron-builder uses appId)
@@ -45,6 +46,9 @@ let mainWindow: BrowserWindow | null = null;
 let launcherWindow: BrowserWindow | null = null;
 let quitting = false;
 let crashes: number[] = [];
+// the action sharkord's in-call guard interrupted, re-run with the guard waived after "leave"
+let interrupted: (() => void) | null = null;
+let waiveGuard = false;
 // --hidden (autostart): stay in the tray until the user asks for the window
 let startHidden = process.argv.includes('--hidden');
 
@@ -152,20 +156,28 @@ const createMainWindow = () => {
   });
 
   // sharkord guards leaving while in a call (beforeunload). electron would silently stay, which
-  // looked like a lost click; ask instead. applies to reload, switching servers and quitting
+  // looked like a lost click. the page stays for now and our own prompt asks; "leave" re-runs
+  // whatever was interrupted with the guard waived. applies to reload, switching servers, quitting
   mainWindow.webContents.on('will-prevent-unload', (event) => {
-    log('window', 'page asks to stay (beforeunload)');
-    const choice = dialog.showMessageBoxSync(mainWindow!, {
-      type: 'question',
-      buttons: ['Leave', 'Stay'],
-      defaultId: 1,
-      cancelId: 1,
-      message: 'Still in a call',
-      detail: quitting ? 'Leave it and quit?' : 'Leave it?'
-    });
+    if (waiveGuard) {
+      waiveGuard = false;
+      event.preventDefault();
+      return;
+    }
 
-    if (choice === 0) event.preventDefault();
-    else quitting = false;
+    log('window', 'page asks to stay (beforeunload)');
+    const wasQuitting = quitting;
+    const again = interrupted ?? (wasQuitting ? quit : () => mainWindow?.webContents.reload());
+    interrupted = null;
+    quitting = false;
+
+    askPrompt(mainWindow!, { message: 'still in a call', detail: wasQuitting ? 'leave it and quit?' : 'leave it?', yes: 'leave', no: 'stay' }).then((leave) => {
+      if (!leave) return;
+      waiveGuard = true;
+      again();
+      // nothing asked after all (the call ended meanwhile): forget the waiver
+      setTimeout(() => (waiveGuard = false), 2000);
+    });
   });
 
   // a server that cannot be reached bounces back to the launcher with the reason
@@ -296,7 +308,7 @@ const createMenu = () => {
       {
         label: '&View',
         submenu: [
-          { label: '&Reload', accelerator: 'CommandOrControl+R', click: () => mainWindow?.webContents.reload() },
+          { label: '&Reload', accelerator: 'CommandOrControl+R', click: () => guarded(() => mainWindow?.webContents.reload()) },
           { type: 'separator' },
           { label: 'Zoom &in', accelerator: 'CommandOrControl+=', click: () => zoom(+0.5) },
           { label: 'Zoom &out', accelerator: 'CommandOrControl+-', click: () => zoom(-0.5) },
@@ -320,10 +332,19 @@ const createMenu = () => {
   );
 };
 
+// runs an action that may unload the server page, remembering it for the in-call prompt
+const guarded = (action: () => void) => {
+  interrupted = action;
+  action();
+  setTimeout(() => (interrupted = null), 1000);
+};
+
 const connectToServer = (id: string) => {
   const server = getSettings().servers.find((s) => s.id === id);
 
   if (!server) return;
+  interrupted = () => connectToServer(id);
+  setTimeout(() => (interrupted = null), 1000);
 
   const win = mainWindow ?? createMainWindow();
 

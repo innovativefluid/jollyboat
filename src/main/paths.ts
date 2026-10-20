@@ -5,8 +5,8 @@ export const preloadPath = () => join(__dirname, '../preload/index.cjs');
 
 const rendererRoot = () => pathToFileURL(join(__dirname, '../renderer/')).toString();
 
-/** URL of one of our renderer pages (launcher | picker), dev server or built file. */
-export const pageUrl = (page: 'launcher' | 'picker') => {
+/** URL of one of our renderer pages (launcher | picker | prompt), dev server or built file. */
+export const pageUrl = (page: 'launcher' | 'picker' | 'prompt') => {
   const dev = process.env.ELECTRON_RENDERER_URL;
 
   if (dev) return `${dev}/${page}/index.html`;
