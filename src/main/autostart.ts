@@ -12,6 +12,8 @@ import { getSettings, saveSettings } from './settings';
 
 const DESKTOP_FILE = 'jollyboat.desktop';
 
+const portableExe = () => process.env.PORTABLE_EXECUTABLE_FILE || undefined;
+
 const autostartDir = () => join(process.env.XDG_CONFIG_HOME || join(app.getPath('home'), '.config'), 'autostart');
 
 const linuxExec = () => {
@@ -22,7 +24,8 @@ const linuxExec = () => {
 };
 
 export const getAutoStart = (): boolean => {
-  if (process.platform === 'win32' || process.platform === 'darwin') return app.getLoginItemSettings().openAtLogin;
+  if (process.platform === 'win32') return app.getLoginItemSettings(portableExe() ? { path: portableExe() } : undefined).openAtLogin;
+  if (process.platform === 'darwin') return app.getLoginItemSettings().openAtLogin;
   if (process.platform === 'linux') return process.env.FLATPAK_ID ? getSettings().autostart : existsSync(join(autostartDir(), DESKTOP_FILE));
 
   return false;
@@ -30,7 +33,8 @@ export const getAutoStart = (): boolean => {
 
 export const setAutoStart = async (enabled: boolean) => {
   if (process.platform === 'win32') {
-    app.setLoginItemSettings({ openAtLogin: enabled, args: ['--hidden'] });
+    // portable: the exe the user keeps, not the temporary copy that runs
+    app.setLoginItemSettings({ openAtLogin: enabled, args: ['--hidden'], ...(portableExe() ? { path: portableExe() } : {}) });
     return getAutoStart();
   }
 

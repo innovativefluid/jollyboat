@@ -1,5 +1,5 @@
-// Updates. Windows: electron-updater against GitHub Releases, downloads in the background and
-// installs on quit. The .flatpak from GitHub and the experimental mac build: only a notice that a
+// Updates. Windows (installed): electron-updater against GitHub Releases, downloads in the
+// background and installs on quit. The portable exe gets the notice described next. The .flatpak from GitHub and the experimental mac build: only a notice that a
 // newer release exists (a bundle file has no update channel; an unsigned mac app cannot update
 // itself). The Flathub build checks nothing: Flathub delivers its updates. All run only in
 // packaged builds, every six hours, behind the "check for updates" toggle.
@@ -79,7 +79,9 @@ export const startUpdater = async () => {
   started = true;
 
   try {
-    const run = process.platform === 'win32' ? await startWindows() : checkGitHub;
+    // the portable exe cannot replace itself: like linux and mac it gets the notice
+    const portable = !!process.env.PORTABLE_EXECUTABLE_DIR;
+    const run = process.platform === 'win32' && !portable ? await startWindows() : checkGitHub;
     // the toggle is read on every round, so turning it off stops the next check
     const check = () => (getSettings().checkUpdates ? run() : undefined);
 

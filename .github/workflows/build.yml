@@ -35,6 +35,23 @@ jobs:
       - name: Smoke test (x64)
         shell: pwsh
         run: ./tools/smoke/smoke-win.ps1 dist/win-unpacked
+      # the portable exe: unpacks itself, keeps its data next to it (Jollyboat-data\smoke.log)
+      - name: Smoke test (portable x64)
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem dist -Filter '*-portable-x64.exe' | Select-Object -First 1
+          $env:JOLLYBOAT_SMOKE = '1'
+          $p = Start-Process -FilePath $exe.FullName -PassThru
+          $null = $p.Handle
+          if (-not $p.WaitForExit(180000)) { $p.Kill(); throw 'portable smoke test timed out' }
+          $log = Join-Path $exe.DirectoryName 'Jollyboat-data\smoke.log'
+          for ($i = 0; $i -lt 30 -and -not (Test-Path $log); $i++) { Start-Sleep 1 }
+          if (-not (Test-Path $log)) { throw "no smoke.log next to the portable exe (exit $($p.ExitCode))" }
+          $line = Get-Content $log
+          Write-Output $line
+          Write-Output "::notice title=portable smoke::$line"
+          if ($line -notmatch '^\[smoke\] win32 x64 .*portable') { throw 'unexpected smoke line' }
+          Remove-Item -Recurse -Force (Join-Path $exe.DirectoryName 'Jollyboat-data')
       - uses: actions/upload-artifact@v7
         with:
           name: windows

@@ -29,7 +29,7 @@
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "pack": "electron-vite build && electron-builder --dir",
-    "dist:win": "electron-vite build && electron-builder --win nsis --x64 --arm64 --publish never",
+    "dist:win": "electron-vite build && electron-builder --win nsis --x64 --arm64 --publish never && electron-builder --win portable --x64 --publish never && electron-builder --win portable --arm64 --publish never",
     "dist:linux": "electron-vite build && electron-builder --linux dir --publish never",
     "dist:mac": "electron-vite build && electron-builder --mac dmg --universal --publish never"
   },

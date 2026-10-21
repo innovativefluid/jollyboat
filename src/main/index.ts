@@ -1,7 +1,8 @@
 import { app, BaseWindow, BrowserWindow, clipboard, ipcMain, Menu, nativeTheme, screen, session, shell, WebContentsView } from 'electron';
+import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { installBasicAuth, refreshBasicAuth } from './basic-auth';
-import { startBridge, stopBridge } from './hotkeys/bridge';
+import { getBridgeStatus, startBridge, stopBridge } from './hotkeys/bridge';
 import { registerIpc } from './ipc';
 import { iconPath, isOwnPageUrl, originOf, pageUrl, preloadPath } from './paths';
 import { installDisplayMediaHandler } from './screen-share';
@@ -53,6 +54,11 @@ if (process.env.JOLLYBOAT_SMOKE && process.platform === 'darwin') app.commandLin
 
 // dev runs would otherwise share ~/.config/Electron with every other electron app in development
 if (!app.isPackaged) app.setPath('userData', join(app.getPath('appData'), 'jollyboat-dev'));
+
+// the portable windows build keeps everything in a folder next to the exe (the exe itself runs
+// from a temporary copy). passwords stay encrypted for this windows user only, as always
+const PORTABLE = process.platform === 'win32' && !!process.env.PORTABLE_EXECUTABLE_DIR;
+if (PORTABLE) app.setPath('userData', join(process.env.PORTABLE_EXECUTABLE_DIR!, 'Jollyboat-data'));
 
 // spellcheck off (the default): google's dictionary host cannot even be resolved
 const spellcheckAtStart = getSettings().spellcheck;
@@ -547,7 +553,11 @@ const runSmokeTest = async () => {
     const panels = await launcher.webContents.executeJavaScript("typeof window.shell === 'object' ? document.querySelectorAll('.panel').length : -1");
     const bar = await barView!.webContents.executeJavaScript("document.getElementById('settings') ? 'ok' : 'missing'");
 
-    console.log(`[smoke] ${process.platform} ${process.arch} | electron ${process.versions.electron} | jollyboat ${__APP_VERSION__} | setup panels ${panels} | bar ${bar}`);
+    const keys = getBridgeStatus().keyUp ? 'push-to-talk' : 'presses only';
+    const line = `[smoke] ${process.platform} ${process.arch} | electron ${process.versions.electron} | jollyboat ${__APP_VERSION__} | setup panels ${panels} | bar ${bar} | keys ${keys}${PORTABLE ? ' | portable' : ''}`;
+    console.log(line);
+    // the portable launcher does not pass the app's output on: the line also goes next to the data
+    if (PORTABLE) writeFileSync(join(app.getPath('userData'), 'smoke.log'), `${line}\n`);
     clearTimeout(timer);
     app.exit(panels >= 3 && bar === 'ok' ? 0 : 1);
   } catch (err) {

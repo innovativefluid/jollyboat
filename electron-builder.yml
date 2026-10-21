@@ -54,6 +54,11 @@ nsis:
   runAfterFinish: true
   artifactName: ${productName}-Setup-${version}.${ext}
 
+# the portable exe: no installer, settings in a Jollyboat-data folder next to it, one per
+# architecture (built in two runs, see dist:win), no self-update (the app shows a notice)
+portable:
+  artifactName: ${productName}-${version}-portable-${arch}.${ext}
+
 # EXPERIMENTAL: built by CI, never run on a real mac by the developers. one universal dmg (intel
 # and apple silicon, macos 13+), ad-hoc signed only: no apple developer id, so no notarization
 # and no self-update (the app shows a notice instead). the name says so on purpose

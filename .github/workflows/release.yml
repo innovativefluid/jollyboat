@@ -75,7 +75,7 @@ jobs:
           files: artifacts/**/*
           body: |
             **Download one file:**
-            - Windows: `Jollyboat-Setup-${{ inputs.version }}.exe` (x64 and ARM in one)
+            - Windows: `Jollyboat-Setup-${{ inputs.version }}.exe` (x64 and ARM in one), or without installing: `Jollyboat-${{ inputs.version }}-portable-x64.exe` (`-arm64` on ARM), keeps its settings in a `Jollyboat-data` folder next to it
             - Linux: `Jollyboat-${{ inputs.version }}-x86_64.flatpak`, or `-aarch64` on ARM
             - Mac (experimental, untested): `Jollyboat-${{ inputs.version }}-mac-universal-EXPERIMENTAL.dmg`. To open it the first time: System Settings → Privacy & Security → Open Anyway.
 
