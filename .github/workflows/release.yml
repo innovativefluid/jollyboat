@@ -24,24 +24,41 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - id: tag
+        env: { GH_TOKEN: '${{ github.token }}' }
         run: |
           pkg=$(node -p "require('./package.json').version")
           if [ "$pkg" != "${{ inputs.version }}" ]; then
             echo "package.json says $pkg, you asked for ${{ inputs.version }}"; exit 1
           fi
           tag="v${{ inputs.version }}"
-          if git ls-remote --tags origin "$tag" | grep -q "$tag"; then
-            echo "tag $tag already exists"; exit 1
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          # a tag left by a run that never got to publish (a cancelled build, say) is moved to this
+          # commit and reused; a tag with a published release is a mistake and stops here
+          force=""
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
+            published=$(gh release view "$tag" --json isDraft --jq '.isDraft | not' 2>/dev/null || echo false)
+            if [ "$published" = "true" ]; then
+              echo "$tag is already released"; exit 1
+            fi
+            echo "$tag exists but was never published: moving it to this commit"
+            force="-f"
           fi
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git tag -a "$tag" -m "Jollyboat ${{ inputs.version }}"
-          git push origin "$tag"
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          git tag $force -a "$tag" -m "Jollyboat ${{ inputs.version }}"
+          git push $force origin "$tag"
 
   build:
     needs: tag
     uses: ./.github/workflows/build.yml
+    with: { targets: main }
+
+  # the experimental mac build on its own: macos runners are sometimes not available for hours,
+  # so the release does not wait for it; the dmg is added to the draft when (if) it is done
+  mac:
+    needs: tag
+    uses: ./.github/workflows/build.yml
+    with: { targets: mac }
 
   release:
     needs: [tag, build]
@@ -52,9 +69,6 @@ jobs:
         with: { name: windows, path: artifacts/windows }
       - uses: actions/download-artifact@v8
         with: { pattern: 'linux-*', path: artifacts }
-      - uses: actions/download-artifact@v8
-        continue-on-error: true # the experimental mac build may be missing
-        with: { name: mac-experimental, path: artifacts/mac }
       - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.tag.outputs.tag }}
@@ -70,3 +84,13 @@ jobs:
           generate_release_notes: true
           draft: true
           prerelease: ${{ inputs.prerelease }}
+
+  attach-mac:
+    needs: [tag, release, mac]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with: { name: mac-experimental, path: mac }
+      - name: Add the mac dmg to the release
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: gh release upload "${{ needs.tag.outputs.tag }}" mac/*.dmg --clobber --repo "${{ github.repository }}"
