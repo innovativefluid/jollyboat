@@ -6,11 +6,13 @@ A desktop client for [Sharkord](https://sharkord.com) servers, for Windows and L
 
 ![setup screen](docs/launcher.png)
 
-- **Screen sharing with sound** — everything you hear except your own call, so nobody hears themselves. Linux needs PipeWire.
+- **Screen sharing with sound** — everything you hear except your own call. On Linux the share is encoded on the GPU when it can be.
 - **Global hotkeys** — mute and deafen from any window; set them in Sharkord's user settings. Works on Wayland (KDE, GNOME 48+).
-- **Tray** — shows in voice, talking, muted, deafened and new messages; closing the window minimizes, hides to the tray or quits — your choice; starts with the system.
-- **Servers** — several at once, proxy logins, stays logged in, one that opens at start, share codes for friends.
-- **Private** — talks to your servers, and to GitHub only for update checks (on by default, one switch to turn off). No telemetry; spellcheck (Google dictionaries) is off unless you turn it on.
+- **One bar on top** — server name, zoom, servers and settings, window buttons; light or dark with Sharkord.
+- **Tray** — in voice, talking, muted, deafened, new messages. Closing the window minimizes, hides to the tray or quits.
+- **Servers** — several, with proxy logins (basic auth), staying logged in, one that opens at start, and share codes.
+- **Careful in calls** — asks before a reload or quit would drop you out of a call.
+- **Private** — talks to your servers, plus GitHub for update checks (one switch to turn off). No telemetry.
 
 ## Install
 
@@ -22,16 +24,17 @@ From [releases](../../releases):
 | Linux | `flatpak install ./Jollyboat-x.y.z-x86_64.flatpak` (or `-aarch64`) |
 | macOS 13+ (**experimental**) | `Jollyboat-x.y.z-mac-universal-EXPERIMENTAL.dmg` |
 
-Add your server's address; if a proxy asks for a login first, tick **proxy login / basic auth** and fill it in. On a server, the bar at the top (or ctrl+shift+s) brings back servers and settings.
+Add your server's address; if a proxy asks for a login first, tick **proxy login / basic auth**. On a server, **servers and settings** in the top bar (or ctrl+shift+s) opens this window again.
+
+Tip: for GPU-encoded screen shares, pick H264 (or AV1 on newer GPUs) as the screen codec in Sharkord's settings, with simulcast off.
 
 ### macOS is experimental
 
-The Mac build is made by CI and has never run on a real Mac on our side. It is not signed by Apple,
-so macOS refuses it on first open: drag Jollyboat to Applications, try to open it once, then
-**System Settings → Privacy & Security → Open Anyway** (or `xattr -dr com.apple.quarantine /Applications/Jollyboat.app`).
-It does not update itself (it tells you when there is a new release), macOS asks for microphone,
-camera and screen permissions again after each update, and screen-share sound may include your own
-call. Reports welcome.
+CI builds it and checks that it starts on Intel and Apple Silicon, but nobody on the project has
+used it on a real Mac. It is not signed by Apple, so the first open needs **System Settings →
+Privacy & Security → Open Anyway**. It does not update itself (it tells you about new releases),
+asks for permissions again after each update, and screen-share sound may include your own call.
+Reports welcome.
 
 ## Build
 
