@@ -56,7 +56,7 @@ const startWindows = async () => {
 
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
-  autoUpdater.allowPrerelease = true;
+  autoUpdater.allowPrerelease = true; // a release published as pre-release still reaches everyone
   autoUpdater.logger = null;
 
   autoUpdater.on('checking-for-update', () => set({ state: 'checking' }));

@@ -4,7 +4,6 @@ import { createPaper } from './paper';
 import { createSparks } from './sparks';
 import { createStrip } from './strip';
 
-export type TFx = ReturnType<typeof createSparks>;
 
 export const bootTheme = () => {
   const paperCanvas = document.createElement('canvas');

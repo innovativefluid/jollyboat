@@ -16,7 +16,7 @@ import { basename } from 'node:path';
 import { release } from 'node:os';
 import { log } from './log';
 
-export type TScreenAudioMode = 'loopback-own-excluded' | 'loopback' | 'pipewire' | 'none';
+type TScreenAudioMode = 'loopback-own-excluded' | 'loopback' | 'pipewire' | 'none';
 
 type TPatchBay = {
   link(data: Record<string, unknown>): boolean;

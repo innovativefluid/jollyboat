@@ -7,7 +7,6 @@ import { contextBridge, ipcRenderer, webFrame } from 'electron';
 import type { TPickerResult, TServerInput, TSettings, TUpdateStatus, TVoiceState } from '../shared/types';
 
 type TBootstrap = {
-  isOwnPage: boolean;
   ownPage: 'launcher' | 'picker' | 'prompt' | 'bar' | null;
   isSavedServer: boolean;
   platform: NodeJS.Platform;
@@ -19,7 +18,7 @@ type TBootstrap = {
 
 const boot = ipcRenderer.sendSync('shell:bootstrap') as TBootstrap;
 
-if (boot.isOwnPage) {
+if (boot.ownPage) {
   // each of our pages gets only what it uses: the setup window the settings / servers api, the
   // picker, prompt and bar their one or two calls
   const common = { platform: boot.platform, version: boot.version };
@@ -31,11 +30,9 @@ if (boot.isOwnPage) {
       saveServer: (input: TServerInput) => ipcRenderer.invoke('servers:save', input),
       removeServer: (id: string) => ipcRenderer.invoke('servers:remove', id),
       setKeepLogin: (id: string, keep: boolean) => ipcRenderer.invoke('servers:keepLogin', id, keep),
-      testServer: (input: TServerInput) => ipcRenderer.invoke('servers:test', input),
       connect: (id: string) => ipcRenderer.invoke('servers:connect', id),
       bridgeStatus: () => ipcRenderer.invoke('bridge:status'),
       screenAudioInfo: () => ipcRenderer.invoke('screenAudio:info'),
-      quit: () => ipcRenderer.invoke('app:quit'),
       openWebsite: () => ipcRenderer.invoke('app:website'),
       shareCode: (ids: string[] | null, withPasswords: boolean) => ipcRenderer.invoke('share:code', ids, withPasswords),
       exportFile: (ids: string[] | null, withPasswords: boolean) => ipcRenderer.invoke('share:exportFile', ids, withPasswords),

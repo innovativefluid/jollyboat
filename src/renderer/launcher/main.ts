@@ -208,7 +208,6 @@ keepBox.onchange = async () => {
 
 window.addEventListener('keydown', (e) => {
   if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); save(); }
-  if (e.ctrlKey && e.key.toLowerCase() === 'q') { e.preventDefault(); window.shell.quit(); }
   if (e.key === 'Escape' && !editorPanel.hidden) closeEditor();
 });
 

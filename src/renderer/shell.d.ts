@@ -20,11 +20,9 @@ declare global {
       saveServer: (input: TServerInput) => Promise<{ server: TServerEntry; test: TTestResult }>;
       removeServer: (id: string) => Promise<void>;
       setKeepLogin: (id: string, keep: boolean) => Promise<void>;
-      testServer: (input: TServerInput) => Promise<TTestResult>;
       connect: (id: string) => Promise<void>;
       bridgeStatus: () => Promise<TBridgeStatus>;
       screenAudioInfo: () => Promise<{ ok: boolean; text: string }>;
-      quit: () => Promise<void>;
       openWebsite: () => Promise<void>;
       shareCode: (ids: string[] | null, withPasswords: boolean) => Promise<string>;
       exportFile: (ids: string[] | null, withPasswords: boolean) => Promise<string | null>;

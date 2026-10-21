@@ -17,7 +17,7 @@ export const pageUrl = (page: 'launcher' | 'picker' | 'prompt' | 'bar') => {
   return `${rendererRoot()}${page}/index.html`;
 };
 
-export type TOwnPage = 'launcher' | 'picker' | 'prompt' | 'bar';
+type TOwnPage = 'launcher' | 'picker' | 'prompt' | 'bar';
 
 /** Which of our pages a url is (null for anything else). */
 export const ownPageOf = (url: string): TOwnPage | null =>

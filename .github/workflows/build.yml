@@ -82,7 +82,6 @@ jobs:
           app=$(ls -d dist/mac-universal/*.app | head -1)
           bin="$app/Contents/MacOS/Jollyboat"
           lipo -archs "$bin"
-          # macos has no gnu timeout: kill after two minutes by hand
           codesign --verify --deep --strict --verbose=2 "$app" 2>&1 | tail -3 | sed 's/^/::notice title=codesign::/' || true
           # macos has no gnu timeout: a guard kills it by hand. the outcome and the log tail
           # go into annotations, which stay readable when the full log is not

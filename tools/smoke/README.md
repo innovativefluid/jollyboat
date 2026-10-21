@@ -14,7 +14,7 @@ node tools/smoke/cdp.mjs launcher /tmp/launcher.png \
   "window.__paperCost().toFixed(2) + ' ms/frame'"
 
 # 3. talk to the built-in hotkey bridge like the sharkord web client does
-node tools/smoke/bridge-test.mjs ~/.config/jollyboat-dev/bridge-token
+node tools/smoke/bridge-test.mjs ~/.config/jollyboat-dev/bridge-token http://localhost:5173   # origin of a saved server
 ```
 
 Debug switches (`NETLOG` and `FAKE_PIPEWIRE` only work in dev builds; `DEBUG` also logs in packaged builds):

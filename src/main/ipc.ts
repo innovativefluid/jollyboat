@@ -34,7 +34,7 @@ import {
   upsertServer
 } from './settings';
 
-type THandlers = { connectToServer: (id: string) => void; getMainWindow: () => BaseWindow | null; quit: () => void; spellcheckAtStart: boolean };
+type THandlers = { connectToServer: (id: string) => void; getMainWindow: () => BaseWindow | null; spellcheckAtStart: boolean };
 
 let spellcheckAtStartup = false;
 
@@ -128,7 +128,7 @@ const fromSavedServer = (event: IpcMainEvent) => !!findServerByUrl(event.senderF
 const idList = (ids: unknown): string[] | null =>
   Array.isArray(ids) ? ids.filter((i): i is string => typeof i === 'string') : null;
 
-export const registerIpc = ({ connectToServer, quit, getMainWindow, spellcheckAtStart }: THandlers) => {
+export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart }: THandlers) => {
   spellcheckAtStartup = spellcheckAtStart;
 
   // sync bootstrap for the preload. the bridge token and the capture patch go only to pages
@@ -140,7 +140,6 @@ export const registerIpc = ({ connectToServer, quit, getMainWindow, spellcheckAt
     const bridge = getBridgeStatus();
 
     event.returnValue = {
-      isOwnPage: own,
       ownPage: ownPageOf(url),
       isSavedServer: !!server,
       platform: process.platform,
@@ -240,7 +239,6 @@ export const registerIpc = ({ connectToServer, quit, getMainWindow, spellcheckAt
   }));
   ipcMain.handle('servers:remove', guard((_e, id: unknown) => removeServer(String(id))));
   ipcMain.handle('servers:keepLogin', guard((_e, id: unknown, keep: unknown) => setKeepLogin(String(id), keep === true)));
-  ipcMain.handle('servers:test', guard((_e, input: unknown) => testServer(pickServerInput(input))));
   ipcMain.handle('servers:connect', guard((_e, id: unknown) => connectToServer(String(id))));
   ipcMain.handle('bridge:status', guard(() => getBridgeStatus()));
   ipcMain.handle('screenAudio:info', guard(() => describeScreenAudio()));
@@ -251,7 +249,6 @@ export const registerIpc = ({ connectToServer, quit, getMainWindow, spellcheckAt
   ipcMain.handle('share:exportFile', guard((e, ids: unknown, withPasswords: unknown) => exportToFile(BrowserWindow.fromWebContents(e.sender), buildExport(idList(ids), withPasswords === true))));
   ipcMain.handle('share:importText', guard((_e, text: unknown) => importShared(parseShared(String(text ?? '').slice(0, 200_000)))));
   ipcMain.handle('share:importFile', guard((e) => importFromFile(BrowserWindow.fromWebContents(e.sender))));
-  ipcMain.handle('app:quit', guard(() => quit()));
   ipcMain.handle('app:website', guard(() => shell.openExternal('https://innovativefluid.net')));
   ipcMain.handle('autostart:get', guard(() => ({ supported: isAutoStartSupported(), enabled: getAutoStart() })));
   ipcMain.handle('autostart:set', guard((_e, enabled: unknown) => setAutoStart(enabled === true)));

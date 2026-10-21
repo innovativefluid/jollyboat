@@ -54,18 +54,18 @@ ipcMain.on('picker:choose', (event, result: TPickerResult) => {
   pickerWindow?.close();
 });
 
-const listSources = async (withThumbnails: boolean): Promise<TCaptureSource[]> => {
+const listSources = async (): Promise<TCaptureSource[]> => {
   const sources = await desktopCapturer.getSources({
     types: ['screen', 'window'],
-    thumbnailSize: withThumbnails ? { width: 320, height: 200 } : { width: 0, height: 0 },
-    fetchWindowIcons: withThumbnails
+    thumbnailSize: { width: 320, height: 200 },
+    fetchWindowIcons: true
   });
 
   return sources.map((s) => ({
     id: s.id,
     name: s.name,
     kind: s.id.startsWith('screen') ? 'screen' : 'window',
-    thumbnail: withThumbnails && !s.thumbnail.isEmpty() ? s.thumbnail.toDataURL() : '',
+    thumbnail: s.thumbnail.isEmpty() ? '' : s.thumbnail.toDataURL(),
     appIcon: s.appIcon && !s.appIcon.isEmpty() ? s.appIcon.toDataURL() : undefined
   }));
 };
@@ -85,7 +85,7 @@ export const installDisplayMediaHandler = (getMainWindow: () => BaseWindow | nul
         return callback(source ? { video: source, audio: loopbackForRequest(request.audioRequested) } : {});
       }
 
-      const sources = await listSources(true);
+      const sources = await listSources();
       const pick = await openPicker(getMainWindow() ?? undefined, sources);
 
       if (!pick) return callback({});

@@ -1,7 +1,7 @@
 // the lcd scheme: the one and only face of the app's own pages. the paper, sparks and strip read
 // their colours from here; css has the same values as tokens in theme.css.
 
-export type TSchemeParams = {
+type TSchemeParams = {
   bg: [number, number, number];
   fg: [number, number, number];
   spark: [number, number, number];

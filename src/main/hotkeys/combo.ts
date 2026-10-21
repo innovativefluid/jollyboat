@@ -52,7 +52,7 @@ const MODIFIER_CODES = new Set([
   'ShiftLeft', 'ShiftRight', 'MetaLeft', 'MetaRight'
 ]);
 
-export type TParsedCombo = { accelerator: string } | { error: string };
+type TParsedCombo = { accelerator: string } | { error: string };
 
 export const comboToAccelerator = (combo: string): TParsedCombo => {
   const parts = combo.split('+');

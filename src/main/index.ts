@@ -614,7 +614,6 @@ if (!app.requestSingleInstanceLock()) {
     registerIpc({
       connectToServer,
       getMainWindow: () => mainWindow,
-      quit,
       spellcheckAtStart
     });
     // no application menu: the bar above the server page and its shortcuts replace it. a mac
