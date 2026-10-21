@@ -72,6 +72,9 @@ const create = () => {
 
   // above fullscreen games and on every workspace, where the system allows it
   win.setAlwaysOnTop(true, 'screen-saver');
+  // left out of screen captures (windows 10 2004+, mac): a shared screen does not carry the
+  // overlay along, and the others in the call do not see the list twice
+  win.setContentProtection(true);
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   win.setMenuBarVisibility(false);
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
@@ -81,10 +84,16 @@ const create = () => {
     send();
     if (wanted()) win?.showInactive();
   });
+  // a drag fires this many times: the spot is written once it comes to rest
+  let moveTimer: NodeJS.Timeout | null = null;
   win.on('moved', () => {
-    if (!win) return;
-    const [nx, ny] = win.getPosition();
-    saveSettings({ overlayPosition: { x: nx!, y: ny! } });
+    if (moveTimer) clearTimeout(moveTimer);
+    moveTimer = setTimeout(() => {
+      moveTimer = null;
+      if (!win) return;
+      const [nx, ny] = win.getPosition();
+      saveSettings({ overlayPosition: { x: nx!, y: ny! } });
+    }, 400);
   });
   win.on('closed', () => {
     win = null;

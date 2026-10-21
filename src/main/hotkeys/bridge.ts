@@ -34,6 +34,9 @@ let token = '';
 let ownedByUs = false;
 const clients = new Set<TClient>();
 let keys: TKeySource | null = null;
+// the key source is looked for in the background (on linux it asks the desktop portal, which
+// may take a moment): startup does not wait, a page's hello does
+let keysReady: Promise<void> | null = null;
 
 const tokenPath = () => join(app.getPath('userData'), 'bridge-token');
 
@@ -79,7 +82,9 @@ let applying = 0;
 const rebuildShortcuts = async () => {
   if (!keys) return;
   const round = ++applying;
-  const list = [...clients].flatMap((c) => c.bindings.map((b) => ({ combo: b.combo, description: DESCRIPTIONS[b.id] ?? b.id })));
+  // the description shows up in the desktop's shortcut dialog (linux): a page's own action
+  // ids are cut short there
+  const list = [...clients].flatMap((c) => c.bindings.map((b) => ({ combo: b.combo, description: DESCRIPTIONS[b.id] ?? b.id.slice(0, 64) })));
   const failed = await keys.apply(list);
   if (round !== applying) return; // a newer list is on its way
 
@@ -95,7 +100,7 @@ const rebuildShortcuts = async () => {
 const handleConnection = (ws: WebSocket) => {
   let client: TClient | null = null;
 
-  ws.on('message', (raw) => {
+  ws.on('message', async (raw) => {
     let msg: Record<string, unknown>;
 
     try {
@@ -122,15 +127,18 @@ const handleConnection = (ws: WebSocket) => {
       client = { ws, serverId: msg.serverId, serverName: String(msg.serverName ?? ''), bindings: [] };
       clients.add(client);
 
+      await keysReady;
       send(ws, { type: 'ready', v: PROTOCOL_VERSION, capabilities: { keyUp: keys?.keyUp ?? false }, platform: process.platform });
       return;
     }
 
     if (msg.type === 'bindings' && client && Array.isArray(msg.bindings)) {
+      // a page binds a handful of keys; more than that is not a page we want keys from
       client.bindings = (msg.bindings as unknown[])
+        .slice(0, 32)
         .filter((b): b is TBinding => {
           const x = b as Record<string, unknown>;
-          return typeof x?.id === 'string' && typeof x?.combo === 'string';
+          return typeof x?.id === 'string' && typeof x?.combo === 'string' && x.id.length <= 128 && x.combo.length <= 64;
         })
         .map(({ id, combo }) => ({ id, combo }));
 
@@ -151,7 +159,10 @@ export const startBridge = async (): Promise<TBridgeStatus> => {
   getBridgeToken();
 
   if (httpServer) return getBridgeStatus();
-  keys ??= await createKeySource(fire);
+  keysReady ??= createKeySource(fire).then((source) => {
+    keys = source;
+    void rebuildShortcuts(); // bindings that arrived meanwhile
+  });
 
   const server = createServer((_req, res) => {
     res.writeHead(426).end('Jollyboat hotkey bridge');
@@ -187,6 +198,7 @@ export const startBridge = async (): Promise<TBridgeStatus> => {
 export const stopBridge = () => {
   keys?.stop();
   keys = null;
+  keysReady = null;
   for (const client of clients) client.ws.close();
   clients.clear();
   httpServer?.close();

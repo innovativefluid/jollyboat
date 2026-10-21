@@ -66,7 +66,7 @@ export type TOverlayState = { channel: string; members: TVoiceMember[]; theme: '
 
 export type TUpdateStatus = { state: 'idle' | 'checking' | 'available' | 'downloaded' | 'none' | 'error'; version?: string; message?: string; url?: string };
 
-export type TServerInfo = {
+type TServerInfo = {
   serverId: string;
   name: string;
   description: string;

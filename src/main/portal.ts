@@ -331,16 +331,18 @@ export class Bus {
 
     this.socket = createConnection(target.path);
     await new Promise<void>((resolve, reject) => {
-      this.socket.once('connect', resolve);
-      this.socket.once('error', reject);
+      const timer = setTimeout(() => reject(new Error('dbus: connect timed out')), 5000);
+      this.socket.once('connect', () => (clearTimeout(timer), resolve()));
+      this.socket.once('error', (e) => (clearTimeout(timer), reject(e)));
     });
 
     // EXTERNAL auth with our uid, then the binary protocol
     const uid = Buffer.from(String(process.getuid?.() ?? 0)).toString('hex');
     this.socket.write(`\0AUTH EXTERNAL ${uid}\r\n`);
     const reply = await new Promise<string>((resolve, reject) => {
-      this.socket.once('data', (d) => resolve(d.toString('ascii')));
-      this.socket.once('error', reject);
+      const timer = setTimeout(() => reject(new Error('dbus: auth timed out')), 5000);
+      this.socket.once('data', (d) => (clearTimeout(timer), resolve(d.toString('ascii'))));
+      this.socket.once('error', (e) => (clearTimeout(timer), reject(e)));
     });
     if (!reply.startsWith('OK')) throw new Error(`dbus auth: ${reply.trim()}`);
     this.socket.write('BEGIN\r\n');
@@ -365,8 +367,20 @@ export class Bus {
 
   private onData(d: Buffer) {
     this.buf = Buffer.concat([this.buf, d]);
+    // a message this parser cannot read (or a corrupt stream) ends the connection rather than
+    // the process: the socket's data handler is the last stop for a throw
+    if (this.buf.length > 1 << 20) {
+      log('portal', 'dbus: message too large, closing');
+      return this.close();
+    }
     for (;;) {
-      const next = decode(this.buf);
+      let next: ReturnType<typeof decode>;
+      try {
+        next = decode(this.buf);
+      } catch (err) {
+        log('portal', 'dbus:', (err as Error).message);
+        return this.close();
+      }
       if (!next) return;
       this.buf = this.buf.subarray(next.size);
       const m = next.message;
@@ -382,10 +396,18 @@ export class Bus {
     }
   }
 
-  call(m: { path: string; iface: string; member: string; destination: string; sig?: string; body?: TValue[] }) {
+  /** a method call; nothing waits forever on the bus (a portal that hangs would hang the app) */
+  call(m: { path: string; iface: string; member: string; destination: string; sig?: string; body?: TValue[] }, timeoutMs = 10_000) {
     const serial = ++this.serial;
     return new Promise<TMessage>((resolve, reject) => {
-      this.pending.set(serial, { resolve, reject });
+      const timer = setTimeout(() => {
+        this.pending.delete(serial);
+        reject(new Error(`dbus: no reply to ${m.member}`));
+      }, timeoutMs);
+      this.pending.set(serial, {
+        resolve: (r) => (clearTimeout(timer), resolve(r)),
+        reject: (e) => (clearTimeout(timer), reject(e))
+      });
       this.socket.write(encode(serial, m));
     });
   }

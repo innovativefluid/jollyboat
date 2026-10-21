@@ -13,7 +13,7 @@ A desktop client for [Sharkord](https://sharkord.com) servers, for Windows and L
 - **Tray** — in voice, talking, muted, deafened, new messages. Closing the window minimizes, hides to the tray or quits.
 - **Servers** — several, with proxy logins (basic auth), staying logged in, one that opens at start, and share codes.
 - **Careful in calls** — asks before a reload or quit would drop you out of a call.
-- **Private** — talks to your servers, plus GitHub for update checks (one switch to turn off). No telemetry.
+- **Private** — talks to your servers, plus GitHub for update checks (one switch to turn off). No telemetry. On Windows, push-to-talk needs a keyboard hook while a hotkey is set: keys are compared with your hotkeys and never stored or sent.
 
 ## Install
 

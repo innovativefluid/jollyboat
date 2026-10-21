@@ -16,8 +16,8 @@ import { log } from '../log';
 import { Bus, result, variant, type TMessage, type TValue } from '../portal';
 import { codeToHookName, comboToAccelerator, comboToPortalTrigger, isModifierCode, parseCombo, type TMods } from './combo';
 
-export type TPhase = 'down' | 'up';
-export type TKeyBinding = { combo: string; description: string };
+type TPhase = 'down' | 'up';
+type TKeyBinding = { combo: string; description: string };
 
 export type TKeySource = {
   name: string;
