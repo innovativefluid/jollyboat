@@ -77,23 +77,24 @@ jobs:
           lipo -archs "$bin"
           # macos has no gnu timeout: kill after two minutes by hand
           codesign --verify --deep --strict --verbose=2 "$app" 2>&1 | tail -3 | sed 's/^/::notice title=codesign::/' || true
-          # macos has no gnu timeout: kill after two minutes by hand. the outcome and the log tail
+          # macos has no gnu timeout: a guard kills it by hand. the outcome and the log tail
           # go into annotations, which stay readable when the full log is not
+          # usage: smoke <log> <seconds> <command...> (rosetta translates electron on first start, slowly)
           smoke() {
-            local log=$1; shift
-            local start=$SECONDS
+            local log=$1 limit=$2; shift 2
+            local start=$SECONDS rc=0
             ELECTRON_ENABLE_LOGGING=1 JOLLYBOAT_SMOKE=1 "$@" > "$log" 2>&1 & local pid=$!
-            ( sleep 120; kill -9 $pid 2>/dev/null ) & local guard=$!
-            wait $pid; local rc=$?
+            ( sleep "$limit"; kill -9 $pid 2>/dev/null ) & local guard=$!
+            wait $pid || rc=$?
             kill $guard 2>/dev/null || true
             echo "::notice title=smoke $log::exit $rc after $((SECONDS - start)) s"
             grep -E 'smoke|ERROR|FATAL|Killed|crash' "$log" | tail -12 | sed "s/^/::notice title=$log::/" || true
             return $rc
           }
-          smoke smoke-arm64.log "$bin"
+          smoke smoke-arm64.log 120 "$bin"
           grep -q '^\[smoke\] darwin arm64' smoke-arm64.log
           if arch -x86_64 /usr/bin/true 2>/dev/null; then
-            smoke smoke-x64.log arch -x86_64 "$bin"
+            smoke smoke-x64.log 300 arch -x86_64 "$bin"
             grep -q '^\[smoke\] darwin x64' smoke-x64.log
           else
             echo "::warning::rosetta is not installed on this runner, the x64 slice was not started"
