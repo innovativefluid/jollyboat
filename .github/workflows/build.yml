@@ -83,7 +83,9 @@ jobs:
   mac:
     needs: check
     if: ${{ inputs.targets != 'main' }}
-    runs-on: macos-latest
+    # an intel mac: github's apple silicon macs were often out of capacity ("job was not
+    # acquired"). the dmg is universal either way; the smoke test starts whatever this cpu runs
+    runs-on: macos-15-intel
     timeout-minutes: 45
     # experimental: a failing mac build must never hold back a windows / linux release
     continue-on-error: true
@@ -93,7 +95,7 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npm run dist:mac
-      - name: Smoke test (arm64 and x64)
+      - name: Smoke test
         shell: bash
         run: |
           app=$(ls -d dist/mac-universal/*.app | head -1)
@@ -114,13 +116,21 @@ jobs:
             grep -E 'smoke|ERROR|FATAL|Killed|crash' "$log" | tail -12 | sed "s/^/::notice title=$log::/" || true
             return $rc
           }
-          smoke smoke-arm64.log 120 "$bin"
-          grep -q '^\[smoke\] darwin arm64' smoke-arm64.log
-          if arch -x86_64 /usr/bin/true 2>/dev/null; then
-            smoke smoke-x64.log 300 arch -x86_64 "$bin"
-            grep -q '^\[smoke\] darwin x64' smoke-x64.log
+          if [ "$(uname -m)" = arm64 ]; then
+            # apple silicon: arm64 natively, x64 under rosetta
+            smoke smoke-arm64.log 120 "$bin"
+            grep -q '^\[smoke\] darwin arm64' smoke-arm64.log
+            if arch -x86_64 /usr/bin/true 2>/dev/null; then
+              smoke smoke-x64.log 300 arch -x86_64 "$bin"
+              grep -q '^\[smoke\] darwin x64' smoke-x64.log
+            else
+              echo "::warning::rosetta is not installed on this runner, the x64 slice was not started"
+            fi
           else
-            echo "::warning::rosetta is not installed on this runner, the x64 slice was not started"
+            # intel: only the x64 slice can run here
+            smoke smoke-x64.log 120 "$bin"
+            grep -q '^\[smoke\] darwin x64' smoke-x64.log
+            echo "::notice title=smoke::intel runner: the arm64 slice was built but not started"
           fi
       - uses: actions/upload-artifact@v7
         with:
