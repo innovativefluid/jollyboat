@@ -38,6 +38,9 @@ export type TSettings = {
   checkUpdates: boolean;
   /** flash the window, badge and tray on a new message while the window is in the background */
   notifyTray: boolean;
+  /** flatpak: what the background portal last granted for starting at login (the portal's
+   *  autostart file is outside the sandbox, so the app remembers it) */
+  autostart: boolean;
   /** last main window bounds, restored on start when they still fit a display */
   windowBounds: { x: number; y: number; width: number; height: number } | null;
   /** name of the last shared screen/window, preselected in the picker */

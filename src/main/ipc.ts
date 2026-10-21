@@ -18,7 +18,7 @@ import {
 import { addUnread, setTitleUnread, setVoiceState } from './tray';
 import { diagnostics } from './diagnostics';
 import { log } from './log';
-import { getUpdateStatus, installUpdateNow, onUpdateStatus, openReleasePage, startUpdater } from './updater';
+import { getUpdateStatus, installUpdateNow, onUpdateStatus, openReleasePage, startUpdater, updatesFromStore } from './updater';
 import {
   decryptPassword,
   findServerByUrl,
@@ -144,6 +144,7 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart 
       isSavedServer: !!server,
       platform: process.platform,
       version: __APP_VERSION__,
+      storeUpdates: updatesFromStore(),
       bridge: server && bridge.ownedByUs ? { ownedByUs: true, token: getBridgeToken() } : null,
       // sharkord's own login, kept across launches (the page would hold it in localStorage anyway)
       login: server && server.keepLogin !== false ? { token: loginTokenFor(server) } : null,

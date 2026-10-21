@@ -42,7 +42,8 @@ Reports welcome.
 npm install
 npm run dev
 npm run dist:win     # on Windows
-npm run dist:linux   # needs flatpak-builder
+npm run dist:linux   # unpacked app; the flatpak is built from source:
+                     # flatpak-builder --user --install build-dir flatpak/net.innovativefluid.Jollyboat.yml
 npm run dist:mac     # on a mac (experimental)
 ```
 

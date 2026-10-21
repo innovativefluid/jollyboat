@@ -3,3 +3,8 @@ out/
 dist/
 *.log
 .DS_Store
+flatpak/build-dir/
+flatpak/repo/
+flatpak/github.yml
+.flatpak-builder/
+*.flatpak

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>net.innovativefluid.Jollyboat</id>
+  <name>Jollyboat</name>
+  <summary>Desktop client for Sharkord servers</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <developer id="net.innovativefluid">
+    <name>innovativefluid</name>
+  </developer>
+
+  <description>
+    <p>
+      Jollyboat is a desktop app for Sharkord, the self-hosted chat with voice, video and screen
+      sharing. Add the address of your server and use it like any other app, with a tray icon,
+      global hotkeys and screen shares that include sound.
+    </p>
+    <ul>
+      <li>Screen sharing with sound: everything you hear except your own call</li>
+      <li>Global hotkeys for mute and deafen, also on Wayland</li>
+      <li>A tray icon that shows when you are in a call, talking, muted or deafened, and new messages</li>
+      <li>Several servers, proxy logins (basic auth), staying logged in and share codes</li>
+      <li>Asks before a reload or quit would drop you out of a call</li>
+      <li>Talks only to your servers, no telemetry</li>
+    </ul>
+    <p>
+      You need a Sharkord server to connect to. Jollyboat is not affiliated with the Sharkord
+      project.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">net.innovativefluid.Jollyboat.desktop</launchable>
+  <provides>
+    <binary>jollyboat</binary>
+  </provides>
+
+  <url type="homepage">https://github.com/innovativefluid/jollyboat</url>
+  <url type="bugtracker">https://github.com/innovativefluid/jollyboat/issues</url>
+  <url type="vcs-browser">https://github.com/innovativefluid/jollyboat</url>
+  <url type="contact">https://innovativefluid.net</url>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>Servers and settings</caption>
+      <image>https://raw.githubusercontent.com/innovativefluid/jollyboat/v0.3.0/flatpak/screenshots/1-setup.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>On a server, in a voice channel</caption>
+      <image>https://raw.githubusercontent.com/innovativefluid/jollyboat/v0.3.0/flatpak/screenshots/2-server.png</image>
+    </screenshot>
+  </screenshots>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#a6b08a</color>
+    <color type="primary" scheme_preference="dark">#2a3424</color>
+  </branding>
+
+  <content_rating type="oars-1.1">
+    <content_attribute id="social-chat">intense</content_attribute>
+    <content_attribute id="social-audio">intense</content_attribute>
+  </content_rating>
+
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+  <requires>
+    <display_length compare="ge">768</display_length>
+  </requires>
+
+  <categories>
+    <category>Network</category>
+    <category>Chat</category>
+    <category>InstantMessaging</category>
+  </categories>
+  <keywords>
+    <keyword>Sharkord</keyword>
+    <keyword>voice</keyword>
+    <keyword>screen share</keyword>
+  </keywords>
+
+  <releases>
+    <release version="0.3.0" date="2026-10-21">
+      <description>
+        <p>First release on Flathub.</p>
+        <ul>
+          <li>Built from source, with the app ID net.innovativefluid.Jollyboat</li>
+          <li>Starting with the system goes through the desktop's background permission</li>
+          <li>Webcams work inside the sandbox through the camera portal</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.2.9" date="2026-10-21">
+      <description>
+        <p>Experimental macOS build, Windows on ARM, security and privacy pass.</p>
+      </description>
+    </release>
+  </releases>
+</component>

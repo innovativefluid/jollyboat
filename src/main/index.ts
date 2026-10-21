@@ -16,7 +16,7 @@ import { askPrompt } from './prompt';
 
 // windows: toast notifications and taskbar grouping need the same AppUserModelId the installer
 // writes into the start-menu shortcut (electron-builder uses appId)
-if (process.platform === 'win32') app.setAppUserModelId('io.github.innovativefluid.Jollyboat');
+if (process.platform === 'win32') app.setAppUserModelId('net.innovativefluid.Jollyboat');
 
 // GlobalShortcutsPortal: lets globalShortcut work on Wayland through xdg-desktop-portal
 // (KDE Plasma, newer GNOME). WebRTCPipeWireCapturer: screen capture through the portal.
@@ -24,10 +24,18 @@ if (process.platform === 'win32') app.setAppUserModelId('io.github.innovativeflu
 // is not available (see screen-audio.ts). AcceleratedVideoEncoder: on linux, screen shares (and
 // webcams) are encoded on the gpu through VA-API when the driver can do the codec sharkord picked;
 // otherwise chromium falls back to software. hardware decoding is already chromium's default.
+// WebRtcPipeWireCamera (flatpak): webcams through the camera portal instead of /dev/video*,
+// which the sandbox does not open.
 // (chromium honours only the last --enable-features, so everything goes in this one)
 app.commandLine.appendSwitch(
   'enable-features',
-  ['GlobalShortcutsPortal', 'WebRTCPipeWireCapturer', 'PulseaudioLoopbackForScreenShare', ...(process.platform === 'linux' ? ['AcceleratedVideoEncoder'] : [])].join(',')
+  [
+    'GlobalShortcutsPortal',
+    'WebRTCPipeWireCapturer',
+    'PulseaudioLoopbackForScreenShare',
+    ...(process.platform === 'linux' ? ['AcceleratedVideoEncoder'] : []),
+    ...(process.env.FLATPAK_ID ? ['WebRtcPipeWireCamera'] : [])
+  ].join(',')
 );
 // privacy: nothing talks to google or anyone else in the background. electron already ships
 // without safe browsing, sync, variations or crash upload; these close what is left

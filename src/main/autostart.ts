@@ -1,19 +1,20 @@
-// Start with the system. Windows: the login item API. Linux: an XDG autostart desktop entry
-// (KDE, GNOME and friends read ~/.config/autostart). Inside Flatpak that directory is reachable
-// through the --filesystem=xdg-config/autostart:create permission in the manifest.
+// Start with the system. Windows and mac: the login item API. Flatpak: the Background portal
+// writes the autostart entry for us (the sandbox cannot reach ~/.config/autostart). Linux
+// outside Flatpak (dev runs): an XDG autostart desktop entry.
 // The app is started with --hidden so it only shows up in the tray.
 
 import { app } from 'electron';
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { log } from './log';
+import { requestAutostart } from './portal';
+import { getSettings, saveSettings } from './settings';
 
 const DESKTOP_FILE = 'jollyboat.desktop';
 
 const autostartDir = () => join(process.env.XDG_CONFIG_HOME || join(app.getPath('home'), '.config'), 'autostart');
 
 const linuxExec = () => {
-  if (process.env.FLATPAK_ID) return `flatpak run ${process.env.FLATPAK_ID} --hidden`;
-
   // packaged: the binary; dev: electron + the main script
   const parts = app.isPackaged ? [process.execPath] : [process.execPath, process.argv[1] ?? ''];
 
@@ -22,12 +23,12 @@ const linuxExec = () => {
 
 export const getAutoStart = (): boolean => {
   if (process.platform === 'win32' || process.platform === 'darwin') return app.getLoginItemSettings().openAtLogin;
-  if (process.platform === 'linux') return existsSync(join(autostartDir(), DESKTOP_FILE));
+  if (process.platform === 'linux') return process.env.FLATPAK_ID ? getSettings().autostart : existsSync(join(autostartDir(), DESKTOP_FILE));
 
   return false;
 };
 
-export const setAutoStart = (enabled: boolean) => {
+export const setAutoStart = async (enabled: boolean) => {
   if (process.platform === 'win32') {
     app.setLoginItemSettings({ openAtLogin: enabled, args: ['--hidden'] });
     return getAutoStart();
@@ -35,6 +36,17 @@ export const setAutoStart = (enabled: boolean) => {
 
   if (process.platform === 'darwin') {
     app.setLoginItemSettings({ openAtLogin: enabled });
+    return getAutoStart();
+  }
+
+  if (process.platform === 'linux' && process.env.FLATPAK_ID) {
+    try {
+      // the command runs inside the sandbox: our launcher script in /app/bin
+      const granted = await requestAutostart(enabled, ['jollyboat', '--hidden']);
+      saveSettings({ autostart: enabled && granted });
+    } catch (err) {
+      log('autostart', 'portal:', (err as Error).message);
+    }
     return getAutoStart();
   }
 
@@ -55,7 +67,7 @@ export const setAutoStart = (enabled: boolean) => {
         'Name=Jollyboat',
         'Comment=Starts Jollyboat in the tray',
         `Exec=${linuxExec()}`,
-        'Icon=io.github.innovativefluid.Jollyboat',
+        'Icon=net.innovativefluid.Jollyboat',
         'Terminal=false',
         'X-GNOME-Autostart-enabled=true',
         'X-KDE-autostart-after=panel',

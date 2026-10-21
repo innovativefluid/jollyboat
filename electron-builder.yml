@@ -1,4 +1,4 @@
-appId: io.github.innovativefluid.Jollyboat
+appId: net.innovativefluid.Jollyboat
 productName: Jollyboat
 directories:
   buildResources: build
@@ -41,6 +41,9 @@ win:
     - nsis
   icon: build/icon.ico
 nsis:
+  # the guid electron-builder derived from the old app id (io.github.innovativefluid.Jollyboat):
+  # pinned, so updates keep replacing the same installation
+  guid: c1b9fc12-fe34-5909-a980-78bb05ab776f
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
@@ -67,34 +70,10 @@ mac:
 dmg:
   title: Jollyboat ${version} (experimental)
 
+# linux ships as a flatpak built from source by flatpak-builder (flatpak/), which runs
+# `electron-builder --linux dir` inside the sandbox; the same build goes to flathub and to the
+# github releases
 linux:
   target:
-    - flatpak
-  # a directory of NxN.png files: nearest-scaled pixel art, never smoothed by the packager
-  icon: build/icons
-  category: Network
-  synopsis: Desktop client for Sharkord servers
-  desktop:
-    entry:
-      StartupWMClass: jollyboat
-flatpak:
-  runtime: org.freedesktop.Platform
-  runtimeVersion: '24.08'
-  sdk: org.freedesktop.Sdk
-  base: org.electronjs.Electron2.BaseApp
-  baseVersion: '24.08'
-  finishArgs:
-    - --share=ipc
-    - --share=network
-    - --socket=wayland
-    - --socket=fallback-x11
-    - --socket=pulseaudio
-    - --filesystem=xdg-run/pipewire-0
-    - --filesystem=xdg-config/autostart:create
-    - --device=dri
-    - --talk-name=org.freedesktop.Notifications
-    - --talk-name=org.kde.StatusNotifierWatcher
-    - --talk-name=org.freedesktop.portal.Desktop
-    # the keyring (safeStorage) behind libsecret; without it passwords fall back to plain storage
-    - --talk-name=org.freedesktop.secrets
-    - --env=ELECTRON_OZONE_PLATFORM_HINT=auto
+    - dir
+  executableName: jollyboat

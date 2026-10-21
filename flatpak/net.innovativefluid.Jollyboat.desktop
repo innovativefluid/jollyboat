@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Jollyboat
+Comment=Sharkord client
+Exec=jollyboat
+Icon=net.innovativefluid.Jollyboat
+Terminal=false
+Categories=Network;Chat;InstantMessaging;
+Keywords=Sharkord;chat;voice;video;screen share;
+StartupWMClass=net.innovativefluid.Jollyboat
+SingleMainWindow=true

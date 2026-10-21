@@ -110,6 +110,8 @@ jobs:
           name: mac-experimental
           path: dist/*.dmg
 
+  # built from source with flatpak-builder, from the same manifest Flathub uses; the GitHub copy
+  # only differs in looking for new releases on GitHub (Flathub delivers its own updates)
   linux-flatpak:
     needs: check
     if: ${{ inputs.targets != 'mac' }}
@@ -117,29 +119,42 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { arch: x64, runner: ubuntu-latest }
-          - { arch: arm64, runner: ubuntu-24.04-arm }
+          - { arch: x86_64, runner: ubuntu-latest }
+          - { arch: aarch64, runner: ubuntu-24.04-arm }
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
-        with: { node-version: 22, cache: npm }
-      - name: Install flatpak tooling
+      - name: Install flatpak and the runtimes
         run: |
           sudo apt-get update
-          sudo apt-get install -y flatpak flatpak-builder elfutils xvfb
-          sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-          sudo flatpak install -y flathub org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08 org.electronjs.Electron2.BaseApp//24.08
-      - run: npm ci
-      - run: npm run dist:linux -- --${{ matrix.arch }}
-      # the unpacked app the flatpak was made from: starts, renders, exits (see runSmokeTest)
-      - name: Smoke test (${{ matrix.arch }})
-        shell: bash # -o pipefail: the app's exit code counts, not tee's
+          sudo apt-get install -y flatpak xvfb dbus-daemon
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y --noninteractive flathub org.flatpak.Builder \
+            org.freedesktop.Platform//25.08 org.freedesktop.Sdk//25.08 \
+            org.freedesktop.Sdk.Extension.node22//25.08 org.electronjs.Electron2.BaseApp//25.08
+      - name: Lint the manifest
+        run: flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest flatpak/net.innovativefluid.Jollyboat.yml || true
+      - name: Build
         run: |
-          app=$(ls -d dist/linux*-unpacked | head -1)
-          JOLLYBOAT_SMOKE=1 timeout 120 xvfb-run -a "$app/jollyboat" --no-sandbox 2>&1 | tee smoke.log
+          version=$(node -p "require('./package.json').version")
+          echo "version=$version" >> "$GITHUB_ENV"
+          sed 's/JOLLYBOAT_CHANNEL=flathub/JOLLYBOAT_CHANNEL=github/' flatpak/net.innovativefluid.Jollyboat.yml > flatpak/github.yml
+          flatpak run org.flatpak.Builder --user --disable-rofiles-fuse --force-clean --repo=flatpak/repo \
+            --default-branch=stable flatpak/build-dir flatpak/github.yml
+          flatpak build-bundle --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo \
+            flatpak/repo "Jollyboat-$version-${{ matrix.arch }}.flatpak" net.innovativefluid.Jollyboat stable
+      - name: Lint the build
+        run: flatpak run --command=flatpak-builder-lint org.flatpak.Builder repo flatpak/repo || true
+      # the installed bundle: starts in the sandbox, renders the setup window and the bar, exits
+      - name: Smoke test
+        shell: bash
+        run: |
+          flatpak install --user -y --noninteractive "Jollyboat-$version-${{ matrix.arch }}.flatpak"
+          JOLLYBOAT_SMOKE=1 timeout 180 dbus-run-session -- xvfb-run -a \
+            flatpak run --env=JOLLYBOAT_SMOKE=1 net.innovativefluid.Jollyboat 2>&1 | tee smoke.log
           grep -q '^\[smoke\] linux' smoke.log
       - uses: actions/upload-artifact@v7
         with:
           name: linux-${{ matrix.arch }}
-          path: dist/*.flatpak
+          path: Jollyboat-*.flatpak

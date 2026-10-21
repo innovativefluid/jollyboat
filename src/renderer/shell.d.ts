@@ -14,6 +14,7 @@ declare global {
     shell: {
       platform: string;
       version: string;
+      storeUpdates: boolean;
       getSettings: () => Promise<TSettings & { secureStorage: boolean; spellcheckAtStart: boolean }>;
       saveSettings: (patch: Partial<TSettings>) => Promise<TSettings>;
       listServers: () => Promise<TServerEntry[]>;

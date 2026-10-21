@@ -1,0 +1,119 @@
+# Jollyboat, built from source. The same manifest is what Flathub builds (with the app source as a
+# git tag instead of this directory) and what CI turns into the .flatpak files on GitHub.
+# Regenerate generated-sources.json after any change to package-lock.json: tools/flatpak-sources.sh
+app-id: net.innovativefluid.Jollyboat
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk
+base: org.electronjs.Electron2.BaseApp
+base-version: '25.08'
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.node22
+command: jollyboat
+separate-locales: false
+
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --socket=pulseaudio
+  - --device=dri
+  # screen shares with sound: venmic links the other apps' audio streams into the share
+  - --filesystem=xdg-run/pipewire-0
+  # notifications for new messages, and the tray icon (StatusNotifierItem)
+  - --talk-name=org.freedesktop.Notifications
+  - --talk-name=org.kde.StatusNotifierWatcher
+  # the keyring keeps the encrypted server passwords and login tokens (Electron safeStorage)
+  - --talk-name=org.freedesktop.secrets
+  - --env=ELECTRON_OZONE_PLATFORM_HINT=auto
+  # updates come from Flathub: the app does not look for releases on GitHub
+  - --env=JOLLYBOAT_CHANNEL=flathub
+
+modules:
+  - name: jollyboat
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/node22/bin
+      env:
+        XDG_CACHE_HOME: /run/build/jollyboat/flatpak-node/cache
+        npm_config_cache: /run/build/jollyboat/flatpak-node/npm-cache
+        npm_config_nodedir: /usr/lib/sdk/node22
+        npm_config_offline: 'true'
+    build-commands:
+      - npm ci --offline
+      - sh flatpak/build-venmic.sh
+      - node_modules/.bin/electron-vite build
+      - node_modules/.bin/electron-builder --linux dir --publish never -c.electronDist=node_modules/electron/dist
+      - cp -a dist/linux*-unpacked /app/jollyboat
+      - rm -f /app/jollyboat/resources/default_app.asar
+      - install -Dm755 flatpak/jollyboat.sh /app/bin/jollyboat
+      - install -Dm644 flatpak/net.innovativefluid.Jollyboat.desktop -t /app/share/applications
+      - install -Dm644 flatpak/net.innovativefluid.Jollyboat.metainfo.xml -t /app/share/metainfo
+      - for s in 16 24 32 48 64 96 128 256 512; do install -Dm644 build/icons/${s}x${s}.png /app/share/icons/hicolor/${s}x${s}/apps/net.innovativefluid.Jollyboat.png; done
+    sources:
+      # app-source
+      - type: dir
+        path: ..
+        skip:
+          - node_modules
+          - out
+          - dist
+          - .flatpak-builder
+          - flatpak/build-dir
+          - flatpak/repo
+      # every npm package, and electron itself, for the offline install
+      - generated-sources.json
+
+      # venmic's C++ dependencies, at the versions its CMake files ask for
+      - type: git
+        url: https://github.com/Curve/rohrkabel.git
+        tag: v13.1.1
+        commit: ac952ebecc27c7dc36c7d95d9bc8b4660d5efbe5
+        dest: venmic-deps/rohrkabel
+      - type: git
+        url: https://github.com/Curve/channel.git
+        tag: v4.0.0
+        commit: 2207ebd4fe382909fa03c5c7fde44a6e2be29d8e
+        dest: venmic-deps/channel
+      - type: git
+        url: https://github.com/stephenberry/glaze.git
+        tag: v7.9.1
+        commit: cadcadea26554cc4214769e358f981426e40a02a
+        dest: venmic-deps/glaze
+      - type: git
+        url: https://github.com/gabime/spdlog.git
+        tag: v1.17.0
+        commit: 79524ddd08a4ec981b7fea76afd08ee05f83755d
+        dest: venmic-deps/spdlog
+      - type: git
+        url: https://github.com/Curve/coco.git
+        tag: v4.7.2
+        commit: 55ac3f559c0f7c56cd6ec0b0fab8b63058aa94de
+        dest: venmic-deps/coco
+      - type: git
+        url: https://github.com/Curve/ereignis.git
+        tag: v6.3.0
+        commit: 941aefbe86801f3796ec6e776d3e81f83a2c573f
+        dest: venmic-deps/ereignis
+      - type: git
+        url: https://github.com/TheLartians/PackageProject.cmake.git
+        tag: v1.13.0
+        commit: 738d2ed9dba67e01ac2ea2a6d0f8d35c198fed32
+        dest: venmic-deps/PackageProject
+      # CPM itself, in the versions the projects above bootstrap (the hash matches, so no download)
+      - type: file
+        url: https://github.com/cpm-cmake/CPM.cmake/releases/download/v0.43.1/CPM.cmake
+        sha256: 1c40fc102ce9625d7de7eb14f541cab30cc3138dca627f0b0ec40293ce6c2934
+        dest: venmic-deps/cpm
+        dest-filename: CPM_0.43.1.cmake
+      - type: file
+        url: https://github.com/cpm-cmake/CPM.cmake/releases/download/v0.40.8/CPM.cmake
+        sha256: 78ba32abdf798bc616bab7c73aac32a17bbd7b06ad9e26a6add69de8f3ae4791
+        dest: venmic-deps/cpm
+        dest-filename: CPM_0.40.8.cmake
+      - type: file
+        url: https://github.com/cpm-cmake/CPM.cmake/releases/download/v0.40.2/CPM.cmake
+        sha256: c8cdc32c03816538ce22781ed72964dc864b2a34a310d3b7104812a5ca2d835d
+        dest: venmic-deps/cpm
+        dest-filename: CPM_0.40.2.cmake

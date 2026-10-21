@@ -1,7 +1,8 @@
 {
   "name": "jollyboat",
   "productName": "Jollyboat",
-  "version": "0.2.9",
+  "desktopName": "net.innovativefluid.Jollyboat.desktop",
+  "version": "0.3.0",
   "description": "Sharkord client",
   "homepage": "https://github.com/innovativefluid/jollyboat",
   "repository": {
@@ -29,7 +30,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "pack": "electron-vite build && electron-builder --dir",
     "dist:win": "electron-vite build && electron-builder --win nsis --x64 --arm64 --publish never",
-    "dist:linux": "electron-vite build && electron-builder --linux flatpak --publish never",
+    "dist:linux": "electron-vite build && electron-builder --linux dir --publish never",
     "dist:mac": "electron-vite build && electron-builder --mac dmg --universal --publish never"
   },
   "dependencies": {

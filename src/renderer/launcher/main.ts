@@ -313,7 +313,8 @@ const renderSettings = async () => {
   };
 
   const updates = $<HTMLInputElement>('check-updates');
-  $('updates-row').hidden = !['win32', 'linux', 'darwin'].includes(platform);
+  $('updates-row').hidden = window.shell.storeUpdates || !['win32', 'linux', 'darwin'].includes(platform);
+  if (window.shell.storeUpdates) $('privacy-line').textContent = 'talks to your servers only | updates come from flathub';
   updates.checked = settings.checkUpdates;
   updates.onchange = () => { window.shell.saveSettings({ checkUpdates: updates.checked }); toast('saved'); };
 

@@ -1,7 +1,8 @@
 // Updates. Windows: electron-updater against GitHub Releases, downloads in the background and
-// installs on quit. Linux and the experimental mac build: only a notice that a newer release
-// exists (a .flatpak file has no update channel; an unsigned mac app cannot update itself). All
-// run only in packaged builds, every six hours, behind the "check for updates" toggle.
+// installs on quit. The .flatpak from GitHub and the experimental mac build: only a notice that a
+// newer release exists (a bundle file has no update channel; an unsigned mac app cannot update
+// itself). The Flathub build checks nothing: Flathub delivers its updates. All run only in
+// packaged builds, every six hours, behind the "check for updates" toggle.
 
 import { app, net, shell } from 'electron';
 import type { TUpdateStatus } from '../shared/types';
@@ -68,8 +69,11 @@ const startWindows = async () => {
   return () => autoUpdater.checkForUpdates().catch(() => undefined);
 };
 
+/** the flathub build: updates come through flatpak, the app never looks at github */
+export const updatesFromStore = () => process.env.JOLLYBOAT_CHANNEL === 'flathub';
+
 export const startUpdater = async () => {
-  if (started || !app.isPackaged || !getSettings().checkUpdates) return;
+  if (started || !app.isPackaged || !getSettings().checkUpdates || updatesFromStore()) return;
   if (!['win32', 'linux', 'darwin'].includes(process.platform)) return;
 
   started = true;

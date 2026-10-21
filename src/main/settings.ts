@@ -11,6 +11,7 @@ const DEFAULTS: TSettings = {
   spellcheck: false,
   checkUpdates: true,
   notifyTray: true,
+  autostart: false,
   windowBounds: null,
   lastSourceName: null
 };
@@ -57,7 +58,7 @@ const sanitize = (raw: unknown): TSettings => {
     out.autoConnectServerId = r.autoConnectServerId;
   }
   if (r.onClose === 'minimize' || r.onClose === 'tray' || r.onClose === 'quit') out.onClose = r.onClose;
-  for (const key of ['spellcheck', 'checkUpdates', 'notifyTray'] as const) {
+  for (const key of ['spellcheck', 'checkUpdates', 'notifyTray', 'autostart'] as const) {
     if (typeof r[key] === 'boolean') out[key] = r[key] as boolean;
   }
   const b = r.windowBounds as Record<string, unknown> | undefined;
