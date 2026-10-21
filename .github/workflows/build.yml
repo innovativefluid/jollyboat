@@ -133,26 +133,47 @@ jobs:
           flatpak install --user -y --noninteractive flathub org.flatpak.Builder \
             org.freedesktop.Platform//25.08 org.freedesktop.Sdk//25.08 \
             org.freedesktop.Sdk.Extension.node22//25.08 org.electronjs.Electron2.BaseApp//25.08
+      # step output also goes into an annotation (newlines as %0A): annotations stay readable
+      # through the API when the log archive is not
       - name: Lint the manifest
-        run: flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest flatpak/net.innovativefluid.Jollyboat.yml || true
+        shell: bash
+        run: |
+          out=$(flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest flatpak/net.innovativefluid.Jollyboat.yml 2>&1) || true
+          echo "$out"
+          echo "::notice title=lint manifest::$(echo "$out" | head -c 6000 | sed ':a;N;$!ba;s/\n/%0A/g')"
       - name: Build
+        shell: bash
         run: |
           version=$(node -p "require('./package.json').version")
           echo "version=$version" >> "$GITHUB_ENV"
           sed 's/JOLLYBOAT_CHANNEL=flathub/JOLLYBOAT_CHANNEL=github/' flatpak/net.innovativefluid.Jollyboat.yml > flatpak/github.yml
+          rc=0
           flatpak run org.flatpak.Builder --user --disable-rofiles-fuse --force-clean --repo=flatpak/repo \
-            --default-branch=stable flatpak/build-dir flatpak/github.yml
+            --default-branch=stable flatpak/build-dir flatpak/github.yml > build.log 2>&1 || rc=$?
+          tail -n 400 build.log
+          if [ $rc -ne 0 ]; then
+            echo "::error title=flatpak-builder (exit $rc)::$(grep -v '^\s*$' build.log | tail -n 70 | cut -c1-300 | sed ':a;N;$!ba;s/\n/%0A/g')"
+            exit $rc
+          fi
           flatpak build-bundle --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo \
             flatpak/repo "Jollyboat-$version-${{ matrix.arch }}.flatpak" net.innovativefluid.Jollyboat stable
+          ls -la Jollyboat-*.flatpak
       - name: Lint the build
-        run: flatpak run --command=flatpak-builder-lint org.flatpak.Builder repo flatpak/repo || true
+        shell: bash
+        run: |
+          out=$(flatpak run --command=flatpak-builder-lint org.flatpak.Builder repo flatpak/repo 2>&1) || true
+          echo "$out"
+          echo "::notice title=lint build::$(echo "$out" | head -c 6000 | sed ':a;N;$!ba;s/\n/%0A/g')"
       # the installed bundle: starts in the sandbox, renders the setup window and the bar, exits
       - name: Smoke test
         shell: bash
         run: |
           flatpak install --user -y --noninteractive "Jollyboat-$version-${{ matrix.arch }}.flatpak"
-          JOLLYBOAT_SMOKE=1 timeout 180 dbus-run-session -- xvfb-run -a \
-            flatpak run --env=JOLLYBOAT_SMOKE=1 net.innovativefluid.Jollyboat 2>&1 | tee smoke.log
+          rc=0
+          timeout 180 dbus-run-session -- xvfb-run -a \
+            flatpak run --env=JOLLYBOAT_SMOKE=1 net.innovativefluid.Jollyboat > smoke.log 2>&1 || rc=$?
+          cat smoke.log
+          echo "::notice title=smoke (exit $rc)::$(grep -v '^\s*$' smoke.log | tail -n 40 | cut -c1-300 | sed ':a;N;$!ba;s/\n/%0A/g')"
           grep -q '^\[smoke\] linux' smoke.log
       - uses: actions/upload-artifact@v7
         with:
