@@ -44,7 +44,9 @@ modules:
       - npm ci --offline
       - sh flatpak/build-venmic.sh
       - node_modules/.bin/electron-vite build
-      - node_modules/.bin/electron-builder --linux dir --publish never -c.electronDist=node_modules/electron/dist
+      # electron from the zip in the offline sources (only the build architecture's is there)
+      - mkdir electron-dist && (unzip -q flatpak-node/cache/electron/electron-v*-linux-*.zip -d electron-dist || bsdtar -xf flatpak-node/cache/electron/electron-v*-linux-*.zip -C electron-dist)
+      - node_modules/.bin/electron-builder --linux dir --publish never -c.electronDist=electron-dist
       - cp -a dist/linux*-unpacked /app/jollyboat
       - rm -f /app/jollyboat/resources/default_app.asar
       - install -Dm755 flatpak/jollyboat.sh /app/bin/jollyboat
