@@ -39,7 +39,7 @@ jobs:
       - name: Smoke test (portable x64)
         shell: pwsh
         run: |
-          $exe = Get-ChildItem dist -Filter '*-portable-x64.exe' | Select-Object -First 1
+          $exe = Get-ChildItem dist -Filter '*-windows-x64-portable.exe' | Select-Object -First 1
           $env:JOLLYBOAT_SMOKE = '1'
           $p = Start-Process -FilePath $exe.FullName -PassThru
           $null = $p.Handle
@@ -136,8 +136,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { arch: x86_64, runner: ubuntu-latest }
-          - { arch: aarch64, runner: ubuntu-24.04-arm }
+          - { arch: x86_64, file: x64, runner: ubuntu-latest }
+          - { arch: aarch64, file: arm64, runner: ubuntu-24.04-arm }
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     steps:
@@ -174,7 +174,7 @@ jobs:
             exit $rc
           fi
           flatpak build-bundle --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo \
-            flatpak/repo "Jollyboat-$version-${{ matrix.arch }}.flatpak" net.innovativefluid.Jollyboat stable
+            flatpak/repo "Jollyboat-$version-linux-${{ matrix.file }}.flatpak" net.innovativefluid.Jollyboat stable
           ls -la Jollyboat-*.flatpak
       - name: Lint the build
         shell: bash
@@ -186,7 +186,7 @@ jobs:
       - name: Smoke test
         shell: bash
         run: |
-          flatpak install --user -y --noninteractive "Jollyboat-$version-${{ matrix.arch }}.flatpak"
+          flatpak install --user -y --noninteractive "Jollyboat-$version-linux-${{ matrix.file }}.flatpak"
           rc=0
           timeout 180 dbus-run-session -- xvfb-run -a \
             flatpak run --env=JOLLYBOAT_SMOKE=1 net.innovativefluid.Jollyboat > smoke.log 2>&1 || rc=$?

@@ -52,12 +52,13 @@ nsis:
   perMachine: false
   allowToChangeInstallationDirectory: true
   runAfterFinish: true
-  artifactName: ${productName}-Setup-${version}.${ext}
+  # file names: Jollyboat-<version>-<platform>-<arch>[-<kind>]; universal = x64 and arm64 in one
+  artifactName: ${productName}-${version}-windows-universal-setup.${ext}
 
 # the portable exe: no installer, settings in a Jollyboat-data folder next to it, one per
 # architecture (built in two runs, see dist:win), no self-update (the app shows a notice)
 portable:
-  artifactName: ${productName}-${version}-portable-${arch}.${ext}
+  artifactName: ${productName}-${version}-windows-${arch}-portable.${ext}
 
 # EXPERIMENTAL: built by CI, never run on a real mac by the developers. one universal dmg (intel
 # and apple silicon, macos 13+), ad-hoc signed only: no apple developer id, so no notarization

@@ -81,6 +81,11 @@
   </keywords>
 
   <releases>
+    <release version="0.3.1" date="2026-10-21">
+      <description>
+        <p>Release files follow one naming scheme.</p>
+      </description>
+    </release>
     <release version="0.3.0" date="2026-10-21">
       <description>
         <ul>

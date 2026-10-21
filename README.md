@@ -21,8 +21,8 @@ From [releases](../../releases):
 
 | | |
 |---|---|
-| Windows (x64 or ARM) | `Jollyboat-Setup-x.y.z.exe`, or portable: `Jollyboat-x.y.z-portable-x64.exe` (`-arm64`), settings in a `Jollyboat-data` folder next to it |
-| Linux | `flatpak install ./Jollyboat-x.y.z-x86_64.flatpak` (or `-aarch64`) |
+| Windows (x64 or ARM) | `Jollyboat-x.y.z-windows-universal-setup.exe`, or portable: `Jollyboat-x.y.z-windows-x64-portable.exe` (`arm64`), settings in a `Jollyboat-data` folder next to it |
+| Linux (x64 or ARM) | `flatpak install ./Jollyboat-x.y.z-linux-x64.flatpak` (or `linux-arm64`) |
 | macOS 13+ (**experimental**) | `Jollyboat-x.y.z-mac-universal-EXPERIMENTAL.dmg` |
 
 Add your server's address; if a proxy asks for a login first, tick **proxy login / basic auth**. On a server, **servers and settings** in the top bar (or ctrl+shift+s) opens this window again.
