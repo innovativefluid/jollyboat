@@ -12,6 +12,9 @@ const DEFAULTS: TSettings = {
   checkUpdates: true,
   notifyTray: true,
   autostart: false,
+  overlay: false,
+  overlayOpacity: 75,
+  overlayPosition: null,
   windowBounds: null,
   lastSourceName: null
 };
@@ -58,13 +61,16 @@ const sanitize = (raw: unknown): TSettings => {
     out.autoConnectServerId = r.autoConnectServerId;
   }
   if (r.onClose === 'minimize' || r.onClose === 'tray' || r.onClose === 'quit') out.onClose = r.onClose;
-  for (const key of ['spellcheck', 'checkUpdates', 'notifyTray', 'autostart'] as const) {
+  for (const key of ['spellcheck', 'checkUpdates', 'notifyTray', 'autostart', 'overlay'] as const) {
     if (typeof r[key] === 'boolean') out[key] = r[key] as boolean;
   }
   const b = r.windowBounds as Record<string, unknown> | undefined;
   if (b && ['x', 'y', 'width', 'height'].every((k) => Number.isFinite(b[k]))) {
     out.windowBounds = { x: b.x as number, y: b.y as number, width: Math.max(300, b.width as number), height: Math.max(200, b.height as number) };
   }
+  if (Number.isFinite(r.overlayOpacity)) out.overlayOpacity = Math.min(100, Math.max(0, Math.round(r.overlayOpacity as number)));
+  const op = r.overlayPosition as Record<string, unknown> | undefined;
+  if (op && Number.isFinite(op.x) && Number.isFinite(op.y)) out.overlayPosition = { x: op.x as number, y: op.y as number };
   if (typeof r.lastSourceName === 'string') out.lastSourceName = r.lastSourceName.slice(0, 200);
 
   return out;

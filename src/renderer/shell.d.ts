@@ -6,7 +6,8 @@ import type {
   TServerEntry,
   TServerInput,
   TSettings,
-  TTestResult
+  TTestResult,
+  TOverlayState
 } from '../shared/types';
 
 declare global {
@@ -15,6 +16,7 @@ declare global {
       platform: string;
       version: string;
       storeUpdates: boolean;
+      wayland: boolean;
       getSettings: () => Promise<TSettings & { secureStorage: boolean; spellcheckAtStart: boolean }>;
       saveSettings: (patch: Partial<TSettings>) => Promise<TSettings>;
       listServers: () => Promise<TServerEntry[]>;
@@ -41,6 +43,8 @@ declare global {
       barAction: (action: 'settings' | 'zoom-in' | 'zoom-out' | 'zoom-reset' | 'menu' | 'minimize' | 'maximize' | 'close', at?: { x: number; y: number }) => void;
       onBarState: (cb: (state: { server: string; zoom: number; theme: 'light' | 'dark' | null; maximized: boolean }) => void) => void;
       pickerChoose: (result: TPickerResult) => void;
+      onOverlayState: (cb: (state: TOverlayState) => void) => void;
+      overlayHeight: (h: number) => void;
     };
   }
 }

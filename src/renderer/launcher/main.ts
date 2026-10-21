@@ -323,6 +323,30 @@ const renderSettings = async () => {
     toast('saved');
   });
 
+  // voice overlay: on/off and its background; the slider saves as it moves (a little later)
+  const overlay = $<HTMLInputElement>('overlay');
+  const opacity = $<HTMLInputElement>('overlay-opacity');
+  const showOpacity = () => {
+    $('overlay-opacity-value').textContent = `${opacity.value}%`;
+    opacity.style.setProperty('--fill', `${opacity.value}%`);
+  };
+  overlay.checked = settings.overlay;
+  opacity.value = String(settings.overlayOpacity);
+  $('overlay-options').hidden = !overlay.checked;
+  if (window.shell.wayland) $('overlay-hint').textContent = 'shows while you are in a call and Jollyboat is in the background | on wayland the desktop places it (kde: a window rule keeps it on top)';
+  showOpacity();
+  overlay.onchange = () => {
+    $('overlay-options').hidden = !overlay.checked;
+    window.shell.saveSettings({ overlay: overlay.checked });
+    toast('saved');
+  };
+  let opacityTimer = 0;
+  opacity.oninput = () => {
+    showOpacity();
+    clearTimeout(opacityTimer);
+    opacityTimer = window.setTimeout(() => window.shell.saveSettings({ overlayOpacity: Number(opacity.value) }), 120);
+  };
+
   const notify = $<HTMLInputElement>('notify-tray');
   notify.checked = settings.notifyTray;
   notify.onchange = () => { window.shell.saveSettings({ notifyTray: notify.checked }); toast('saved'); };

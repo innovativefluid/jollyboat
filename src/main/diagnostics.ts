@@ -4,6 +4,7 @@
 import { app } from 'electron';
 import { release, type } from 'node:os';
 import { getBridgeStatus } from './hotkeys/bridge';
+import { describeOverlay } from './overlay';
 import { recentLog } from './log';
 import { getScreenAudioMode } from './screen-audio';
 import { getSettings } from './settings';
@@ -32,6 +33,7 @@ export const diagnostics = () => {
     `gpu: ${gpuLine()}`,
     `hotkey bridge: ${bridge.ownedByUs ? `ours on ${bridge.port}, ${bridge.bindings.length} bindings, ${bridge.keyUp ? 'push-to-talk' : 'presses only'}` : `port ${bridge.port} taken`}`,
     describeTray(),
+    describeOverlay(),
     `updates: ${getUpdateStatus().state}${getUpdateStatus().version ? ` ${getUpdateStatus().version}` : ''}`,
     `settings: ${s.servers.length} servers | auto-connect ${s.autoConnectServerId ? 'on' : 'off'} | on close ${s.onClose} | notify ${s.notifyTray} | spellcheck ${s.spellcheck} | update checks ${s.checkUpdates}`,
     '',

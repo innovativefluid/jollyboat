@@ -13,6 +13,7 @@ import { applySpellcheck, blockDictionaryDownloads } from './privacy';
 import { initScreenAudio, stopPipeWireShare } from './screen-audio';
 import { startUpdater } from './updater';
 import { askPrompt } from './prompt';
+import { setOverlayHostFocused, setOverlayTheme, setOverlayVoice } from './overlay';
 
 // windows: toast notifications and taskbar grouping need the same AppUserModelId the installer
 // writes into the start-menu shortcut (electron-builder uses appId)
@@ -117,6 +118,7 @@ const sendBarState = () => {
   const wc = barView?.webContents;
   if (!wc || wc.isDestroyed()) return;
   wc.send('bar:state', { server: serverName, zoom: page()?.getZoomFactor() ?? 1, theme: pageTheme, maximized: !!mainWindow?.isMaximized() });
+  setOverlayTheme(barDark() ? 'dark' : 'light');
   const bg = barDark() ? '#18201c' : '#a6b08a';
   barView?.setBackgroundColor(bg);
   mainWindow?.setBackgroundColor(bg);
@@ -217,7 +219,10 @@ const createMainWindow = () => {
   win.on('focus', () => {
     clearUnread();
     if (!wc.isDestroyed()) wc.focus();
+    setOverlayHostFocused(true);
   });
+  win.on('blur', () => setOverlayHostFocused(false));
+  win.on('hide', () => setOverlayHostFocused(false));
   win.on('resize', () => {
     layout();
     rememberBounds();
@@ -451,6 +456,7 @@ const dropServer = (reason: string, serverId?: string) => {
   }
   serverName = '';
   setServerName('');
+  setOverlayVoice(false, '', []);
   showLauncher(reason, serverId, visible);
 };
 

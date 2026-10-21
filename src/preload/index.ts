@@ -4,15 +4,16 @@
 // process decides which kind of page this is from the frame URL.
 
 import { contextBridge, ipcRenderer, webFrame } from 'electron';
-import type { TPickerResult, TServerInput, TSettings, TUpdateStatus, TVoiceState } from '../shared/types';
+import type { TOverlayState, TPickerResult, TServerInput, TSettings, TUpdateStatus, TVoiceMember, TVoiceReport } from '../shared/types';
 
 type TBootstrap = {
-  ownPage: 'launcher' | 'picker' | 'prompt' | 'bar' | null;
+  ownPage: 'launcher' | 'picker' | 'prompt' | 'bar' | 'overlay' | null;
   isSavedServer: boolean;
   platform: NodeJS.Platform;
   version: string;
   /** flathub build: no update checks of our own */
   storeUpdates: boolean;
+  wayland: boolean;
   bridge: { ownedByUs: boolean; token: string } | null;
   login: { token: string | null } | null;
   screenAudio: { pipewire: boolean; virtualMic: string; dropRestrict: boolean } | null;
@@ -23,7 +24,7 @@ const boot = ipcRenderer.sendSync('shell:bootstrap') as TBootstrap;
 if (boot.ownPage) {
   // each of our pages gets only what it uses: the setup window the settings / servers api, the
   // picker, prompt and bar their one or two calls
-  const common = { platform: boot.platform, version: boot.version, storeUpdates: boot.storeUpdates };
+  const common = { platform: boot.platform, version: boot.version, storeUpdates: boot.storeUpdates, wayland: boot.wayland };
   const byPage = {
     launcher: {
       getSettings: () => ipcRenderer.invoke('settings:get') as Promise<TSettings>,
@@ -64,6 +65,12 @@ if (boot.ownPage) {
     },
     prompt: {
       promptAnswer: (answer: boolean) => ipcRenderer.send('prompt:answer', answer)
+    },
+    overlay: {
+      onOverlayState: (cb: (state: TOverlayState) => void) => {
+        ipcRenderer.on('overlay:state', (_e, state) => cb(state));
+      },
+      overlayHeight: (h: number) => ipcRenderer.send('overlay:height', h)
     }
   };
   contextBridge.exposeInMainWorld('shell', { ...common, ...(boot.ownPage ? byPage[boot.ownPage] : {}) });
@@ -278,17 +285,50 @@ if (boot.isSavedServer) {
     return false;
   };
 
-  const readVoice = (): TVoiceState => {
+  // a voice channel's people sit in the element right after its channel item, one row each:
+  // avatar (with the speaking ring), name, then mic / headphone / screen / camera icons
+  const readRow = (row: Element, own: string): TVoiceMember | null => {
+    const nameEl = Array.from(row.querySelectorAll('span')).find((s) => s.className.includes('truncate'));
+    const name = nameEl?.textContent?.trim();
+    if (!name) return null;
+    return {
+      name,
+      self: name === own,
+      speaking: !!row.querySelector('[class*="speaking-effect-"]'),
+      micMuted: !!row.querySelector('svg.lucide-mic-off'),
+      deafened: !!row.querySelector('svg.lucide-headphone-off'),
+      sharing: !!row.querySelector('svg.lucide-monitor'),
+      video: !!row.querySelector('svg.lucide-video')
+    };
+  };
+  const ownChannel = (bar: Element) => {
+    const own = ownName(bar);
+    if (!own) return null;
+    for (const item of Array.from(document.querySelectorAll('[data-testid="channel-item"]'))) {
+      const list = item.nextElementSibling;
+      if (!list || item.parentElement !== list.parentElement) continue;
+      const members = Array.from(list.children).flatMap((row) => readRow(row, own) ?? []);
+      // the channel's name is its truncating span (the live waveform brings a <style> along)
+      const name = Array.from(item.querySelectorAll('span')).find((s) => s.className.includes('truncate'))?.textContent?.trim() ?? '';
+      if (members.some((m) => m.self)) return { channel: name, members };
+    }
+    return null;
+  };
+
+  const readVoice = (): TVoiceReport => {
     const bar = controlBar();
     const inVoice = !!document.querySelector('svg.lucide-phone-off');
     const micMuted = !!bar?.querySelector('svg.lucide-mic-off');
+    const room = inVoice && bar ? ownChannel(bar) : null;
 
     return {
       connected: !!bar,
       inVoice,
       micMuted,
       deafened: !!bar?.querySelector('svg.lucide-headphone-off'),
-      speaking: inVoice && !micMuted && !!bar && ownSpeaking(bar)
+      speaking: inVoice && !micMuted && !!bar && ownSpeaking(bar),
+      channel: room?.channel ?? '',
+      members: room?.members ?? []
     };
   };
 

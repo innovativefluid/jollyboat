@@ -38,6 +38,12 @@ export type TSettings = {
   checkUpdates: boolean;
   /** flash the window, badge and tray on a new message while the window is in the background */
   notifyTray: boolean;
+  /** the voice overlay: an always-on-top list of who is in the call and who talks */
+  overlay: boolean;
+  /** the overlay's background, 0 (see-through) to 100 (solid); the text stays solid */
+  overlayOpacity: number;
+  /** where the overlay was left (top-left corner), null = top left of the main display */
+  overlayPosition: { x: number; y: number } | null;
   /** flatpak: what the background portal last granted for starting at login (the portal's
    *  autostart file is outside the sandbox, so the app remembers it) */
   autostart: boolean;
@@ -48,6 +54,15 @@ export type TSettings = {
 };
 
 export type TVoiceState = { connected: boolean; inVoice: boolean; micMuted: boolean; deafened: boolean; speaking: boolean };
+
+/** someone in our voice channel, as Sharkord's sidebar shows them */
+export type TVoiceMember = { name: string; self: boolean; speaking: boolean; micMuted: boolean; deafened: boolean; sharing: boolean; video: boolean };
+
+/** what the page reports: the tray's state plus the channel for the overlay */
+export type TVoiceReport = TVoiceState & { channel: string; members: TVoiceMember[] };
+
+/** what the overlay window shows */
+export type TOverlayState = { channel: string; members: TVoiceMember[]; theme: 'light' | 'dark'; opacity: number };
 
 export type TUpdateStatus = { state: 'idle' | 'checking' | 'available' | 'downloaded' | 'none' | 'error'; version?: string; message?: string; url?: string };
 

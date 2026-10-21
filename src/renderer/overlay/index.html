@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'" />
+    <title>Jollyboat voice</title>
+    <link rel="stylesheet" href="../theme/theme.css" />
+    <style>
+      /* the voice overlay: the lcd look on a see-through window. the background takes the opacity
+         from the settings; text and the talking fill stay solid, with an outline in the
+         background colour so they read over anything */
+      :root { --bg-rgb: 176, 186, 148; --alpha: 0.75; }
+      :root[data-theme='dark'] {
+        --bg: #18201c; --panel: #202a24; --fg: #c4d6a6; --dim: #869672; --mute: #5e6c52; --faint: #384438;
+        --fg-rgb: 196, 214, 166; --bg-rgb: 32, 42, 36;
+      }
+      html, body { background: transparent; height: auto; overflow: hidden; }
+      body { padding: 4px; }
+      .card {
+        background: rgba(var(--bg-rgb), var(--alpha));
+        border: 2px solid rgba(var(--fg-rgb), max(var(--alpha), 0.0));
+        border-radius: 10px 4px 10px 4px;
+        padding: 5px 6px 6px;
+        -webkit-app-region: drag;
+        cursor: move;
+        --outline: rgba(var(--bg-rgb), calc(1 - var(--alpha) * 0.6));
+        text-shadow: 1px 0 var(--outline), -1px 0 var(--outline), 0 1px var(--outline), 0 -1px var(--outline);
+      }
+      .head { display: flex; align-items: center; gap: 6px; font: 500 12px/1 var(--px); color: var(--dim); padding: 1px 4px 5px; }
+      .head .name { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+      .rows { display: flex; flex-direction: column; gap: 2px; }
+      .row { display: flex; align-items: center; gap: 7px; padding: 3px 5px; border-radius: 4px; font: 600 14px/1.1 var(--px); color: var(--fg); }
+      .row .who { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+      .row .self { color: var(--dim); font-weight: 400; }
+      /* speaking: fill instead of outline, the lcd way of emphasis */
+      .dot { width: 9px; height: 9px; border: 2px solid var(--dim); border-radius: 2px; flex: none; }
+      .row.talking { background: var(--fg); color: var(--bg); text-shadow: none; }
+      .row.talking .dot { background: var(--bg); border-color: var(--bg); }
+      .row.talking .self { color: var(--bg); }
+      .row.quiet .who { color: var(--dim); }
+      .icons { display: flex; gap: 3px; flex: none; }
+      .icons svg { width: 12px; height: 12px; shape-rendering: crispEdges; display: block; }
+      .empty { font: 500 13px/1.2 var(--px); color: var(--dim); padding: 2px 5px; }
+    </style>
+  </head>
+  <body>
+    <div class="card" id="card">
+      <div class="head"><span class="name" id="channel">voice</span></div>
+      <div class="rows" id="rows"></div>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

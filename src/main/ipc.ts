@@ -1,5 +1,6 @@
 import { BrowserWindow, ipcMain, net, safeStorage, shell, webContents, type BaseWindow, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
-import type { TServerInput, TSettings, TTestResult, TVoiceState } from '../shared/types';
+import type { TServerInput, TSettings, TTestResult, TVoiceReport } from '../shared/types';
+import { isWayland, refreshOverlay, setOverlayHeight, setOverlayVoice } from './overlay';
 import { getAutoStart, isAutoStartSupported, setAutoStart } from './autostart';
 import { basicHeaderFor } from './basic-auth';
 import { getBridgeStatus, getBridgeToken } from './hotkeys/bridge';
@@ -59,6 +60,8 @@ const pickSettingsPatch = (patch: unknown): Partial<TSettings> => {
   if (typeof p.checkUpdates === 'boolean') out.checkUpdates = p.checkUpdates;
   if (p.onClose === 'minimize' || p.onClose === 'tray' || p.onClose === 'quit') out.onClose = p.onClose;
   if (typeof p.notifyTray === 'boolean') out.notifyTray = p.notifyTray;
+  if (typeof p.overlay === 'boolean') out.overlay = p.overlay;
+  if (typeof p.overlayOpacity === 'number' && Number.isFinite(p.overlayOpacity)) out.overlayOpacity = Math.min(100, Math.max(0, Math.round(p.overlayOpacity)));
   if (p.autoConnectServerId === null) out.autoConnectServerId = null;
   if (typeof p.autoConnectServerId === 'string' && getSettings().servers.some((s) => s.id === p.autoConnectServerId)) {
     out.autoConnectServerId = p.autoConnectServerId;
@@ -145,6 +148,7 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart 
       platform: process.platform,
       version: __APP_VERSION__,
       storeUpdates: updatesFromStore(),
+      wayland: isWayland(),
       bridge: server && bridge.ownedByUs ? { ownedByUs: true, token: getBridgeToken() } : null,
       // sharkord's own login, kept across launches (the page would hold it in localStorage anyway)
       login: server && server.keepLogin !== false ? { token: loginTokenFor(server) } : null,
@@ -160,16 +164,34 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart 
   });
 
   // from saved server pages only: voice state for the tray, and new-message notifications
-  ipcMain.on('server:voice', (event, state: TVoiceState) => {
+  // the overlay page measured itself
+  ipcMain.on('overlay:height', (event, h: unknown) => {
+    if (ownPageOf(event.senderFrame?.url ?? '') !== 'overlay') return;
+    setOverlayHeight(event.sender, Number(h));
+  });
+  ipcMain.on('server:voice', (event, state: TVoiceReport) => {
     if (!fromSavedServer(event)) return;
 
-    setVoiceState({
+    const voice = {
       connected: state?.connected === true,
       inVoice: state?.inVoice === true,
       micMuted: state?.micMuted === true,
       deafened: state?.deafened === true,
       speaking: state?.speaking === true
-    });
+    };
+    setVoiceState(voice);
+
+    // the page is not trusted with shapes: names are cut short, a call has at most 50 rows here
+    const members = (Array.isArray(state?.members) ? state.members : []).slice(0, 50).map((m) => ({
+      name: String(m?.name ?? '').slice(0, 64),
+      self: m?.self === true,
+      speaking: m?.speaking === true,
+      micMuted: m?.micMuted === true,
+      deafened: m?.deafened === true,
+      sharing: m?.sharing === true,
+      video: m?.video === true
+    }));
+    setOverlayVoice(voice.inVoice, String(state?.channel ?? '').slice(0, 64), members);
   });
   ipcMain.on('server:notification', (event) => {
     if (!fromSavedServer(event) || !getSettings().notifyTray) return;
@@ -223,6 +245,7 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart 
     const saved = saveSettings(picked);
     if (picked.spellcheck !== undefined) applySpellcheck(saved.spellcheck);
     if (picked.checkUpdates === true) startUpdater();
+    if (picked.overlay !== undefined || picked.overlayOpacity !== undefined) refreshOverlay();
     return saved;
   }));
   ipcMain.handle('servers:list', guard(() => publicServers()));

@@ -8,8 +8,11 @@ export const iconPath = () => join(__dirname, '../../resources/icon.png');
 
 const rendererRoot = () => pathToFileURL(join(__dirname, '../renderer/')).toString();
 
-/** URL of one of our renderer pages (launcher | picker | prompt | bar), dev server or built file. */
-export const pageUrl = (page: 'launcher' | 'picker' | 'prompt' | 'bar') => {
+type TOwnPage = 'launcher' | 'picker' | 'prompt' | 'bar' | 'overlay';
+const OWN_PAGES: readonly TOwnPage[] = ['launcher', 'picker', 'prompt', 'bar', 'overlay'];
+
+/** URL of one of our renderer pages, dev server or built file. */
+export const pageUrl = (page: TOwnPage) => {
   const dev = process.env.ELECTRON_RENDERER_URL;
 
   if (dev) return `${dev}/${page}/index.html`;
@@ -17,11 +20,9 @@ export const pageUrl = (page: 'launcher' | 'picker' | 'prompt' | 'bar') => {
   return `${rendererRoot()}${page}/index.html`;
 };
 
-type TOwnPage = 'launcher' | 'picker' | 'prompt' | 'bar';
-
 /** Which of our pages a url is (null for anything else). */
 export const ownPageOf = (url: string): TOwnPage | null =>
-  (['launcher', 'picker', 'prompt', 'bar'] as const).find((p) => url.startsWith(pageUrl(p).replace(/index\.html$/, ''))) ?? null;
+  OWN_PAGES.find((p) => url.startsWith(pageUrl(p).replace(/index\.html$/, ''))) ?? null;
 
 /** True only for our own pages: the built renderer directory or the electron-vite dev server. */
 export const isOwnPageUrl = (url: string) => {
