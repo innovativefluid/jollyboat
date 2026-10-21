@@ -3,12 +3,12 @@
 # Regenerate generated-sources.json after any change to package-lock.json: tools/flatpak-sources.sh
 app-id: net.innovativefluid.Jollyboat
 runtime: org.freedesktop.Platform
-runtime-version: '25.08'
+runtime-version: '26.08'
 sdk: org.freedesktop.Sdk
 base: org.electronjs.Electron2.BaseApp
-base-version: '25.08'
+base-version: '26.08'
 sdk-extensions:
-  - org.freedesktop.Sdk.Extension.node22
+  - org.freedesktop.Sdk.Extension.node24
 command: jollyboat
 separate-locales: false
 
@@ -34,11 +34,11 @@ modules:
   - name: jollyboat
     buildsystem: simple
     build-options:
-      append-path: /usr/lib/sdk/node22/bin
+      append-path: /usr/lib/sdk/node24/bin
       env:
         XDG_CACHE_HOME: /run/build/jollyboat/flatpak-node/cache
         npm_config_cache: /run/build/jollyboat/flatpak-node/npm-cache
-        npm_config_nodedir: /usr/lib/sdk/node22
+        npm_config_nodedir: /usr/lib/sdk/node24
         npm_config_offline: 'true'
     build-commands:
       - npm ci --offline
