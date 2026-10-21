@@ -8,5 +8,8 @@ $p = Start-Process -FilePath (Join-Path $AppDir 'Jollyboat.exe') -PassThru -Redi
 $null = $p.Handle # keeps the exit code readable after exit
 if (-not $p.WaitForExit(120000)) { $p.Kill(); throw 'smoke test timed out' }
 Get-Content $out, $err -ErrorAction SilentlyContinue | Where-Object { $_ -match 'smoke' }
+# the result line also as an annotation (readable through the API when the log is not)
+$line = Get-Content $out -ErrorAction SilentlyContinue | Where-Object { $_ -match '^\[smoke\]' } | Select-Object -First 1
+if ($line) { Write-Output "::notice title=smoke::$line" }
 if ($p.ExitCode -ne 0) { throw "smoke test failed (exit $($p.ExitCode))" }
 if (-not (Select-String -Path $out -Pattern '^\[smoke\] win32' -Quiet)) { Write-Warning 'exit 0, but the [smoke] line did not reach stdout' }
