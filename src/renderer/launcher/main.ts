@@ -285,7 +285,7 @@ $('import-file').onclick = async () => {
 const renderBridge = async () => {
   const status = await window.shell.bridgeStatus();
   if (status.ownedByUs) {
-    hint($('bridge-text'), 'hotkeys ready', 'good');
+    hint($('bridge-text'), status.keyUp ? 'hotkeys and push-to-talk ready' : 'hotkeys ready | no push-to-talk on this system', 'good');
   } else {
     hint($('bridge-text'), `hotkeys | port ${status.port} taken, using the sharkord bridge`, '');
   }

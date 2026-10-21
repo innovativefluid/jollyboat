@@ -30,7 +30,7 @@ export const diagnostics = () => {
     `${process.platform} ${process.arch} | ${type()} ${release()}${session ? ` | ${session}` : ''}${process.env.FLATPAK_ID ? ` | flatpak${process.env.JOLLYBOAT_CHANNEL ? ` (${process.env.JOLLYBOAT_CHANNEL})` : ''}` : ''}${process.env.XDG_CURRENT_DESKTOP ? ` | ${process.env.XDG_CURRENT_DESKTOP}` : ''}`,
     `screen audio: ${getScreenAudioMode()}`,
     `gpu: ${gpuLine()}`,
-    `hotkey bridge: ${bridge.ownedByUs ? `ours on ${bridge.port}, ${bridge.bindings.length} bindings` : `port ${bridge.port} taken`}`,
+    `hotkey bridge: ${bridge.ownedByUs ? `ours on ${bridge.port}, ${bridge.bindings.length} bindings, ${bridge.keyUp ? 'push-to-talk' : 'presses only'}` : `port ${bridge.port} taken`}`,
     describeTray(),
     `updates: ${getUpdateStatus().state}${getUpdateStatus().version ? ` ${getUpdateStatus().version}` : ''}`,
     `settings: ${s.servers.length} servers | auto-connect ${s.autoConnectServerId ? 'on' : 'off'} | on close ${s.onClose} | notify ${s.notifyTray} | spellcheck ${s.spellcheck} | update checks ${s.checkUpdates}`,

@@ -1,15 +1,15 @@
-// A minimal D-Bus client for one job: asking xdg-desktop-portal's Background portal to start
-// Jollyboat with the system. Inside Flatpak (and on Flathub) the app may not write to
-// ~/.config/autostart, the portal does it for us. Only what this call needs is implemented:
-// little-endian messages, EXTERNAL auth, method calls and the Request::Response signal.
+// A minimal D-Bus client for xdg-desktop-portal: the Background portal (start with the system;
+// inside Flatpak the app may not write ~/.config/autostart) and the GlobalShortcuts portal
+// (push-to-talk needs key releases, which Electron's globalShortcut does not report). Only what
+// these need is implemented: little-endian messages, EXTERNAL auth, method calls, signals.
 
 import { createConnection, type Socket } from 'node:net';
 import { log } from './log';
 
-type TValue = string | number | boolean | bigint | TValue[] | Map<string, TValue> | TVariant;
-type TVariant = { sig: string; value: TValue };
+export type TValue = string | number | boolean | bigint | TValue[] | Map<string, TValue> | TVariant;
+export type TVariant = { sig: string; value: TValue };
 
-const variant = (sig: string, value: TValue): TVariant => ({ sig, value });
+export const variant = (sig: string, value: TValue): TVariant => ({ sig, value });
 
 // --- marshalling ------------------------------------------------------------------------------
 
@@ -223,7 +223,7 @@ class Reader {
 
 // --- messages ---------------------------------------------------------------------------------
 
-type TMessage = {
+export type TMessage = {
   type: number;
   serial: number;
   replySerial?: number;
@@ -315,13 +315,15 @@ const busPath = () => {
   return null;
 };
 
-class Bus {
+export class Bus {
   private socket!: Socket;
   private buf = Buffer.alloc(0);
   private serial = 0;
   private pending = new Map<number, { resolve: (m: TMessage) => void; reject: (e: Error) => void }>();
   private signalHandlers = new Set<(m: TMessage) => void>();
   name = '';
+  /** called once when the connection drops */
+  onClose: (() => void) | null = null;
 
   async open() {
     const target = busPath();
@@ -345,7 +347,12 @@ class Bus {
 
     this.socket.on('data', (d) => this.onData(d));
     this.socket.on('error', (err) => this.failAll(err));
-    this.socket.on('close', () => this.failAll(new Error('dbus connection closed')));
+    this.socket.on('close', () => {
+      this.failAll(new Error('dbus connection closed'));
+      const cb = this.onClose;
+      this.onClose = null;
+      cb?.();
+    });
 
     const hello = await this.call({ path: '/org/freedesktop/DBus', iface: 'org.freedesktop.DBus', member: 'Hello', destination: 'org.freedesktop.DBus' });
     this.name = hello.body[0] as string;
@@ -388,14 +395,51 @@ class Bus {
     return () => this.signalHandlers.delete(h);
   }
 
+  addMatch(rule: string) {
+    return this.call({ path: '/org/freedesktop/DBus', iface: 'org.freedesktop.DBus', member: 'AddMatch', destination: 'org.freedesktop.DBus', sig: 's', body: [rule] });
+  }
+
+  /**
+   * A portal method that answers through a Request object: adds a handle_token to the options
+   * (the last argument, a{sv}), calls, and resolves with the Response (code 0 = granted).
+   */
+  async request(iface: string, member: string, sig: string, body: TValue[], timeoutMs = 120_000) {
+    const token = `jollyboat${++requests}${Date.now() % 100000}`;
+    const handle = `/org/freedesktop/portal/desktop/request/${this.name.slice(1).replace(/\./g, '_')}/${token}`;
+    const options = body[body.length - 1] as Map<string, TValue>;
+    options.set('handle_token', variant('s', token));
+
+    let off = () => false;
+    const response = new Promise<{ code: number; results: Map<string, TValue> }>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        off();
+        reject(new Error(`no answer from the portal (${member})`));
+      }, timeoutMs);
+      off = this.onSignal((m) => {
+        if (m.path !== handle || m.member !== 'Response') return;
+        clearTimeout(timer);
+        off();
+        resolve({ code: m.body[0] as number, results: m.body[1] as Map<string, TValue> });
+      });
+    });
+
+    await this.call({ ...PORTAL, iface, member, sig, body });
+    return response;
+  }
+
   close() {
     this.socket?.destroy();
   }
 }
 
-// --- the background portal --------------------------------------------------------------------
+let requests = 0;
 
-const PORTAL = { destination: 'org.freedesktop.portal.Desktop', path: '/org/freedesktop/portal/desktop' };
+export const PORTAL = { destination: 'org.freedesktop.portal.Desktop', path: '/org/freedesktop/portal/desktop' };
+
+/** a variant's value out of a results map */
+export const result = (results: Map<string, TValue> | undefined, key: string) => (results?.get(key) as TVariant | undefined)?.value;
+
+// --- the background portal --------------------------------------------------------------------
 
 /**
  * Asks the portal to (not) start the app at login. Resolves with what the portal granted; the
@@ -406,43 +450,17 @@ export const requestAutostart = async (enabled: boolean, commandline: string[]):
 
   try {
     await bus.open();
-
-    const token = `jollyboat${Date.now()}`;
-    const handle = `/org/freedesktop/portal/desktop/request/${bus.name.slice(1).replace(/\./g, '_')}/${token}`;
-
-    const response = new Promise<TMessage>((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error('no answer from the portal')), 120_000);
-      bus.onSignal((m) => {
-        if (m.path === handle && m.member === 'Response') {
-          clearTimeout(timer);
-          resolve(m);
-        }
-      });
-    });
-
-    await bus.call({
-      path: '/org/freedesktop/DBus',
-      iface: 'org.freedesktop.DBus',
-      member: 'AddMatch',
-      destination: 'org.freedesktop.DBus',
-      sig: 's',
-      body: [`type='signal',interface='org.freedesktop.portal.Request',member='Response',path='${handle}'`]
-    });
+    await bus.addMatch(`type='signal',interface='org.freedesktop.portal.Request',member='Response'`);
 
     const options = new Map<string, TValue>([
-      ['handle_token', variant('s', token)],
       ['reason', variant('s', 'Start Jollyboat in the tray when you log in')],
       ['autostart', variant('b', enabled)],
       ['commandline', variant('as', commandline)],
       ['dbus-activatable', variant('b', false)]
     ]);
 
-    await bus.call({ ...PORTAL, iface: 'org.freedesktop.portal.Background', member: 'RequestBackground', sig: 'sa{sv}', body: ['', options] });
-
-    const answer = await response;
-    const code = answer.body[0] as number;
-    const results = answer.body[1] as Map<string, TValue>;
-    const granted = (results.get('autostart') as TVariant | undefined)?.value === true;
+    const { code, results } = await bus.request('org.freedesktop.portal.Background', 'RequestBackground', 'sa{sv}', ['', options]);
+    const granted = result(results, 'autostart') === true;
 
     log('portal', `background: response ${code}, autostart ${granted}`);
     return code === 0 && granted;

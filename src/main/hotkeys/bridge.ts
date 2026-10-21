@@ -1,12 +1,12 @@
 // A built-in implementation of the Sharkord hotkey bridge protocol (v1), the same one the
 // official Sharkord Bridge speaks (https://github.com/Sharkord/bridge). The Sharkord web app
 // connects to ws://127.0.0.1:47821, pairs with a token, sends its bindings, and expects
-// `event` messages with phase down/up. Our key source is Electron's globalShortcut, which only
-// reports presses, so we announce keyUp:false (push-to-talk is then disabled by Sharkord).
+// `event` messages with phase down/up. Keys come from the best source the system has (see
+// sources.ts); when it reports releases we announce keyUp:true and Sharkord offers push-to-talk.
 //
 // If the port is already taken (the user runs the official bridge), we stay out of the way.
 
-import { app, globalShortcut } from 'electron';
+import { app } from 'electron';
 import { randomBytes } from 'node:crypto';
 import { chmodSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
@@ -14,10 +14,17 @@ import { join } from 'node:path';
 import { WebSocketServer, type WebSocket } from 'ws';
 import { BRIDGE_PORT, type TBridgeStatus } from '../../shared/types';
 import { findServerByUrl } from '../settings';
-import { comboToAccelerator } from './combo';
+import { log } from '../log';
+import { createKeySource, type TKeySource } from './sources';
 
 const PROTOCOL_VERSION = 1;
-const CAPABILITIES = { keyUp: false };
+
+// what sharkord's core actions are called in the desktop's shortcut settings (linux portal)
+const DESCRIPTIONS: Record<string, string> = {
+  'core:push-to-talk': 'Push to talk',
+  'core:toggle-mic': 'Mute or unmute the microphone',
+  'core:toggle-sound': 'Deafen or undeafen'
+};
 
 type TBinding = { id: string; combo: string };
 type TClient = { ws: WebSocket; serverId: string; serverName: string; bindings: TBinding[] };
@@ -26,8 +33,7 @@ let httpServer: Server | null = null;
 let token = '';
 let ownedByUs = false;
 const clients = new Set<TClient>();
-/** accelerator → combos registered for it (several servers may bind the same key) */
-const registered = new Map<string, Set<string>>();
+let keys: TKeySource | null = null;
 
 const tokenPath = () => join(app.getPath('userData'), 'bridge-token');
 
@@ -67,51 +73,23 @@ const fire = (combo: string, phase: 'down' | 'up') => {
   }
 };
 
-const rebuildShortcuts = () => {
-  globalShortcut.unregisterAll();
-  registered.clear();
-
-  const wanted = new Map<string, Set<string>>(); // accelerator → combos
+// every client's bindings go to the key source in one list; several servers may bind the same
+// combo, an event then goes to each of them
+let applying = 0;
+const rebuildShortcuts = async () => {
+  if (!keys) return;
+  const round = ++applying;
+  const list = [...clients].flatMap((c) => c.bindings.map((b) => ({ combo: b.combo, description: DESCRIPTIONS[b.id] ?? b.id })));
+  const failed = await keys.apply(list);
+  if (round !== applying) return; // a newer list is on its way
 
   for (const client of clients) {
     for (const binding of client.bindings) {
-      const parsed = comboToAccelerator(binding.combo);
-
-      if ('error' in parsed) {
-        send(client.ws, { type: 'error', id: binding.id, reason: parsed.error });
-        continue;
-      }
-
-      const set = wanted.get(parsed.accelerator) ?? new Set<string>();
-      set.add(binding.combo);
-      wanted.set(parsed.accelerator, set);
+      const reason = failed.get(binding.combo);
+      if (reason) send(client.ws, { type: 'error', id: binding.id, reason });
     }
   }
-
-  for (const [accelerator, combos] of wanted) {
-    let ok = false;
-
-    try {
-      ok = globalShortcut.register(accelerator, () => {
-        for (const combo of combos) fire(combo, 'down');
-      });
-    } catch {
-      ok = false;
-    }
-
-    if (ok) {
-      registered.set(accelerator, combos);
-      continue;
-    }
-
-    for (const client of clients) {
-      for (const binding of client.bindings) {
-        if (combos.has(binding.combo)) {
-          send(client.ws, { type: 'error', id: binding.id, reason: 'the system refused this key' });
-        }
-      }
-    }
-  }
+  if (failed.size) log('hotkeys', `${failed.size} key(s) not registered: ${[...new Set(failed.values())].join(', ')}`);
 };
 
 const handleConnection = (ws: WebSocket) => {
@@ -144,7 +122,7 @@ const handleConnection = (ws: WebSocket) => {
       client = { ws, serverId: msg.serverId, serverName: String(msg.serverName ?? ''), bindings: [] };
       clients.add(client);
 
-      send(ws, { type: 'ready', v: PROTOCOL_VERSION, capabilities: CAPABILITIES, platform: process.platform });
+      send(ws, { type: 'ready', v: PROTOCOL_VERSION, capabilities: { keyUp: keys?.keyUp ?? false }, platform: process.platform });
       return;
     }
 
@@ -156,7 +134,7 @@ const handleConnection = (ws: WebSocket) => {
         })
         .map(({ id, combo }) => ({ id, combo }));
 
-      rebuildShortcuts();
+      void rebuildShortcuts();
     }
   });
 
@@ -164,7 +142,7 @@ const handleConnection = (ws: WebSocket) => {
     if (client) {
       clients.delete(client);
       client = null;
-      rebuildShortcuts();
+      void rebuildShortcuts();
     }
   });
 };
@@ -173,6 +151,7 @@ export const startBridge = async (): Promise<TBridgeStatus> => {
   getBridgeToken();
 
   if (httpServer) return getBridgeStatus();
+  keys ??= await createKeySource(fire);
 
   const server = createServer((_req, res) => {
     res.writeHead(426).end('Jollyboat hotkey bridge');
@@ -206,7 +185,8 @@ export const startBridge = async (): Promise<TBridgeStatus> => {
 };
 
 export const stopBridge = () => {
-  globalShortcut.unregisterAll();
+  keys?.stop();
+  keys = null;
   for (const client of clients) client.ws.close();
   clients.clear();
   httpServer?.close();
@@ -218,6 +198,6 @@ export const getBridgeStatus = (): TBridgeStatus => ({
   running: ownedByUs,
   port: BRIDGE_PORT,
   ownedByUs,
-  keyUp: CAPABILITIES.keyUp,
+  keyUp: keys?.keyUp ?? false,
   bindings: [...clients].flatMap((c) => c.bindings)
 });
