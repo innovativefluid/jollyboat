@@ -26,8 +26,18 @@
         --outline: rgba(var(--bg-rgb), calc(1 - var(--alpha) * 0.6));
         text-shadow: 1px 0 var(--outline), -1px 0 var(--outline), 0 1px var(--outline), 0 -1px var(--outline);
       }
-      .head { display: flex; align-items: center; gap: 6px; font: 500 12px/1 var(--px); color: var(--dim); padding: 1px 4px 5px; }
+      .head { display: flex; align-items: center; gap: 4px; font: 500 12px/1 var(--px); color: var(--dim); padding: 1px 2px 5px 4px; }
       .head .name { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+      /* the buttons: sharkord's mic / deafen, and the stream pop-out. outline off, filled on */
+      .head button {
+        -webkit-app-region: no-drag; cursor: pointer; width: 20px; height: 18px; padding: 0; display: grid; place-items: center;
+        background: transparent; border: 2px solid var(--dim); border-radius: 3px; color: var(--dim);
+      }
+      .head button:hover { border-color: var(--fg); color: var(--fg); }
+      .head button.on { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+      .head button svg { width: 12px; height: 12px; shape-rendering: crispEdges; display: block; }
+      .head button[hidden] { display: none; }
+      :root.click-through .head button { display: none; }
       .rows { display: flex; flex-direction: column; gap: 2px; }
       .row { display: flex; align-items: center; gap: 7px; padding: 3px 5px; border-radius: 4px; font: 600 14px/1.1 var(--px); color: var(--fg); }
       .row .who { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
@@ -45,7 +55,12 @@
   </head>
   <body>
     <div class="card" id="card">
-      <div class="head"><span class="name" id="channel">voice</span></div>
+      <div class="head">
+        <span class="name" id="channel">voice</span>
+        <button id="popout" title="pop out stream" hidden><svg viewBox="0 0 12 12"><path d="M0 2h6v1H1v8h8V6h1v6H0zM7 0h5v5h-1V2l-5 5-1-1 5-5H7z" fill="currentColor"/></svg></button>
+        <button id="mic" title="mute"><svg viewBox="0 0 12 12"><path d="M4 1h4v6H4zM2 5h1v2H2zM9 5h1v2H9zM3 7h1v1H3zM8 7h1v1H8zM4 8h4v1H4zM5 9h2v1H5zM3 10h6v1H3z" fill="currentColor"/></svg></button>
+        <button id="sound" title="deafen"><svg viewBox="0 0 12 12"><path d="M3 2h6v1H3zM2 3h1v3H2zM9 3h1v3H9zM1 6h3v4H1zM8 6h3v4H8z" fill="currentColor"/></svg></button>
+      </div>
       <div class="rows" id="rows"></div>
     </div>
     <script type="module" src="./main.ts"></script>

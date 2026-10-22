@@ -60,6 +60,7 @@ setInterval(() => {
 }, 100);
 
 $('settings').onclick = () => window.shell.barAction('settings');
+$('popout').onclick = () => window.shell.barAction('popout');
 $('zoom-in').onclick = () => window.shell.barAction('zoom-in');
 $('zoom-out').onclick = () => window.shell.barAction('zoom-out');
 $('zoom').onclick = () => window.shell.barAction('zoom-reset');
@@ -83,4 +84,5 @@ window.shell.onBarState((state) => {
   $('max-icon').querySelector('path')!.setAttribute('d', state.maximized ? RESTORE : MAXIMIZE);
   $('maximize').title = state.maximized ? 'restore' : 'maximize';
   $('zoom').textContent = `${Math.round(state.zoom * 100)}%`;
+  $('popout').hidden = !state.streams;
 });

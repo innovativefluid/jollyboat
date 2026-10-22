@@ -70,7 +70,8 @@ if (boot.ownPage) {
       onOverlayState: (cb: (state: TOverlayState) => void) => {
         ipcRenderer.on('overlay:state', (_e, state) => cb(state));
       },
-      overlayHeight: (h: number) => ipcRenderer.send('overlay:height', h)
+      overlayHeight: (h: number) => ipcRenderer.send('overlay:height', h),
+      overlayAction: (action: 'mic' | 'sound' | 'popout') => ipcRenderer.send('overlay:action', action)
     }
   };
   contextBridge.exposeInMainWorld('shell', { ...common, ...(boot.ownPage ? byPage[boot.ownPage] : {}) });
@@ -315,6 +316,10 @@ if (boot.isSavedServer) {
     return null;
   };
 
+  // stream videos that are playing (a share or camera someone sends; the own preview counts too)
+  const playingStreams = () =>
+    Array.from(document.querySelectorAll('video')).filter((v) => v.srcObject && v.readyState >= 2 && v.videoWidth > 0).length;
+
   const readVoice = (): TVoiceReport => {
     const bar = controlBar();
     const inVoice = !!document.querySelector('svg.lucide-phone-off');
@@ -328,7 +333,8 @@ if (boot.isSavedServer) {
       deafened: !!bar?.querySelector('svg.lucide-headphone-off'),
       speaking: inVoice && !micMuted && !!bar && ownSpeaking(bar),
       channel: room?.channel ?? '',
-      members: room?.members ?? []
+      members: room?.members ?? [],
+      streams: inVoice ? playingStreams() : 0
     };
   };
 
@@ -396,6 +402,8 @@ if (boot.isSavedServer) {
       rescope();
       schedule();
     }).observe(document.body, { subtree: true, childList: true });
+    // a stream video starting or stopping is not a mutation
+    for (const ev of ['playing', 'emptied', 'ended', 'loadeddata']) document.addEventListener(ev, schedule, true);
     rescope();
     schedule();
     const head = document.querySelector('head');

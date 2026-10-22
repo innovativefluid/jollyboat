@@ -6,7 +6,7 @@
 // a normal small window (KDE can keep it above with a window rule).
 
 import { BrowserWindow, screen } from 'electron';
-import type { TOverlayState, TVoiceMember } from '../shared/types';
+import type { TOverlayState, TVoiceMember, TVoiceState } from '../shared/types';
 import { iconPath, pageUrl, preloadPath } from './paths';
 import { getSettings, saveSettings } from './settings';
 
@@ -14,6 +14,8 @@ const WIDTH = 240;
 
 let win: BrowserWindow | null = null;
 let inVoice = false;
+let voice: TVoiceState = { connected: false, inVoice: false, micMuted: false, deafened: false, speaking: false };
+let streams = 0;
 let channel = '';
 let members: TVoiceMember[] = [];
 let theme: 'light' | 'dark' = 'light';
@@ -36,7 +38,16 @@ const position = () => {
   return { x: area.x + 24, y: area.y + 24 };
 };
 
-const state = (): TOverlayState => ({ channel, members, theme, opacity: getSettings().overlayOpacity });
+const state = (): TOverlayState => ({
+  channel,
+  members,
+  theme,
+  opacity: getSettings().overlayOpacity,
+  micMuted: voice.micMuted,
+  deafened: voice.deafened,
+  streams,
+  clickThrough: getSettings().overlayClickThrough
+});
 
 const send = () => {
   if (!win || win.isDestroyed()) return;
@@ -81,6 +92,7 @@ const create = () => {
   win.webContents.on('will-navigate', (event) => event.preventDefault());
   win.webContents.on('did-finish-load', () => {
     lastSent = '';
+    win?.setIgnoreMouseEvents(getSettings().overlayClickThrough, { forward: true });
     send();
     if (wanted()) win?.showInactive();
   });
@@ -115,14 +127,18 @@ export const refreshOverlay = () => {
     return;
   }
   if (!win) return create();
+  // let clicks through (position locked, buttons off) or not; mouse moves still reach the page
+  win.setIgnoreMouseEvents(getSettings().overlayClickThrough, { forward: true });
   send();
   if (!win.isVisible()) win.showInactive();
 };
 
-export const setOverlayVoice = (voice: boolean, name: string, list: TVoiceMember[]) => {
-  inVoice = voice;
+export const setOverlayVoice = (next: TVoiceState, name: string, list: TVoiceMember[], playing: number) => {
+  voice = next;
+  inVoice = next.inVoice;
+  streams = playing;
   channel = name;
-  members = voice ? list : [];
+  members = inVoice ? list : [];
   refreshOverlay();
 };
 
@@ -146,4 +162,4 @@ export const setOverlayHeight = (sender: Electron.WebContents, h: number) => {
 };
 
 export const describeOverlay = () =>
-  `overlay: ${getSettings().overlay ? `on, ${getSettings().overlayOpacity}% background${win?.isVisible() ? ', showing' : ''}${isWayland() ? ', wayland' : ''}` : 'off'}`;
+  `overlay: ${getSettings().overlay ? `on, ${getSettings().overlayOpacity}% background${getSettings().overlayClickThrough ? ', click-through' : ''}${win?.isVisible() ? ', showing' : ''}${isWayland() ? ', wayland' : ''}` : 'off'}`;

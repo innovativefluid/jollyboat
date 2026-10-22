@@ -18,6 +18,12 @@ const lastSpoke = new Map<string, number>();
 let state: TOverlayState | null = null;
 
 const card = document.getElementById('card')!;
+const mic = document.getElementById('mic') as HTMLButtonElement;
+const sound = document.getElementById('sound') as HTMLButtonElement;
+const popout = document.getElementById('popout') as HTMLButtonElement;
+mic.onclick = () => window.shell.overlayAction('mic');
+sound.onclick = () => window.shell.overlayAction('sound');
+popout.onclick = () => window.shell.overlayAction('popout');
 const rows = document.getElementById('rows')!;
 const channel = document.getElementById('channel')!;
 
@@ -52,6 +58,12 @@ const render = () => {
   document.documentElement.dataset.theme = state.theme;
   document.documentElement.style.setProperty('--alpha', String(state.opacity / 100));
   channel.textContent = state.channel ? `> ${state.channel}` : '> voice';
+  document.documentElement.classList.toggle('click-through', state.clickThrough);
+  mic.classList.toggle('on', state.micMuted);
+  mic.title = state.micMuted ? 'unmute' : 'mute';
+  sound.classList.toggle('on', state.deafened);
+  sound.title = state.deafened ? 'undeafen' : 'deafen';
+  popout.hidden = !state.streams;
   rows.replaceChildren(...state.members.map((m) => rowFor(m, now)));
   if (!state.members.length) {
     const empty = document.createElement('div');

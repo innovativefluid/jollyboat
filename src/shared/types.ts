@@ -42,6 +42,8 @@ export type TSettings = {
   overlay: boolean;
   /** the overlay's background, 0 (see-through) to 100 (solid); the text stays solid */
   overlayOpacity: number;
+  /** clicks go through the overlay to whatever is under it (the buttons are off then) */
+  overlayClickThrough: boolean;
   /** where the overlay was left (top-left corner), null = top left of the main display */
   overlayPosition: { x: number; y: number } | null;
   /** flatpak: what the background portal last granted for starting at login (the portal's
@@ -59,10 +61,10 @@ export type TVoiceState = { connected: boolean; inVoice: boolean; micMuted: bool
 export type TVoiceMember = { name: string; self: boolean; speaking: boolean; micMuted: boolean; deafened: boolean; sharing: boolean; video: boolean };
 
 /** what the page reports: the tray's state plus the channel for the overlay */
-export type TVoiceReport = TVoiceState & { channel: string; members: TVoiceMember[] };
+export type TVoiceReport = TVoiceState & { channel: string; members: TVoiceMember[]; /** playing stream videos (screen shares, cameras) that could be popped out */ streams: number };
 
 /** what the overlay window shows */
-export type TOverlayState = { channel: string; members: TVoiceMember[]; theme: 'light' | 'dark'; opacity: number };
+export type TOverlayState = { channel: string; members: TVoiceMember[]; theme: 'light' | 'dark'; opacity: number; micMuted: boolean; deafened: boolean; streams: number; clickThrough: boolean };
 
 export type TUpdateStatus = { state: 'idle' | 'checking' | 'available' | 'downloaded' | 'none' | 'error'; version?: string; message?: string; url?: string };
 

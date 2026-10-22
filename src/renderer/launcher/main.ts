@@ -340,6 +340,9 @@ const renderSettings = async () => {
     window.shell.saveSettings({ overlay: overlay.checked });
     toast('saved');
   };
+  const clickThrough = $<HTMLInputElement>('overlay-click-through');
+  clickThrough.checked = settings.overlayClickThrough;
+  clickThrough.onchange = () => { window.shell.saveSettings({ overlayClickThrough: clickThrough.checked }); toast('saved'); };
   let opacityTimer = 0;
   opacity.oninput = () => {
     showOpacity();

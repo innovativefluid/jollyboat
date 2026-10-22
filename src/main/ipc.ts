@@ -1,6 +1,7 @@
 import { BrowserWindow, ipcMain, net, safeStorage, shell, webContents, type BaseWindow, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
 import type { TServerInput, TSettings, TTestResult, TVoiceReport } from '../shared/types';
 import { isWayland, refreshOverlay, setOverlayHeight, setOverlayVoice } from './overlay';
+import { getMainPage, popOutStream, setStreams } from './popout';
 import { getAutoStart, isAutoStartSupported, setAutoStart } from './autostart';
 import { basicHeaderFor } from './basic-auth';
 import { getBridgeStatus, getBridgeToken } from './hotkeys/bridge';
@@ -61,6 +62,7 @@ const pickSettingsPatch = (patch: unknown): Partial<TSettings> => {
   if (p.onClose === 'minimize' || p.onClose === 'tray' || p.onClose === 'quit') out.onClose = p.onClose;
   if (typeof p.notifyTray === 'boolean') out.notifyTray = p.notifyTray;
   if (typeof p.overlay === 'boolean') out.overlay = p.overlay;
+  if (typeof p.overlayClickThrough === 'boolean') out.overlayClickThrough = p.overlayClickThrough;
   if (typeof p.overlayOpacity === 'number' && Number.isFinite(p.overlayOpacity)) out.overlayOpacity = Math.min(100, Math.max(0, Math.round(p.overlayOpacity)));
   if (p.autoConnectServerId === null) out.autoConnectServerId = null;
   if (typeof p.autoConnectServerId === 'string' && getSettings().servers.some((s) => s.id === p.autoConnectServerId)) {
@@ -169,6 +171,12 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart 
     if (ownPageOf(event.senderFrame?.url ?? '') !== 'overlay') return;
     setOverlayHeight(event.sender, Number(h));
   });
+  // the overlay's buttons: sharkord's own mic / deafen buttons, or the stream pop-out
+  ipcMain.on('overlay:action', (event, action: unknown) => {
+    if (ownPageOf(event.senderFrame?.url ?? '') !== 'overlay') return;
+    if (action === 'mic' || action === 'sound') getMainPage()?.send('shell:voice-action', action);
+    else if (action === 'popout') void popOutStream();
+  });
   ipcMain.on('server:voice', (event, state: TVoiceReport) => {
     if (!fromSavedServer(event)) return;
 
@@ -191,7 +199,8 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart 
       sharing: m?.sharing === true,
       video: m?.video === true
     }));
-    setOverlayVoice(voice.inVoice, String(state?.channel ?? '').slice(0, 64), members);
+    setOverlayVoice(voice, String(state?.channel ?? '').slice(0, 64), members, Math.max(0, Math.min(99, Number(state?.streams) || 0)));
+    setStreams(voice.inVoice ? Math.max(0, Math.min(99, Number(state?.streams) || 0)) : 0);
   });
   ipcMain.on('server:notification', (event) => {
     if (!fromSavedServer(event) || !getSettings().notifyTray) return;
@@ -245,7 +254,7 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart 
     const saved = saveSettings(picked);
     if (picked.spellcheck !== undefined) applySpellcheck(saved.spellcheck);
     if (picked.checkUpdates === true) startUpdater();
-    if (picked.overlay !== undefined || picked.overlayOpacity !== undefined) refreshOverlay();
+    if (picked.overlay !== undefined || picked.overlayOpacity !== undefined || picked.overlayClickThrough !== undefined) refreshOverlay();
     return saved;
   }));
   ipcMain.handle('servers:list', guard(() => publicServers()));

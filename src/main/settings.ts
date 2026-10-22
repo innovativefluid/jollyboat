@@ -14,6 +14,7 @@ const DEFAULTS: TSettings = {
   autostart: false,
   overlay: false,
   overlayOpacity: 75,
+  overlayClickThrough: false,
   overlayPosition: null,
   windowBounds: null,
   lastSourceName: null
@@ -61,7 +62,7 @@ const sanitize = (raw: unknown): TSettings => {
     out.autoConnectServerId = r.autoConnectServerId;
   }
   if (r.onClose === 'minimize' || r.onClose === 'tray' || r.onClose === 'quit') out.onClose = r.onClose;
-  for (const key of ['spellcheck', 'checkUpdates', 'notifyTray', 'autostart', 'overlay'] as const) {
+  for (const key of ['spellcheck', 'checkUpdates', 'notifyTray', 'autostart', 'overlay', 'overlayClickThrough'] as const) {
     if (typeof r[key] === 'boolean') out[key] = r[key] as boolean;
   }
   const b = r.windowBounds as Record<string, unknown> | undefined;

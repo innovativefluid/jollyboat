@@ -15,6 +15,7 @@ import { initScreenAudio, stopPipeWireShare } from './screen-audio';
 import { startUpdater } from './updater';
 import { askPrompt } from './prompt';
 import { setOverlayHostFocused, setOverlayTheme, setOverlayVoice } from './overlay';
+import { bindMainPage, onStreams, popOutStream, setStreams, streamCount } from './popout';
 
 // windows: toast notifications and taskbar grouping need the same AppUserModelId the installer
 // writes into the start-menu shortcut (electron-builder uses appId)
@@ -123,7 +124,7 @@ const barDark = () => (pageTheme ? pageTheme === 'dark' : nativeTheme.shouldUseD
 const sendBarState = () => {
   const wc = barView?.webContents;
   if (!wc || wc.isDestroyed()) return;
-  wc.send('bar:state', { server: serverName, zoom: page()?.getZoomFactor() ?? 1, theme: pageTheme, maximized: !!mainWindow?.isMaximized() });
+  wc.send('bar:state', { server: serverName, zoom: page()?.getZoomFactor() ?? 1, theme: pageTheme, maximized: !!mainWindow?.isMaximized(), streams: streamCount() });
   setOverlayTheme(barDark() ? 'dark' : 'light');
   const bg = barDark() ? '#18201c' : '#a6b08a';
   barView?.setBackgroundColor(bg);
@@ -137,6 +138,7 @@ ipcMain.on('server:theme', (event, theme: unknown) => {
   sendBarState();
 });
 nativeTheme.on('updated', sendBarState);
+onStreams(sendBarState);
 
 const zoom = (delta: number) => {
   const wc = page();
@@ -168,6 +170,7 @@ const handleShortcuts = (wc: Electron.WebContents) =>
     const key = input.key.toLowerCase();
     const action =
       ctrl && input.shift && key === 's' ? () => showLauncher()
+      : ctrl && input.shift && key === 'p' ? () => void popOutStream()
       : ctrl && input.shift && key === 'i' ? () => page()?.toggleDevTools()
       : (ctrl && !input.shift && key === 'r') || input.key === 'F5' ? reloadPage
       : ctrl && (key === '=' || key === '+') ? () => zoom(+0.5)
@@ -462,7 +465,8 @@ const dropServer = (reason: string, serverId?: string) => {
   }
   serverName = '';
   setServerName('');
-  setOverlayVoice(false, '', []);
+  setOverlayVoice({ connected: false, inVoice: false, micMuted: false, deafened: false, speaking: false }, '', [], 0);
+  setStreams(0);
   showLauncher(reason, serverId, visible);
 };
 
@@ -495,6 +499,7 @@ ipcMain.on('bar:action', (event, action: unknown, at: unknown) => {
   else if (action === 'minimize') mainWindow?.minimize();
   else if (action === 'maximize') mainWindow?.isMaximized() ? mainWindow.unmaximize() : mainWindow?.maximize();
   else if (action === 'close') mainWindow?.close();
+  else if (action === 'popout') void popOutStream();
   else if (action === 'menu' && mainWindow) {
     const p = (at ?? {}) as { x?: unknown; y?: unknown };
     barMenu().popup({ window: mainWindow, x: typeof p.x === 'number' ? p.x : 0, y: typeof p.y === 'number' ? p.y : BAR_HEIGHT });
@@ -634,6 +639,7 @@ if (!app.requestSingleInstanceLock()) {
     installBasicAuth();
     onServersChanged(refreshBasicAuth);
     installDisplayMediaHandler(() => mainWindow);
+  bindMainPage(page);
     await startBridge();
     registerIpc({
       connectToServer,

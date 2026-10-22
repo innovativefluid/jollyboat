@@ -40,11 +40,12 @@ declare global {
       onUpdateStatus: (cb: (s: TUpdateStatus) => void) => void;
       onPickerSources: (cb: (sources: TCaptureSource[], lastName: string | null) => void) => void;
       promptAnswer: (answer: boolean) => void;
-      barAction: (action: 'settings' | 'zoom-in' | 'zoom-out' | 'zoom-reset' | 'menu' | 'minimize' | 'maximize' | 'close', at?: { x: number; y: number }) => void;
-      onBarState: (cb: (state: { server: string; zoom: number; theme: 'light' | 'dark' | null; maximized: boolean }) => void) => void;
+      barAction: (action: 'settings' | 'zoom-in' | 'zoom-out' | 'zoom-reset' | 'menu' | 'minimize' | 'maximize' | 'close' | 'popout', at?: { x: number; y: number }) => void;
+      onBarState: (cb: (state: { server: string; zoom: number; theme: 'light' | 'dark' | null; maximized: boolean; streams: number }) => void) => void;
       pickerChoose: (result: TPickerResult) => void;
       onOverlayState: (cb: (state: TOverlayState) => void) => void;
       overlayHeight: (h: number) => void;
+      overlayAction: (action: 'mic' | 'sound' | 'popout') => void;
     };
   }
 }
