@@ -37,6 +37,8 @@ if (boot.ownPage) {
       bridgeStatus: () => ipcRenderer.invoke('bridge:status'),
       screenAudioInfo: () => ipcRenderer.invoke('screenAudio:info'),
       openWebsite: () => ipcRenderer.invoke('app:website'),
+      editCustomCss: () => ipcRenderer.invoke('css:edit') as Promise<string>,
+      useCssExample: () => ipcRenderer.invoke('css:example'),
       shareCode: (ids: string[] | null, withPasswords: boolean) => ipcRenderer.invoke('share:code', ids, withPasswords),
       exportFile: (ids: string[] | null, withPasswords: boolean) => ipcRenderer.invoke('share:exportFile', ids, withPasswords),
       importText: (text: string) => ipcRenderer.invoke('share:importText', text),

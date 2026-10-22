@@ -1,0 +1,71 @@
+/* Jollyboat's lcd look for the Sharkord page: one ink on a green-grey panel, like the setup
+   window. Sharkord styles itself through these variables (light in :root, dark in .dark), so
+   the colours change here and the layout stays Sharkord's own. Edit freely; the file is read
+   again whenever it changes. (Sharkord puts .dark / .light on <html> and on its main view; the
+   html-prefixed selectors are a notch more specific than Sharkord's own, so these win whatever
+   order the stylesheets load in.) */
+
+html:root,
+html .light {
+  --radius: 4px;
+  --background: #a6b08a;
+  --foreground: #1a221c;
+  --card: #b0ba94;
+  --card-foreground: #1a221c;
+  --popover: #b0ba94;
+  --popover-foreground: #1a221c;
+  --primary: #1a221c;
+  --primary-foreground: #b0ba94;
+  --secondary: #96a07e;
+  --secondary-foreground: #1a221c;
+  --muted: #96a07e;
+  --muted-foreground: #46503e;
+  --accent: #8e9876;
+  --accent-foreground: #1a221c;
+  --destructive: #5a2a1c;
+  --border: #8e9876;
+  --input: #96a07e;
+  --ring: #46503e;
+  --sidebar: #9ea882;
+  --sidebar-foreground: #1a221c;
+  --sidebar-primary: #1a221c;
+  --sidebar-primary-foreground: #b0ba94;
+  --sidebar-accent: #8e9876;
+  --sidebar-accent-foreground: #1a221c;
+  --sidebar-border: #8e9876;
+  --sidebar-ring: #46503e;
+}
+
+html.dark,
+html .dark {
+  --background: #18201c;
+  --foreground: #c4d6a6;
+  --card: #202a24;
+  --card-foreground: #c4d6a6;
+  --popover: #202a24;
+  --popover-foreground: #c4d6a6;
+  --primary: #c4d6a6;
+  --primary-foreground: #18201c;
+  --secondary: #303c32;
+  --secondary-foreground: #c4d6a6;
+  --muted: #303c32;
+  --muted-foreground: #869672;
+  --accent: #384438;
+  --accent-foreground: #c4d6a6;
+  --destructive: #d08a6a;
+  --border: #384438;
+  --input: #303c32;
+  --ring: #869672;
+  --sidebar: #1c2620;
+  --sidebar-foreground: #c4d6a6;
+  --sidebar-primary: #c4d6a6;
+  --sidebar-primary-foreground: #18201c;
+  --sidebar-accent: #384438;
+  --sidebar-accent-foreground: #c4d6a6;
+  --sidebar-border: #303c32;
+  --sidebar-ring: #869672;
+}
+
+/* the few places sharkord colours directly: voice state greens and reds become ink */
+.text-green-500 { color: var(--foreground) !important; }
+.text-red-500 { color: var(--destructive) !important; }

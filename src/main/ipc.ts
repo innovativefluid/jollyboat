@@ -2,6 +2,7 @@ import { BrowserWindow, ipcMain, net, safeStorage, shell, webContents, type Base
 import type { TServerInput, TSettings, TTestResult, TVoiceReport } from '../shared/types';
 import { isWayland, refreshOverlay, setOverlayHeight, setOverlayVoice } from './overlay';
 import { getMainPage, popOutStream, setStreams } from './popout';
+import { editCustomCss, refreshCustomCss, useExample } from './customcss';
 import { getAutoStart, isAutoStartSupported, setAutoStart } from './autostart';
 import { basicHeaderFor } from './basic-auth';
 import { getBridgeStatus, getBridgeToken } from './hotkeys/bridge';
@@ -63,6 +64,7 @@ const pickSettingsPatch = (patch: unknown): Partial<TSettings> => {
   if (typeof p.notifyTray === 'boolean') out.notifyTray = p.notifyTray;
   if (typeof p.overlay === 'boolean') out.overlay = p.overlay;
   if (typeof p.overlayClickThrough === 'boolean') out.overlayClickThrough = p.overlayClickThrough;
+  if (typeof p.customCss === 'boolean') out.customCss = p.customCss;
   if (typeof p.overlayOpacity === 'number' && Number.isFinite(p.overlayOpacity)) out.overlayOpacity = Math.min(100, Math.max(0, Math.round(p.overlayOpacity)));
   if (p.autoConnectServerId === null) out.autoConnectServerId = null;
   if (typeof p.autoConnectServerId === 'string' && getSettings().servers.some((s) => s.id === p.autoConnectServerId)) {
@@ -255,6 +257,7 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart 
     if (picked.spellcheck !== undefined) applySpellcheck(saved.spellcheck);
     if (picked.checkUpdates === true) startUpdater();
     if (picked.overlay !== undefined || picked.overlayOpacity !== undefined || picked.overlayClickThrough !== undefined) refreshOverlay();
+    if (picked.customCss !== undefined) refreshCustomCss();
     return saved;
   }));
   ipcMain.handle('servers:list', guard(() => publicServers()));
@@ -274,6 +277,8 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart 
   ipcMain.handle('servers:keepLogin', guard((_e, id: unknown, keep: unknown) => setKeepLogin(String(id), keep === true)));
   ipcMain.handle('servers:connect', guard((_e, id: unknown) => connectToServer(String(id))));
   ipcMain.handle('bridge:status', guard(() => getBridgeStatus()));
+  ipcMain.handle('css:edit', guard(() => editCustomCss()));
+  ipcMain.handle('css:example', guard(() => useExample()));
   ipcMain.handle('screenAudio:info', guard(() => describeScreenAudio()));
 
   // sharing: ids null = every server; passwords only when asked

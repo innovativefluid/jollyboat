@@ -16,6 +16,7 @@ import { startUpdater } from './updater';
 import { askPrompt } from './prompt';
 import { setOverlayHostFocused, setOverlayTheme, setOverlayVoice } from './overlay';
 import { bindMainPage, onStreams, popOutStream, setStreams, streamCount } from './popout';
+import { installCustomCss } from './customcss';
 
 // windows: toast notifications and taskbar grouping need the same AppUserModelId the installer
 // writes into the start-menu shortcut (electron-builder uses appId)
@@ -246,6 +247,7 @@ const createMainWindow = () => {
   win.on('maximize', onMaximizeChange);
   win.on('unmaximize', onMaximizeChange);
   wc.on('zoom-changed', (_e, direction) => zoom(direction === 'in' ? +0.5 : -0.5));
+  installCustomCss(page, wc);
   wc.on('page-title-updated', (_e, title) => win.setTitle(`${title} — Jollyboat`));
 
   // links Sharkord opens in a new window go to the system browser

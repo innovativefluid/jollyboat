@@ -42,6 +42,8 @@ export type TSettings = {
   overlay: boolean;
   /** the overlay's background, 0 (see-through) to 100 (solid); the text stays solid */
   overlayOpacity: number;
+  /** custom.css (next to the settings) is applied to the server page */
+  customCss: boolean;
   /** clicks go through the overlay to whatever is under it (the buttons are off then) */
   overlayClickThrough: boolean;
   /** where the overlay was left (top-left corner), null = top left of the main display */

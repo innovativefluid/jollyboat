@@ -323,6 +323,18 @@ const renderSettings = async () => {
     toast('saved');
   });
 
+  // custom css: a file next to the settings, applied to the server page while this is on
+  const customCss = $<HTMLInputElement>('custom-css');
+  customCss.checked = settings.customCss;
+  $('css-row').hidden = !customCss.checked;
+  customCss.onchange = () => {
+    $('css-row').hidden = !customCss.checked;
+    window.shell.saveSettings({ customCss: customCss.checked });
+    toast('saved');
+  };
+  $('css-edit').onclick = async () => { await window.shell.editCustomCss(); toast('opened in your editor'); };
+  $('css-example').onclick = async () => { await window.shell.useCssExample(); toast('lcd theme in custom.css'); };
+
   // voice overlay: on/off and its background; the slider saves as it moves (a little later)
   const overlay = $<HTMLInputElement>('overlay');
   const opacity = $<HTMLInputElement>('overlay-opacity');

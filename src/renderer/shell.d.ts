@@ -45,6 +45,8 @@ declare global {
       pickerChoose: (result: TPickerResult) => void;
       onOverlayState: (cb: (state: TOverlayState) => void) => void;
       overlayHeight: (h: number) => void;
+      editCustomCss: () => Promise<string>;
+      useCssExample: () => Promise<void>;
       overlayAction: (action: 'mic' | 'sound' | 'popout') => void;
     };
   }
