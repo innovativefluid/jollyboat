@@ -15,16 +15,14 @@ import { WebSocketServer, type WebSocket } from 'ws';
 import { BRIDGE_PORT, type TBridgeStatus } from '../../shared/types';
 import { findServerByUrl } from '../settings';
 import { log } from '../log';
+import { t } from '../lang';
 import { createKeySource, type TKeySource } from './sources';
 
 const PROTOCOL_VERSION = 1;
 
 // what sharkord's core actions are called in the desktop's shortcut settings (linux portal)
-const DESCRIPTIONS: Record<string, string> = {
-  'core:push-to-talk': 'Push to talk',
-  'core:toggle-mic': 'Mute or unmute the microphone',
-  'core:toggle-sound': 'Deafen or undeafen'
-};
+const describe = (id: string) =>
+  id === 'core:push-to-talk' ? t('Push to talk') : id === 'core:toggle-mic' ? t('Mute or unmute the microphone') : id === 'core:toggle-sound' ? t('Deafen or undeafen') : id.slice(0, 64);
 
 type TBinding = { id: string; combo: string };
 type TClient = { ws: WebSocket; serverId: string; serverName: string; bindings: TBinding[] };
@@ -84,7 +82,7 @@ const rebuildShortcuts = async () => {
   const round = ++applying;
   // the description shows up in the desktop's shortcut dialog (linux): a page's own action
   // ids are cut short there
-  const list = [...clients].flatMap((c) => c.bindings.map((b) => ({ combo: b.combo, description: DESCRIPTIONS[b.id] ?? b.id.slice(0, 64) })));
+  const list = [...clients].flatMap((c) => c.bindings.map((b) => ({ combo: b.combo, description: describe(b.id) })));
   const failed = await keys.apply(list);
   if (round !== applying) return; // a newer list is on its way
 

@@ -1,6 +1,7 @@
 // the voice overlay page: who is in the call, who talks (filled row), who is muted
 
 import type { TOverlayState, TVoiceMember } from '../../shared/types';
+import { t, translatePage } from '../i18n';
 
 // 12×12 pixel icons, drawn like the bar's window buttons
 const ICONS = {
@@ -17,6 +18,7 @@ const HOLD_MS = 350;
 const lastSpoke = new Map<string, number>();
 let state: TOverlayState | null = null;
 
+translatePage();
 const card = document.getElementById('card')!;
 const mic = document.getElementById('mic') as HTMLButtonElement;
 const sound = document.getElementById('sound') as HTMLButtonElement;
@@ -41,7 +43,7 @@ const rowFor = (m: TVoiceMember, now: number) => {
   if (m.self) {
     const you = document.createElement('span');
     you.className = 'self';
-    you.textContent = ' (you)';
+    you.textContent = ` (${t('you')})`;
     who.append(you);
   }
   const icons = document.createElement('span');
@@ -57,18 +59,18 @@ const render = () => {
   const now = Date.now();
   document.documentElement.dataset.theme = state.theme;
   document.documentElement.style.setProperty('--alpha', String(state.opacity / 100));
-  channel.textContent = state.channel ? `> ${state.channel}` : '> voice';
+  channel.textContent = state.channel ? `> ${state.channel}` : `> ${t('voice')}`;
   document.documentElement.classList.toggle('click-through', state.clickThrough);
   mic.classList.toggle('on', state.micMuted);
-  mic.title = state.micMuted ? 'unmute' : 'mute';
+  mic.title = state.micMuted ? t('unmute') : t('mute');
   sound.classList.toggle('on', state.deafened);
-  sound.title = state.deafened ? 'undeafen' : 'deafen';
+  sound.title = state.deafened ? t('undeafen') : t('deafen');
   popout.hidden = !state.streams;
   rows.replaceChildren(...state.members.map((m) => rowFor(m, now)));
   if (!state.members.length) {
     const empty = document.createElement('div');
     empty.className = 'empty';
-    empty.textContent = 'in a call';
+    empty.textContent = t('in a call');
     rows.append(empty);
   }
   // re-render once the hold of someone who just stopped runs out

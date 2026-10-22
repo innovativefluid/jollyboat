@@ -42,6 +42,8 @@ export type TSettings = {
   overlay: boolean;
   /** the overlay's background, 0 (see-through) to 100 (solid); the text stays solid */
   overlayOpacity: number;
+  /** the app's own language: follow the system, or one of ours */
+  language: 'system' | 'en' | 'de' | 'pl';
   /** custom.css (next to the settings) is applied to the server page */
   customCss: boolean;
   /** clicks go through the overlay to whatever is under it (the buttons are off then) */

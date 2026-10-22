@@ -3,6 +3,7 @@ import type { TServerInput, TSettings, TTestResult, TVoiceReport } from '../shar
 import { isWayland, refreshOverlay, setOverlayHeight, setOverlayVoice } from './overlay';
 import { getMainPage, popOutStream, setStreams } from './popout';
 import { editCustomCss, refreshCustomCss, useExample } from './customcss';
+import { currentLang, onLanguageChange, t } from './lang';
 import { getAutoStart, isAutoStartSupported, setAutoStart } from './autostart';
 import { basicHeaderFor } from './basic-auth';
 import { getBridgeStatus, getBridgeToken } from './hotkeys/bridge';
@@ -65,6 +66,7 @@ const pickSettingsPatch = (patch: unknown): Partial<TSettings> => {
   if (typeof p.overlay === 'boolean') out.overlay = p.overlay;
   if (typeof p.overlayClickThrough === 'boolean') out.overlayClickThrough = p.overlayClickThrough;
   if (typeof p.customCss === 'boolean') out.customCss = p.customCss;
+  if (p.language === 'system' || p.language === 'en' || p.language === 'de' || p.language === 'pl') out.language = p.language;
   if (typeof p.overlayOpacity === 'number' && Number.isFinite(p.overlayOpacity)) out.overlayOpacity = Math.min(100, Math.max(0, Math.round(p.overlayOpacity)));
   if (p.autoConnectServerId === null) out.autoConnectServerId = null;
   if (typeof p.autoConnectServerId === 'string' && getSettings().servers.some((s) => s.id === p.autoConnectServerId)) {
@@ -96,7 +98,7 @@ const testServer = async (input: TServerInput): Promise<TTestResult> => {
   try {
     origin = normalizeUrl(input.url);
   } catch {
-    return { ok: false, error: 'not a url' };
+    return { ok: false, error: t('not a url') };
   }
 
   const headers: Record<string, string> = {};
@@ -116,16 +118,16 @@ const testServer = async (input: TServerInput): Promise<TTestResult> => {
   try {
     const res = await net.fetch(`${origin}/info`, { headers, signal: AbortSignal.timeout(8000) });
 
-    if (res.status === 401) return { ok: false, status: 401, error: 'proxy login wrong or missing' };
+    if (res.status === 401) return { ok: false, status: 401, error: t('proxy login wrong or missing') };
     if (!res.ok) return { ok: false, status: res.status, error: `http ${res.status}` };
 
     const info = await res.json();
 
-    if (typeof info?.serverId !== 'string') return { ok: false, error: 'not a sharkord server' };
+    if (typeof info?.serverId !== 'string') return { ok: false, error: t('not a sharkord server') };
 
     return { ok: true, info, version: res.headers.get('x-sharkord-version') ?? undefined };
   } catch (err) {
-    return { ok: false, error: `unreachable | ${(err as Error).message.toLowerCase().replace(/^net::err_/, '').replace(/_/g, ' ')}` };
+    return { ok: false, error: `${t('unreachable')} | ${(err as Error).message.toLowerCase().replace(/^net::err_/, '').replace(/_/g, ' ')}` };
   }
 };
 
@@ -152,6 +154,7 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart 
       platform: process.platform,
       version: __APP_VERSION__,
       storeUpdates: updatesFromStore(),
+      lang: currentLang(),
       wayland: isWayland(),
       bridge: server && bridge.ownedByUs ? { ownedByUs: true, token: getBridgeToken() } : null,
       // sharkord's own login, kept across launches (the page would hold it in localStorage anyway)
@@ -258,6 +261,7 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart 
     if (picked.checkUpdates === true) startUpdater();
     if (picked.overlay !== undefined || picked.overlayOpacity !== undefined || picked.overlayClickThrough !== undefined) refreshOverlay();
     if (picked.customCss !== undefined) refreshCustomCss();
+    if (picked.language !== undefined) onLanguageChange();
     return saved;
   }));
   ipcMain.handle('servers:list', guard(() => publicServers()));

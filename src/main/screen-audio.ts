@@ -15,6 +15,7 @@ import { createRequire } from 'node:module';
 import { basename } from 'node:path';
 import { release } from 'node:os';
 import { log } from './log';
+import { t } from './lang';
 
 type TScreenAudioMode = 'loopback-own-excluded' | 'loopback' | 'pipewire' | 'none';
 
@@ -146,13 +147,13 @@ export const stopPipeWireShare = () => {
 /** one line for the launcher */
 export const describeScreenAudio = () =>
   ({
-    'loopback-own-excluded': { ok: true, text: 'share audio ready' },
+    'loopback-own-excluded': { ok: true, text: t('share audio ready') },
     loopback:
       process.platform === 'win32'
-        ? { ok: false, text: 'share audio | others may hear themselves (windows older than 10 22h2)' }
+        ? { ok: false, text: t('share audio | others may hear themselves (windows older than 10 22h2)') }
         : process.platform === 'darwin'
-          ? { ok: false, text: 'share audio | experimental on mac, others may hear themselves' }
-          : { ok: false, text: 'share audio | others may hear themselves (no pipewire)' },
-    pipewire: { ok: true, text: 'share audio ready' },
-    none: { ok: false, text: 'share audio unavailable' }
+          ? { ok: false, text: t('share audio | experimental on mac, others may hear themselves') }
+          : { ok: false, text: t('share audio | others may hear themselves (no pipewire)') },
+    pipewire: { ok: true, text: t('share audio ready') },
+    none: { ok: false, text: t('share audio unavailable') }
   })[mode];

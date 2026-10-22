@@ -17,6 +17,7 @@ declare global {
       version: string;
       storeUpdates: boolean;
       wayland: boolean;
+      lang: 'en' | 'de' | 'pl';
       getSettings: () => Promise<TSettings & { secureStorage: boolean; spellcheckAtStart: boolean }>;
       saveSettings: (patch: Partial<TSettings>) => Promise<TSettings>;
       listServers: () => Promise<TServerEntry[]>;

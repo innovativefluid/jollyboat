@@ -3,6 +3,7 @@
 // that survives a chat message. Passwords are only included when asked for.
 
 import { dialog, type BrowserWindow } from 'electron';
+import { t } from './lang';
 import { readFile, writeFile } from 'node:fs/promises';
 import type { TServerInput } from '../shared/types';
 import { decryptPassword, getSettings, normalizeUrl, upsertServer } from './settings';
@@ -48,7 +49,7 @@ export const parseShared = (text: string): TShared => {
   try {
     parsed = JSON.parse(json);
   } catch {
-    throw new Error('not a share code');
+    throw new Error(t('not a share code'));
   }
 
   const doc = parsed as Partial<TShared>;
@@ -76,7 +77,7 @@ export const parseShared = (text: string): TShared => {
     };
   });
 
-  if (servers.length === 0) throw new Error('no servers in it');
+  if (servers.length === 0) throw new Error(t('no servers in it'));
 
   return { jollyboat: FORMAT, servers };
 };
@@ -103,9 +104,9 @@ export const importShared = (doc: TShared) => {
 
 export const exportToFile = async (win: BrowserWindow | null, doc: TShared) => {
   const { filePath, canceled } = await dialog.showSaveDialog(win ?? undefined as never, {
-    title: 'save server file',
+    title: t('save server file'),
     defaultPath: 'jollyboat-servers.json',
-    filters: [{ name: 'sharkord servers', extensions: ['json'] }]
+    filters: [{ name: t('sharkord servers'), extensions: ['json'] }]
   });
 
   if (canceled || !filePath) return null;
@@ -117,16 +118,16 @@ export const exportToFile = async (win: BrowserWindow | null, doc: TShared) => {
 
 export const importFromFile = async (win: BrowserWindow | null) => {
   const { filePaths, canceled } = await dialog.showOpenDialog(win ?? undefined as never, {
-    title: 'open server file',
+    title: t('open server file'),
     properties: ['openFile'],
-    filters: [{ name: 'sharkord servers', extensions: ['json'] }, { name: 'all files', extensions: ['*'] }]
+    filters: [{ name: t('sharkord servers'), extensions: ['json'] }, { name: t('all files'), extensions: ['*'] }]
   });
 
   if (canceled || !filePaths[0]) return null;
 
   const text = await readFile(filePaths[0], 'utf8');
 
-  if (text.length > 200_000) throw new Error('file too large');
+  if (text.length > 200_000) throw new Error(t('file too large'));
 
   return importShared(parseShared(text));
 };

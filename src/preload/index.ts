@@ -14,6 +14,7 @@ type TBootstrap = {
   /** flathub build: no update checks of our own */
   storeUpdates: boolean;
   wayland: boolean;
+  lang: 'en' | 'de' | 'pl';
   bridge: { ownedByUs: boolean; token: string } | null;
   login: { token: string | null } | null;
   screenAudio: { pipewire: boolean; virtualMic: string; dropRestrict: boolean } | null;
@@ -24,7 +25,7 @@ const boot = ipcRenderer.sendSync('shell:bootstrap') as TBootstrap;
 if (boot.ownPage) {
   // each of our pages gets only what it uses: the setup window the settings / servers api, the
   // picker, prompt and bar their one or two calls
-  const common = { platform: boot.platform, version: boot.version, storeUpdates: boot.storeUpdates, wayland: boot.wayland };
+  const common = { platform: boot.platform, version: boot.version, storeUpdates: boot.storeUpdates, wayland: boot.wayland, lang: boot.lang };
   const byPage = {
     launcher: {
       getSettings: () => ipcRenderer.invoke('settings:get') as Promise<TSettings>,

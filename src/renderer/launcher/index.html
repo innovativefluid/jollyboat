@@ -35,17 +35,17 @@
       <div class="columns">
         <div class="col left">
           <section class="panel">
-            <div class="panel-title">servers</div>
+            <div class="panel-title" data-i18n>servers</div>
             <div class="list" id="server-list"></div>
             <div class="row" style="margin-top: 8px">
-              <button class="pill" id="add-server">add server</button>
-              <button class="pill minor small alt" id="import-toggle">import</button>
-              <button class="pill minor small" id="export-all">share all</button>
+              <button class="pill" id="add-server" data-i18n>add server</button>
+              <button class="pill minor small alt" id="import-toggle" data-i18n>import</button>
+              <button class="pill minor small" id="export-all" data-i18n>share all</button>
             </div>
             <div class="row" id="import-row" style="margin-top: 10px" hidden>
-              <input type="text" id="import-code" placeholder="paste a share code" style="flex: 1" spellcheck="false" />
-              <button class="pill small" id="import-go">import</button>
-              <button class="pill minor small alt" id="import-file">from file</button>
+              <input type="text" id="import-code" placeholder="paste a share code" data-i18n-placeholder style="flex: 1" spellcheck="false" />
+              <button class="pill small" id="import-go" data-i18n>import</button>
+              <button class="pill minor small alt" id="import-file" data-i18n>from file</button>
             </div>
             <div class="hint" id="list-status" style="margin-top: 6px"></div>
           </section>
@@ -53,59 +53,56 @@
 
         <div class="col fill" id="right">
           <section class="panel alt settings" id="intro" hidden>
-            <div class="panel-title">welcome aboard</div>
-            <div class="intro-text">Jollyboat is a desktop app for Sharkord servers. Add the address of a server to start: your login stays saved, voice works from the tray, screen shares carry sound, and hotkeys work from any window.</div>
-            <div class="intro-text" style="margin-top: 6px">Nothing leaves this computer except what you send to your servers.</div>
-            <div class="row" style="margin-top: 10px"><button class="pill small" id="intro-add">add a server</button><span class="meta">or import a share code on the left</span></div>
+            <div class="panel-title" data-i18n>welcome aboard</div>
+            <div class="intro-text" data-i18n>Jollyboat is a desktop app for Sharkord servers. Add the address of a server to start: your login stays saved, voice works from the tray, screen shares carry sound, and hotkeys work from any window.</div>
+            <div class="intro-text" style="margin-top: 6px" data-i18n>Nothing leaves this computer except what you send to your servers.</div>
+            <div class="row" style="margin-top: 10px"><button class="pill small" id="intro-add" data-i18n>add a server</button><span class="meta" data-i18n>or import a share code on the left</span></div>
           </section>
           <section class="panel alt" id="editor" hidden>
             <div class="row">
-              <div class="panel-title" id="editor-title" style="margin: 0">server</div>
+              <div class="panel-title" id="editor-title" style="margin: 0" data-i18n>server</div>
               <span class="spacer"></span>
-              <button class="pill minor small" id="editor-close">close</button>
+              <button class="pill minor small" id="editor-close" data-i18n>close</button>
             </div>
             <div>
               <div class="field">
-                <label for="f-url">url</label>
+                <label for="f-url" data-i18n>url</label>
                 <div class="control"><input type="url" id="f-url" placeholder="https://chat.example.com" spellcheck="false" /><div class="note" id="url-note"></div></div>
               </div>
               <div class="field">
-                <label for="f-name">name</label>
-                <div class="control"><input type="text" id="f-name" placeholder="optional" /></div>
+                <label for="f-name" data-i18n>name</label>
+                <div class="control"><input type="text" id="f-name" placeholder="optional" data-i18n-placeholder /></div>
               </div>
               <label class="check" style="margin-top: 10px; display: flex">
-                <input type="checkbox" id="use-auth" /> proxy login / basic auth
-              </label>
+                <input type="checkbox" id="use-auth" /> <span data-i18n>proxy login / basic auth</span></label>
               <div id="auth-fields" hidden>
-                <div class="hint" style="margin-top: 4px">only if a proxy asks for a login before sharkord</div>
+                <div class="hint" style="margin-top: 4px" data-i18n>only if a proxy asks for a login before sharkord</div>
                 <div class="field" style="margin-top: 4px">
-                  <label for="f-user">user</label>
+                  <label for="f-user" data-i18n>user</label>
                   <div class="control"><input type="text" id="f-user" autocomplete="off" spellcheck="false" /></div>
                 </div>
                 <div class="field">
-                  <label for="f-pass">password</label>
+                  <label for="f-pass" data-i18n>password</label>
                   <div class="control"><input type="password" id="f-pass" autocomplete="off" /></div>
                 </div>
               </div>
               <label class="check" style="margin-top: 6px; display: flex">
-                <input type="checkbox" id="keep-login" checked /> stay logged in
-              </label>
+                <input type="checkbox" id="keep-login" checked /> <span data-i18n>stay logged in</span></label>
               <label class="check" id="auto-connect-row" style="margin-top: 6px; display: flex" hidden>
-                <input type="checkbox" id="auto-connect" /> open at start
-              </label>
+                <input type="checkbox" id="auto-connect" /> <span data-i18n>open at start</span></label>
               <div class="hint" id="test-status" style="margin-top: 6px"></div>
               <div class="row" style="margin-top: 10px">
-                <button class="pill small" id="save">save</button>
-                <button class="pill minor small alt" id="open-now" hidden>open</button>
+                <button class="pill small" id="save" data-i18n>save</button>
+                <button class="pill minor small alt" id="open-now" hidden data-i18n>open</button>
                 <span class="spacer"></span>
-                <button class="pill minor small alt" id="delete" hidden>remove</button>
+                <button class="pill minor small alt" id="delete" hidden data-i18n>remove</button>
               </div>
               <div id="share-row" hidden>
-                <div class="panel-title" style="margin-top: 12px">share</div>
+                <div class="panel-title" style="margin-top: 12px" data-i18n>share</div>
                 <div class="row">
-                  <button class="pill minor small" id="share-copy">copy code</button>
-                  <button class="pill minor small alt" id="share-file">save file</button>
-                  <label class="check"><input type="checkbox" id="share-passwords" /> include password</label>
+                  <button class="pill minor small" id="share-copy" data-i18n>copy code</button>
+                  <button class="pill minor small alt" id="share-file" data-i18n>save file</button>
+                  <label class="check"><input type="checkbox" id="share-passwords" /> <span data-i18n>include password</span></label>
                 </div>
                 <div class="hint" id="share-status" style="margin-top: 6px"></div>
               </div>
@@ -113,43 +110,44 @@
           </section>
 
           <section class="panel alt settings">
-            <div class="panel-title">app</div>
+            <div class="panel-title" data-i18n>app</div>
             <div class="hint" id="bridge-text"></div>
             <div class="hint" id="screen-audio-text" style="margin-top: 4px"></div>
             <div class="row" style="margin-top: 8px; gap: 10px">
-              <button class="pill minor small" id="mic-test">test the mic</button>
+              <button class="pill minor small" id="mic-test" data-i18n>test the mic</button>
               <div class="meter" id="mic-meter" aria-label="mic level"></div>
               <span class="meta" id="mic-status"></span>
             </div>
-            <div class="row" style="margin-top: 10px"><span class="meta">closing the window</span><div id="on-close"></div></div>
-            <label class="check" id="autostart-row" style="margin-top: 6px"><input type="checkbox" id="autostart" /> start with the system</label>
-            <label class="check" style="margin-top: 6px"><input type="checkbox" id="notify-tray" /> mark new messages</label>
-            <label class="check" style="margin-top: 6px"><input type="checkbox" id="custom-css" /> custom css on the server page</label>
+            <div class="row" style="margin-top: 10px"><span class="meta" data-i18n>closing the window</span><div id="on-close"></div></div>
+            <div class="row" style="margin-top: 8px"><span class="meta" data-i18n>language</span><div id="language"></div></div>
+            <label class="check" id="autostart-row" style="margin-top: 6px"><input type="checkbox" id="autostart" /> <span data-i18n>start with the system</span></label>
+            <label class="check" style="margin-top: 6px"><input type="checkbox" id="notify-tray" /> <span data-i18n>mark new messages</span></label>
+            <label class="check" style="margin-top: 6px"><input type="checkbox" id="custom-css" /> <span data-i18n>custom css on the server page</span></label>
             <div class="row" id="css-row" style="margin-top: 6px" hidden>
-              <button class="pill minor small" id="css-edit">edit custom.css</button>
-              <button class="pill minor small alt" id="css-example">start from the lcd theme</button>
+              <button class="pill minor small" id="css-edit" data-i18n>edit custom.css</button>
+              <button class="pill minor small alt" id="css-example" data-i18n>start from the lcd theme</button>
             </div>
-            <label class="check" style="margin-top: 6px"><input type="checkbox" id="overlay" /> voice overlay</label>
+            <label class="check" style="margin-top: 6px"><input type="checkbox" id="overlay" /> <span data-i18n>voice overlay</span></label>
             <div id="overlay-options" hidden>
               <div class="row" style="margin-top: 6px; gap: 10px">
-                <span class="meta">background</span>
+                <span class="meta" data-i18n>background</span>
                 <input type="range" class="slider" id="overlay-opacity" min="0" max="100" step="5" aria-label="overlay background" />
                 <span class="meta" id="overlay-opacity-value" style="min-width: 38px"></span>
               </div>
-              <label class="check" style="margin-top: 6px; display: flex"><input type="checkbox" id="overlay-click-through" /> clicks go through it | buttons off, hotkeys only</label>
-              <div class="hint" id="overlay-hint" style="margin-top: 4px">on top of other windows while you are in a call and Jollyboat is in the background | drag it where you want it</div>
+              <label class="check" style="margin-top: 6px; display: flex"><input type="checkbox" id="overlay-click-through" /> <span data-i18n>clicks go through it | buttons off, hotkeys only</span></label>
+              <div class="hint" id="overlay-hint" style="margin-top: 4px" data-i18n>on top of other windows while you are in a call and Jollyboat is in the background | drag it where you want it</div>
             </div>
           </section>
 
           <section class="panel settings">
-            <div class="panel-title">privacy</div>
-            <div class="meta" id="privacy-line">talks to your servers | and github, only while update checks are on</div>
-            <label class="check" style="margin-top: 8px"><input type="checkbox" id="spellcheck" /> spellcheck | dictionaries from google</label>
-            <label class="check" id="updates-row" style="margin-top: 6px" hidden><input type="checkbox" id="check-updates" /> check for updates on github</label>
+            <div class="panel-title" data-i18n>privacy</div>
+            <div class="meta" id="privacy-line" data-i18n>talks to your servers | and github, only while update checks are on</div>
+            <label class="check" style="margin-top: 8px"><input type="checkbox" id="spellcheck" /> <span data-i18n>spellcheck | dictionaries from google</span></label>
+            <label class="check" id="updates-row" style="margin-top: 6px" hidden><input type="checkbox" id="check-updates" /> <span data-i18n>check for updates on github</span></label>
             <div class="hint" id="update-line" style="margin-top: 8px"></div>
             <div class="row" style="margin-top: 10px">
-              <button class="pill minor small" id="diagnostics">copy diagnostics</button>
-              <span class="meta">for bug reports | no server names or passwords</span>
+              <button class="pill minor small" id="diagnostics" data-i18n>copy diagnostics</button>
+              <span class="meta" data-i18n>for bug reports | no server names or passwords</span>
             </div>
           </section>
         </div>

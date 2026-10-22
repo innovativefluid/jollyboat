@@ -1,6 +1,8 @@
 import type { TCaptureSource } from '../../shared/types';
 import { segment, bootTheme } from '../theme/ui';
+import { t, translatePage } from '../i18n';
 
+translatePage();
 bootTheme();
 
 const grid = document.getElementById('grid')!;
@@ -42,7 +44,7 @@ const share = () => {
   if (selected) window.shell.pickerChoose({ sourceId: selected });
 };
 
-segment(document.getElementById('kind')!, [{ value: 'screen', label: 'screens' }, { value: 'window', label: 'windows' }], kind, (v) => {
+segment(document.getElementById('kind')!, [{ value: 'screen', label: t('screens') }, { value: 'window', label: t('windows') }], kind, (v) => {
   kind = v;
   render();
 });

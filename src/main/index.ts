@@ -14,6 +14,7 @@ import { applySpellcheck, blockDictionaryDownloads } from './privacy';
 import { initScreenAudio, stopPipeWireShare } from './screen-audio';
 import { startUpdater } from './updater';
 import { askPrompt } from './prompt';
+import { t } from './lang';
 import { setOverlayHostFocused, setOverlayTheme, setOverlayVoice } from './overlay';
 import { bindMainPage, onStreams, popOutStream, setStreams, streamCount } from './popout';
 import { installCustomCss } from './customcss';
@@ -277,7 +278,7 @@ const createMainWindow = () => {
     const url = wc.getURL();
     const saved = findServerByUrl(url);
 
-    if (crashes.length >= 3 || !saved) dropServer(`page crashed (${details.reason})`, saved?.id);
+    if (crashes.length >= 3 || !saved) dropServer(t('page crashed ({reason})', { reason: details.reason }), saved?.id);
     else wc.loadURL(url);
   });
 
@@ -316,7 +317,7 @@ const createMainWindow = () => {
     interrupted = null;
     quitting = false;
 
-    askPrompt(win, { message: 'still in a call', detail: wasQuitting ? 'leave it and quit?' : 'leave it?', yes: 'leave', no: 'stay' }).then((leave) => {
+    askPrompt(win, { message: t('still in a call'), detail: wasQuitting ? t('leave it and quit?') : t('leave it?'), yes: t('leave'), no: t('stay') }).then((leave) => {
       if (!leave) return;
       waiveGuard = true;
       again();
@@ -332,7 +333,7 @@ const createMainWindow = () => {
     if (!isMainFrame || code === -3 /* aborted: a new navigation started */) return;
 
     const text = description.toLowerCase().replace(/^err_/, '').replace(/_/g, ' ');
-    dropServer(text === 'too many retries' ? 'proxy login refused | check the proxy login' : text, findServerByUrl(url)?.id);
+    dropServer(text === 'too many retries' ? t('proxy login refused | check the proxy login') : text, findServerByUrl(url)?.id);
   });
 
   // an http error page from the server itself (did-fail-load does not fire for those)
@@ -340,8 +341,8 @@ const createMainWindow = () => {
     const saved = findServerByUrl(url);
     if (!saved || httpResponseCode < 400) return;
     log('window', 'server answered', httpResponseCode, 'for the page');
-    if (httpResponseCode === 401 || httpResponseCode === 407) dropServer('proxy login refused | check the proxy login', saved.id);
-    else if (httpResponseCode >= 500) dropServer(`server error ${httpResponseCode}`, saved.id);
+    if (httpResponseCode === 401 || httpResponseCode === 407) dropServer(t('proxy login refused | check the proxy login'), saved.id);
+    else if (httpResponseCode >= 500) dropServer(t('server error {code}', { code: httpResponseCode }), saved.id);
   });
 
   // closing: minimize (default), hide into the tray, or quit. quitting closes the page first so
@@ -477,17 +478,17 @@ const WEBSITE = 'https://innovativefluid.net';
 // the bar's ⋯ menu: everything the old menu bar had that the bar does not show
 const barMenu = () =>
   Menu.buildFromTemplate([
-    { label: 'Reload', accelerator: 'CommandOrControl+R', click: reloadPage },
-    { label: 'Full screen', accelerator: 'F11', click: toggleFullScreen },
-    { label: 'Developer tools', accelerator: 'CommandOrControl+Shift+I', click: () => page()?.toggleDevTools() },
+    { label: t('Reload'), accelerator: 'CommandOrControl+R', click: reloadPage },
+    { label: t('Full screen'), accelerator: 'F11', click: toggleFullScreen },
+    { label: t('Developer tools'), accelerator: 'CommandOrControl+Shift+I', click: () => page()?.toggleDevTools() },
     { type: 'separator' },
     { label: 'Copy diagnostics', click: () => clipboard.writeText(diagnostics()) },
-    { label: 'Jollyboat on GitHub', click: () => shell.openExternal('https://github.com/innovativefluid/jollyboat') },
-    { label: 'Releases', click: () => shell.openExternal('https://github.com/innovativefluid/jollyboat/releases') },
+    { label: t('Jollyboat on GitHub'), click: () => shell.openExternal('https://github.com/innovativefluid/jollyboat') },
+    { label: t('Releases'), click: () => shell.openExternal('https://github.com/innovativefluid/jollyboat/releases') },
     { label: 'innovativefluid.net', click: () => shell.openExternal(WEBSITE) },
     { label: `Version ${__APP_VERSION__}`, enabled: false },
     { type: 'separator' },
-    { label: 'Quit', accelerator: 'CommandOrControl+Q', click: quit }
+    { label: t('Quit'), accelerator: 'CommandOrControl+Q', click: quit }
   ]);
 
 ipcMain.on('bar:action', (event, action: unknown, at: unknown) => {

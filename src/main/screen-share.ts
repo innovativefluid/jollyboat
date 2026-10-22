@@ -7,6 +7,7 @@
 import { BrowserWindow, desktopCapturer, ipcMain, session, type BaseWindow } from 'electron';
 import type { TCaptureSource, TPickerResult } from '../shared/types';
 import { log } from './log';
+import { t } from './lang';
 import { loopbackForRequest, markShareGranted } from './screen-audio';
 import { getSettings, saveSettings } from './settings';
 import { pageUrl, preloadPath, iconPath } from './paths';
@@ -29,7 +30,7 @@ const openPicker = (parent: BaseWindow | undefined, sources: TCaptureSource[]) =
       show: false,
       autoHideMenuBar: true,
       icon: iconPath(),
-      title: 'Share your screen',
+      title: t('Share your screen'),
       webPreferences: { preload: preloadPath(), sandbox: true, contextIsolation: true }
     });
 

@@ -2,8 +2,10 @@
 // for the rest. follows the system's light/dark setting (css), the mark too
 
 import boatMap from '../../../build/pixel/icon-16.txt?raw';
+import { t, translatePage } from '../i18n';
 
 const $ = (id: string) => document.getElementById(id)!;
+translatePage();
 if (window.shell.platform === 'darwin') document.body.classList.add('mac');
 const dark = window.matchMedia('(prefers-color-scheme: dark)');
 
@@ -82,7 +84,7 @@ window.shell.onBarState((state) => {
   repaint();
   $('server').textContent = state.server;
   $('max-icon').querySelector('path')!.setAttribute('d', state.maximized ? RESTORE : MAXIMIZE);
-  $('maximize').title = state.maximized ? 'restore' : 'maximize';
+  $('maximize').title = state.maximized ? t('restore') : t('maximize');
   $('zoom').textContent = `${Math.round(state.zoom * 100)}%`;
   $('popout').hidden = !state.streams;
 });

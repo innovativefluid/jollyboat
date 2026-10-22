@@ -5,6 +5,7 @@
 
 import { createConnection, type Socket } from 'node:net';
 import { log } from './log';
+import { t } from './lang';
 
 export type TValue = string | number | boolean | bigint | TValue[] | Map<string, TValue> | TVariant;
 export type TVariant = { sig: string; value: TValue };
@@ -475,7 +476,7 @@ export const requestAutostart = async (enabled: boolean, commandline: string[]):
     await bus.addMatch(`type='signal',interface='org.freedesktop.portal.Request',member='Response'`);
 
     const options = new Map<string, TValue>([
-      ['reason', variant('s', 'Start Jollyboat in the tray when you log in')],
+      ['reason', variant('s', t('Start Jollyboat in the tray when you log in'))],
       ['autostart', variant('b', enabled)],
       ['commandline', variant('as', commandline)],
       ['dbus-activatable', variant('b', false)]

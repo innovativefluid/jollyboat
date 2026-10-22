@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { TVoiceState } from '../shared/types';
 import { log } from './log';
+import { t, whenLanguageChanges } from './lang';
 
 type TTrayActions = {
   toggle: () => void;
@@ -74,8 +75,8 @@ const tooltip = () => {
   const parts = ['Jollyboat'];
 
   if (state.serverName) parts.push(state.serverName);
-  if (state.inVoice) parts.push(state.deafened ? 'deafened' : state.micMuted ? 'mic muted' : 'in voice');
-  if (unread() > 0) parts.push(`${unread()} new`);
+  if (state.inVoice) parts.push(state.deafened ? t('deafened') : state.micMuted ? t('mic muted') : t('in voice'));
+  if (unread() > 0) parts.push(t('{n} new', { n: unread() }));
 
   return parts.join(' | ');
 };
@@ -102,22 +103,22 @@ const render = () => {
   tray.setContextMenu(
     Menu.buildFromTemplate([
       ...(state.serverName ? [{ label: state.serverName, enabled: false }] : []),
-      { label: 'Show', click: actions.show },
-      { label: 'Servers and settings…', click: actions.showLauncher },
+      { label: t('Show'), click: actions.show },
+      { label: t('Servers and settings…'), click: actions.showLauncher },
       { type: 'separator' },
       {
-        label: state.micMuted ? 'Unmute microphone' : 'Mute microphone',
+        label: state.micMuted ? t('Unmute microphone') : t('Mute microphone'),
         enabled: state.connected,
         click: () => actions?.voiceAction('mic')
       },
       {
-        label: state.deafened ? 'Undeafen' : 'Deafen',
+        label: state.deafened ? t('Undeafen') : t('Deafen'),
         enabled: state.connected,
         click: () => actions?.voiceAction('sound')
       },
-      ...(state.inVoice ? [{ label: 'Leave call', click: () => actions?.voiceAction('leave') }] : []),
+      ...(state.inVoice ? [{ label: t('Leave call'), click: () => actions?.voiceAction('leave') }] : []),
       { type: 'separator' },
-      { label: 'Quit', click: actions.quit }
+      { label: t('Quit'), click: actions.quit }
     ])
   );
 
@@ -130,6 +131,7 @@ export const createTray = (a: TTrayActions) => {
   // left click shows the window, or puts it away when it is already in front
   tray.on('click', a.toggle);
   render();
+  whenLanguageChanges(render);
 
   return tray;
 };
