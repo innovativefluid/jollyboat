@@ -8,8 +8,7 @@ import pl from './locales/pl.json';
 export type TLang = 'en' | 'de' | 'pl';
 export type TLanguageSetting = 'system' | TLang;
 
-export const LANGS: readonly TLang[] = ['en', 'de', 'pl'];
-export const LANG_NAMES: Record<TLang, string> = { en: 'English', de: 'Deutsch', pl: 'Polski' };
+const LANGS: readonly TLang[] = ['en', 'de', 'pl'];
 
 const dictionaries: Record<TLang, Record<string, string>> = { en: {}, de, pl };
 

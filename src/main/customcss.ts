@@ -28,7 +28,7 @@ const readCss = () => {
 };
 
 /** (re)applies the file to the page; removes it when the setting is off */
-export const applyCustomCss = async () => {
+const applyCustomCss = async () => {
   const wc = target?.();
   if (!wc || wc.isDestroyed()) return;
 

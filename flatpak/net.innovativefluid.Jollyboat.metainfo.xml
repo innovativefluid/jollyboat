@@ -81,6 +81,17 @@
   </keywords>
 
   <releases>
+    <release version="0.3.2" date="2026-10-22">
+      <description>
+        <ul>
+          <li>Pop out a stream: a share or camera in its own always-on-top window</li>
+          <li>Overlay: mute and deafen buttons, optional click-through</li>
+          <li>Custom CSS for the server page, with an lcd theme to start from</li>
+          <li>Welcome panel on first run, mic check</li>
+          <li>German and Polish</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.3.1" date="2026-10-21">
       <description>
         <p>Release files follow one naming scheme.</p>

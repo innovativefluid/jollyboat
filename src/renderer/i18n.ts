@@ -2,7 +2,7 @@
 
 import { createT, type TLang } from '../shared/i18n';
 
-export const lang: TLang = window.shell.lang;
+const lang: TLang = window.shell.lang;
 export const t = createT(lang);
 
 /** elements marked data-i18n get their text translated; -title / -placeholder likewise */

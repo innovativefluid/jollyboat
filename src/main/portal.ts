@@ -457,7 +457,7 @@ export class Bus {
 
 let requests = 0;
 
-export const PORTAL = { destination: 'org.freedesktop.portal.Desktop', path: '/org/freedesktop/portal/desktop' };
+const PORTAL = { destination: 'org.freedesktop.portal.Desktop', path: '/org/freedesktop/portal/desktop' };
 
 /** a variant's value out of a results map */
 export const result = (results: Map<string, TValue> | undefined, key: string) => (results?.get(key) as TVariant | undefined)?.value;
