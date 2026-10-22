@@ -14,6 +14,12 @@
       .item { cursor: pointer; }
       .item.failed .meta { color: var(--fg); }
       .col.fill.editing > .settings { display: none; }
+      .intro-text { font: 500 15px/1.3 var(--body); color: var(--fg); }
+      /* the mic meter: sixteen lcd blocks, filled up to the level, the peak held a moment */
+      .meter { display: flex; gap: 2px; }
+      .meter i { width: 8px; height: 14px; border: 2px solid var(--dim); border-radius: 2px; }
+      .meter i.on { background: var(--fg); border-color: var(--fg); }
+      .meter i.peak { border-color: var(--fg); }
       .footer { flex: none; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding: 0 2px; }
     </style>
   </head>
@@ -46,6 +52,12 @@
         </div>
 
         <div class="col fill" id="right">
+          <section class="panel alt settings" id="intro" hidden>
+            <div class="panel-title">welcome aboard</div>
+            <div class="intro-text">Jollyboat is a desktop app for Sharkord servers. Add the address of a server to start: your login stays saved, voice works from the tray, screen shares carry sound, and hotkeys work from any window.</div>
+            <div class="intro-text" style="margin-top: 6px">Nothing leaves this computer except what you send to your servers.</div>
+            <div class="row" style="margin-top: 10px"><button class="pill small" id="intro-add">add a server</button><span class="meta">or import a share code on the left</span></div>
+          </section>
           <section class="panel alt" id="editor" hidden>
             <div class="row">
               <div class="panel-title" id="editor-title" style="margin: 0">server</div>
@@ -104,6 +116,11 @@
             <div class="panel-title">app</div>
             <div class="hint" id="bridge-text"></div>
             <div class="hint" id="screen-audio-text" style="margin-top: 4px"></div>
+            <div class="row" style="margin-top: 8px; gap: 10px">
+              <button class="pill minor small" id="mic-test">test the mic</button>
+              <div class="meter" id="mic-meter" aria-label="mic level"></div>
+              <span class="meta" id="mic-status"></span>
+            </div>
             <div class="row" style="margin-top: 10px"><span class="meta">closing the window</span><div id="on-close"></div></div>
             <label class="check" id="autostart-row" style="margin-top: 6px"><input type="checkbox" id="autostart" /> start with the system</label>
             <label class="check" style="margin-top: 6px"><input type="checkbox" id="notify-tray" /> mark new messages</label>

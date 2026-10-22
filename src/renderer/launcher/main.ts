@@ -56,6 +56,7 @@ const renderServers = async () => {
   list.innerHTML = '';
   $<HTMLButtonElement>('export-all').hidden = servers.length === 0;
 
+  $('intro').hidden = servers.length > 0;
   if (servers.length === 0) {
     list.innerHTML = '<div class="hint">no servers yet | add the url of a sharkord server</div>';
     return;
@@ -361,6 +362,65 @@ const renderSettings = async () => {
     clearTimeout(opacityTimer);
     opacityTimer = window.setTimeout(() => window.shell.saveSettings({ overlayOpacity: Number(opacity.value) }), 120);
   };
+
+  // mic check: the level of the default microphone for a few seconds, no server involved
+  const meter = $('mic-meter');
+  const SEGMENTS = 16;
+  meter.replaceChildren(...Array.from({ length: SEGMENTS }, () => document.createElement('i')));
+  const segments = Array.from(meter.children) as HTMLElement[];
+  let micStop: (() => void) | null = null;
+  const showLevel = (level: number, peak: number) => {
+    const lit = Math.round(level * SEGMENTS);
+    const held = Math.round(peak * SEGMENTS);
+    segments.forEach((s, i) => {
+      s.classList.toggle('on', i < lit);
+      s.classList.toggle('peak', i === held - 1 && i >= lit);
+    });
+  };
+  $('mic-test').onclick = async () => {
+    if (micStop) return micStop();
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      hint($('mic-status'), 'no microphone', 'bad');
+      return;
+    }
+    const ctx = new AudioContext();
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 512;
+    ctx.createMediaStreamSource(stream).connect(analyser);
+    const samples = new Float32Array(analyser.fftSize);
+    const started = performance.now();
+    let peak = 0;
+    let frame = 0;
+    const tick = () => {
+      analyser.getFloatTimeDomainData(samples);
+      let sum = 0;
+      for (const v of samples) sum += v * v;
+      // rms on a log scale: quiet speech lights a few blocks, a shout all of them
+      const db = 20 * Math.log10(Math.sqrt(sum / samples.length) + 1e-6);
+      const level = Math.min(1, Math.max(0, (db + 50) / 50));
+      peak = Math.max(level, peak - 0.012);
+      showLevel(level, peak);
+      const left = Math.ceil(12 - (performance.now() - started) / 1000);
+      $('mic-status').textContent = `say something | ${left} s`;
+      if (left <= 0) return micStop?.();
+      frame = requestAnimationFrame(tick);
+    };
+    micStop = () => {
+      cancelAnimationFrame(frame);
+      stream.getTracks().forEach((t) => t.stop());
+      void ctx.close();
+      micStop = null;
+      showLevel(0, 0);
+      $('mic-test').textContent = 'test the mic';
+      hint($('mic-status'), peak > 0.05 ? 'the mic works' : 'nothing heard', peak > 0.05 ? 'good' : 'bad');
+    };
+    $('mic-test').textContent = 'stop';
+    tick();
+  };
+  $('intro-add').onclick = () => $('add-server').click();
 
   const notify = $<HTMLInputElement>('notify-tray');
   notify.checked = settings.notifyTray;
