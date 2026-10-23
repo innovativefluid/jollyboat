@@ -326,26 +326,18 @@ const renderSettings = async () => {
     toast(t('saved'));
   });
 
-  // a theme on the server page: the app's own lcd look, or custom.css next to the settings
-  const themeOn = $<HTMLInputElement>('theme-on');
-  let themeKind: 'jollyboat' | 'custom' = settings.theme === 'custom' ? 'custom' : 'jollyboat';
-  const showTheme = () => {
-    $('theme-options').hidden = !themeOn.checked;
-    $('css-row').hidden = themeKind !== 'custom';
-  };
-  themeOn.checked = settings.theme !== 'none';
-  segment($('theme-kind'), [{ value: 'jollyboat' as const, label: 'Jollyboat' }, { value: 'custom' as const, label: t('custom') }], themeKind, (v) => {
-    themeKind = v;
-    showTheme();
-    window.shell.saveSettings({ theme: v });
-    toast(t('saved'));
-  });
-  showTheme();
-  themeOn.onchange = () => {
-    showTheme();
-    window.shell.saveSettings({ theme: themeOn.checked ? themeKind : 'none' });
-    toast(t('saved'));
-  };
+  // the server page's theme: Sharkord's own, the app's lcd look, or custom.css next to the settings
+  $('css-row').hidden = settings.theme !== 'custom';
+  segment(
+    $('theme-kind'),
+    [{ value: 'none' as const, label: 'Sharkord' }, { value: 'jollyboat' as const, label: 'Jollyboat' }, { value: 'custom' as const, label: t('custom') }],
+    settings.theme,
+    (v) => {
+      $('css-row').hidden = v !== 'custom';
+      window.shell.saveSettings({ theme: v });
+      toast(t('saved'));
+    }
+  );
   $('css-edit').onclick = async () => { await window.shell.editCustomCss(); toast(t('opened in your editor')); };
   $('css-example').onclick = async () => { await window.shell.useCssExample(); toast(t('lcd theme in custom.css')); };
 
