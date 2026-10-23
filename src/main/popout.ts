@@ -12,7 +12,7 @@ const listeners = new Set<() => void>();
 export const bindMainPage = (get: () => WebContents | null) => {
   mainPage = get;
 };
-export const getMainPage = () => mainPage?.() ?? null;
+const getMainPage = () => mainPage?.() ?? null;
 
 export const streamCount = () => streams;
 export const onStreams = (cb: () => void) => listeners.add(cb);

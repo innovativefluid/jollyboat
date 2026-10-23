@@ -39,6 +39,7 @@ if (boot.ownPage) {
       screenAudioInfo: () => ipcRenderer.invoke('screenAudio:info'),
       openWebsite: () => ipcRenderer.invoke('app:website'),
       editCustomCss: () => ipcRenderer.invoke('css:edit') as Promise<string>,
+      positionOverlay: () => ipcRenderer.invoke('overlay:position'),
       useCssExample: () => ipcRenderer.invoke('css:example'),
       shareCode: (ids: string[] | null, withPasswords: boolean) => ipcRenderer.invoke('share:code', ids, withPasswords),
       exportFile: (ids: string[] | null, withPasswords: boolean) => ipcRenderer.invoke('share:exportFile', ids, withPasswords),
@@ -74,7 +75,7 @@ if (boot.ownPage) {
         ipcRenderer.on('overlay:state', (_e, state) => cb(state));
       },
       overlayHeight: (h: number) => ipcRenderer.send('overlay:height', h),
-      overlayAction: (action: 'mic' | 'sound' | 'popout') => ipcRenderer.send('overlay:action', action)
+      overlayDone: () => ipcRenderer.send('overlay:done')
     }
   };
   contextBridge.exposeInMainWorld('shell', { ...common, ...(boot.ownPage ? byPage[boot.ownPage] : {}) });

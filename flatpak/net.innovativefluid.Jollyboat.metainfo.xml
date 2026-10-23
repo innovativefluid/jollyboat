@@ -18,7 +18,7 @@
     <ul>
       <li>Screen sharing with sound: everything you hear except your own call</li>
       <li>Global hotkeys for mute, deafen and push-to-talk, also on Wayland</li>
-      <li>An optional voice overlay that shows who is talking</li>
+      <li>An optional voice overlay that shows who is talking, clicks go through it</li>
       <li>A tray icon that shows when you are in a call, talking, muted or deafened, and new messages</li>
       <li>Several servers, proxy logins (basic auth), staying logged in and share codes</li>
       <li>Asks before a reload or quit would drop you out of a call</li>
@@ -86,6 +86,7 @@
         <ul>
           <li>The Jollyboat theme goes further: pixel type, pill buttons, ink outlines, square avatars</li>
           <li>Settings: a theme choice, Sharkord, Jollyboat or custom</li>
+          <li>The voice overlay lets clicks through; place it once with "set position"</li>
           <li>Updated dependencies, performance and security pass</li>
         </ul>
       </description>

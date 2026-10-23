@@ -14,7 +14,6 @@ const DEFAULTS: TSettings = {
   autostart: false,
   overlay: false,
   overlayOpacity: 75,
-  overlayClickThrough: false,
   theme: 'none',
   language: 'system',
   overlayPosition: null,
@@ -67,7 +66,7 @@ const sanitize = (raw: unknown): TSettings => {
   else if (r.customCss === true) out.theme = 'custom'; // 0.3.2
   if (r.language === 'system' || r.language === 'en' || r.language === 'de' || r.language === 'pl') out.language = r.language;
   if (r.onClose === 'minimize' || r.onClose === 'tray' || r.onClose === 'quit') out.onClose = r.onClose;
-  for (const key of ['spellcheck', 'checkUpdates', 'notifyTray', 'autostart', 'overlay', 'overlayClickThrough'] as const) {
+  for (const key of ['spellcheck', 'checkUpdates', 'notifyTray', 'autostart', 'overlay'] as const) {
     if (typeof r[key] === 'boolean') out[key] = r[key] as boolean;
   }
   const b = r.windowBounds as Record<string, unknown> | undefined;

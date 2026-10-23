@@ -48,7 +48,8 @@ declare global {
       overlayHeight: (h: number) => void;
       editCustomCss: () => Promise<string>;
       useCssExample: () => Promise<void>;
-      overlayAction: (action: 'mic' | 'sound' | 'popout') => void;
+      overlayDone: () => void;
+      positionOverlay: () => Promise<void>;
     };
   }
 }

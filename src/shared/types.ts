@@ -46,8 +46,6 @@ export type TSettings = {
   language: 'system' | 'en' | 'de' | 'pl';
   /** a theme on the server page: none, the app's own lcd look, or custom.css next to the settings */
   theme: 'none' | 'jollyboat' | 'custom';
-  /** clicks go through the overlay to whatever is under it (the buttons are off then) */
-  overlayClickThrough: boolean;
   /** where the overlay was left (top-left corner), null = top left of the main display */
   overlayPosition: { x: number; y: number } | null;
   /** flatpak: what the background portal last granted for starting at login (the portal's
@@ -68,7 +66,7 @@ export type TVoiceMember = { name: string; self: boolean; speaking: boolean; mic
 export type TVoiceReport = TVoiceState & { channel: string; members: TVoiceMember[]; /** playing stream videos (screen shares, cameras) that could be popped out */ streams: number };
 
 /** what the overlay window shows */
-export type TOverlayState = { channel: string; members: TVoiceMember[]; theme: 'light' | 'dark'; opacity: number; micMuted: boolean; deafened: boolean; streams: number; clickThrough: boolean };
+export type TOverlayState = { channel: string; members: TVoiceMember[]; theme: 'light' | 'dark'; opacity: number; /** being placed: draggable, with a done button */ positioning: boolean };
 
 export type TUpdateStatus = { state: 'idle' | 'checking' | 'available' | 'downloaded' | 'none' | 'error'; version?: string; message?: string; url?: string };
 

@@ -351,16 +351,16 @@ const renderSettings = async () => {
   overlay.checked = settings.overlay;
   opacity.value = String(settings.overlayOpacity);
   $('overlay-options').hidden = !overlay.checked;
-  if (window.shell.wayland) $('overlay-hint').textContent = t('shows while you are in a call and Jollyboat is in the background | on wayland the desktop places it (kde: a window rule keeps it on top)');
+  if (window.shell.wayland) $('overlay-hint').textContent = t('on top of other windows while you are in a call and Jollyboat is in the background | clicks go through it | on wayland the desktop places it (kde: a window rule keeps it in place and on top)');
   showOpacity();
   overlay.onchange = () => {
     $('overlay-options').hidden = !overlay.checked;
     window.shell.saveSettings({ overlay: overlay.checked });
     toast(t('saved'));
   };
-  const clickThrough = $<HTMLInputElement>('overlay-click-through');
-  clickThrough.checked = settings.overlayClickThrough;
-  clickThrough.onchange = () => { window.shell.saveSettings({ overlayClickThrough: clickThrough.checked }); toast('saved'); };
+  // placing it: shown and draggable until its done button. wayland lets the desktop place it
+  $('overlay-position-row').hidden = window.shell.wayland;
+  $('overlay-position').onclick = () => window.shell.positionOverlay();
   let opacityTimer = 0;
   opacity.oninput = () => {
     showOpacity();

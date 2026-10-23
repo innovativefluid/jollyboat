@@ -468,7 +468,7 @@ const dropServer = (reason: string, serverId?: string) => {
   }
   serverName = '';
   setServerName('');
-  setOverlayVoice({ connected: false, inVoice: false, micMuted: false, deafened: false, speaking: false }, '', [], 0);
+  setOverlayVoice({ connected: false, inVoice: false, micMuted: false, deafened: false, speaking: false }, '', []);
   setStreams(0);
   showLauncher(reason, serverId, visible);
 };

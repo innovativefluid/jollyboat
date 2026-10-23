@@ -1,12 +1,15 @@
 // The voice overlay (opt-in): a small always-on-top window listing who is in our voice channel,
 // who talks, who is muted. It shows while we are in a call and the server window is not the
-// focused one (you see Sharkord itself then), and remembers where it was dragged to.
+// focused one (you see Sharkord itself then). Clicks always go through it to whatever is
+// underneath; "set position" in the settings makes it draggable once, until its done button.
 //
-// Wayland: the desktop places windows and decides about "always on top", so there the overlay is
-// a normal small window (KDE can keep it above with a window rule).
+// Wayland: the desktop places windows and decides about "always on top" (an app can neither
+// move its window nor learn where it is), so there is no "set position" there; KDE can keep
+// it above and in place with a window rule.
 
 import { BrowserWindow, screen } from 'electron';
 import type { TOverlayState, TVoiceMember, TVoiceState } from '../shared/types';
+import { t } from './lang';
 import { iconPath, pageUrl, preloadPath } from './paths';
 import { getSettings, saveSettings } from './settings';
 
@@ -14,8 +17,7 @@ const WIDTH = 240;
 
 let win: BrowserWindow | null = null;
 let inVoice = false;
-let voice: TVoiceState = { connected: false, inVoice: false, micMuted: false, deafened: false, speaking: false };
-let streams = 0;
+let positioning = false;
 let channel = '';
 let members: TVoiceMember[] = [];
 let theme: 'light' | 'dark' = 'light';
@@ -25,7 +27,7 @@ let lastSent = '';
 
 export const isWayland = () => process.platform === 'linux' && (process.env.XDG_SESSION_TYPE === 'wayland' || !!process.env.WAYLAND_DISPLAY);
 
-const wanted = () => getSettings().overlay && inVoice && !hostFocused;
+const wanted = () => getSettings().overlay && (positioning || (inVoice && !hostFocused));
 
 /** the saved position, if it is still on a display; else the top left of the main display */
 const position = () => {
@@ -38,16 +40,19 @@ const position = () => {
   return { x: area.x + 24, y: area.y + 24 };
 };
 
+// while it is being placed outside a call: a stand-in row, so it has its usual size
+const sample = (): TVoiceMember[] => [{ name: t('you'), self: false, speaking: true, micMuted: false, deafened: false, sharing: false, video: false }];
+
 const state = (): TOverlayState => ({
-  channel,
-  members,
+  channel: positioning && !inVoice ? t('voice') : channel,
+  members: positioning && !members.length ? sample() : members,
   theme,
   opacity: getSettings().overlayOpacity,
-  micMuted: voice.micMuted,
-  deafened: voice.deafened,
-  streams,
-  clickThrough: getSettings().overlayClickThrough
+  positioning
 });
+
+/** clicks pass through, except while it is being placed */
+const applyMouse = () => win?.setIgnoreMouseEvents(!positioning, { forward: false });
 
 const send = () => {
   if (!win || win.isDestroyed()) return;
@@ -92,20 +97,9 @@ const create = () => {
   win.webContents.on('will-navigate', (event) => event.preventDefault());
   win.webContents.on('did-finish-load', () => {
     lastSent = '';
-    win?.setIgnoreMouseEvents(getSettings().overlayClickThrough, { forward: true });
+    applyMouse();
     send();
-    if (wanted()) win?.showInactive();
-  });
-  // a drag fires this many times: the spot is written once it comes to rest
-  let moveTimer: NodeJS.Timeout | null = null;
-  win.on('moved', () => {
-    if (moveTimer) clearTimeout(moveTimer);
-    moveTimer = setTimeout(() => {
-      moveTimer = null;
-      if (!win) return;
-      const [nx, ny] = win.getPosition();
-      saveSettings({ overlayPosition: { x: nx!, y: ny! } });
-    }, 400);
+    if (wanted()) (positioning ? win?.show() : win?.showInactive());
   });
   win.on('closed', () => {
     win = null;
@@ -118,6 +112,7 @@ const create = () => {
 /** show, hide or update the overlay after anything it depends on changed */
 export const refreshOverlay = () => {
   if (!getSettings().overlay) {
+    positioning = false;
     win?.destroy();
     win = null;
     return;
@@ -127,18 +122,36 @@ export const refreshOverlay = () => {
     return;
   }
   if (!win) return create();
-  // let clicks through (position locked, buttons off) or not; mouse moves still reach the page
-  win.setIgnoreMouseEvents(getSettings().overlayClickThrough, { forward: true });
+  applyMouse();
   send();
   if (!win.isVisible()) win.showInactive();
 };
 
-export const setOverlayVoice = (next: TVoiceState, name: string, list: TVoiceMember[], playing: number) => {
-  voice = next;
+export const setOverlayVoice = (next: TVoiceState, name: string, list: TVoiceMember[]) => {
   inVoice = next.inVoice;
-  streams = playing;
   channel = name;
   members = inVoice ? list : [];
+  refreshOverlay();
+};
+
+/** "set position": shown and draggable until its done button (not on wayland, see above) */
+export const startPositioning = () => {
+  if (!getSettings().overlay || isWayland()) return;
+  positioning = true;
+  if (!win) return create();
+  applyMouse();
+  send();
+  win.show();
+  win.focus();
+};
+
+export const finishPositioning = () => {
+  if (!positioning) return;
+  positioning = false;
+  if (win) {
+    const [x, y] = win.getPosition();
+    saveSettings({ overlayPosition: { x: x!, y: y! } });
+  }
   refreshOverlay();
 };
 
@@ -162,4 +175,4 @@ export const setOverlayHeight = (sender: Electron.WebContents, h: number) => {
 };
 
 export const describeOverlay = () =>
-  `overlay: ${getSettings().overlay ? `on, ${getSettings().overlayOpacity}% background${getSettings().overlayClickThrough ? ', click-through' : ''}${win?.isVisible() ? ', showing' : ''}${isWayland() ? ', wayland' : ''}` : 'off'}`;
+  `overlay: ${getSettings().overlay ? `on, ${getSettings().overlayOpacity}% background${getSettings().overlayPosition ? ', placed' : ''}${win?.isVisible() ? ', showing' : ''}${isWayland() ? ', wayland' : ''}` : 'off'}`;
