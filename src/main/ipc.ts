@@ -181,7 +181,7 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart 
   // the overlay while it is being placed: its done button
   ipcMain.on('overlay:done', (event) => {
     if (ownPageOf(event.senderFrame?.url ?? '') !== 'overlay') return;
-    finishPositioning();
+    finishPositioning(event.sender);
   });
   ipcMain.on('server:voice', (event, state: TVoiceReport) => {
     if (!fromSavedServer(event)) return;

@@ -145,8 +145,8 @@ export const startPositioning = () => {
   win.focus();
 };
 
-export const finishPositioning = () => {
-  if (!positioning) return;
+export const finishPositioning = (sender: Electron.WebContents) => {
+  if (!positioning || !win || sender !== win.webContents) return;
   positioning = false;
   if (win) {
     const [x, y] = win.getPosition();
