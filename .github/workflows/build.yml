@@ -152,15 +152,25 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
+      # a stalled download from flathub once held a release for an hour: each attempt gets a
+      # time limit, three attempts, and the step as a whole fifteen minutes
       - name: Install flatpak and the runtimes
+        timeout-minutes: 15
         run: |
           sudo apt-get update
           sudo apt-get install -y flatpak flatpak-builder xvfb dbus-daemon
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           echo "::notice title=flathub branches::$(flatpak remote-ls --user --all flathub --columns=ref | grep -E 'Electron2.BaseApp|Sdk.Extension.node2[0-9]/|/org.freedesktop.Sdk/' | grep "/$(uname -m | sed s/arm64/aarch64/)/" | sort | tail -n 30 | sed ':a;N;$!ba;s/\n/%0A/g')"
-          flatpak install --user -y --noninteractive flathub org.flatpak.Builder \
-            org.freedesktop.Platform//26.08 org.freedesktop.Sdk//26.08 \
-            org.freedesktop.Sdk.Extension.node24//26.08 org.electronjs.Electron2.BaseApp//26.08
+          for attempt in 1 2 3; do
+            if timeout 240 flatpak install --user -y --noninteractive flathub org.flatpak.Builder \
+                org.freedesktop.Platform//26.08 org.freedesktop.Sdk//26.08 \
+                org.freedesktop.Sdk.Extension.node24//26.08 org.electronjs.Electron2.BaseApp//26.08; then
+              break
+            fi
+            echo "::warning title=flathub::runtime download attempt $attempt failed or stalled"
+            [ $attempt = 3 ] && exit 1
+            sleep 10
+          done
       # step output also goes into an annotation (newlines as %0A): annotations stay readable
       # through the API when the log archive is not
       - name: Lint the manifest
@@ -170,6 +180,7 @@ jobs:
           echo "$out"
           echo "::notice title=lint manifest::$(echo "$out" | head -c 6000 | sed ':a;N;$!ba;s/\n/%0A/g')"
       - name: Build
+        timeout-minutes: 30
         shell: bash
         run: |
           version=$(node -p "require('./package.json').version")
