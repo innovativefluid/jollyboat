@@ -341,15 +341,16 @@ const renderSettings = async () => {
   $('css-edit').onclick = async () => { await window.shell.editCustomCss(); toast(t('opened in your editor')); };
   $('css-example').onclick = async () => { await window.shell.useCssExample(); toast(t('lcd theme in custom.css')); };
 
-  // voice overlay: on/off and its background; the slider saves as it moves (a little later)
+  // voice overlay: on/off and its transparency; the slider saves as it moves (a little later)
   const overlay = $<HTMLInputElement>('overlay');
   const opacity = $<HTMLInputElement>('overlay-opacity');
+  // the slider is the transparency (0 = solid); stored as the background's opacity
   const showOpacity = () => {
     $('overlay-opacity-value').textContent = `${opacity.value}%`;
     opacity.style.setProperty('--fill', `${opacity.value}%`);
   };
   overlay.checked = settings.overlay;
-  opacity.value = String(settings.overlayOpacity);
+  opacity.value = String(100 - settings.overlayOpacity);
   $('overlay-options').hidden = !overlay.checked;
   if (window.shell.wayland) $('overlay-hint').textContent = t('on top of other windows while you are in a call and Jollyboat is in the background | clicks go through it | on wayland the desktop places it (kde: a window rule keeps it in place and on top)');
   showOpacity();
@@ -365,66 +366,9 @@ const renderSettings = async () => {
   opacity.oninput = () => {
     showOpacity();
     clearTimeout(opacityTimer);
-    opacityTimer = window.setTimeout(() => window.shell.saveSettings({ overlayOpacity: Number(opacity.value) }), 120);
+    opacityTimer = window.setTimeout(() => window.shell.saveSettings({ overlayOpacity: 100 - Number(opacity.value) }), 120);
   };
 
-  // mic check: the level of the default microphone for a few seconds, no server involved
-  const meter = $('mic-meter');
-  const SEGMENTS = 16;
-  meter.replaceChildren(...Array.from({ length: SEGMENTS }, () => document.createElement('i')));
-  const segments = Array.from(meter.children) as HTMLElement[];
-  let micStop: (() => void) | null = null;
-  const showLevel = (level: number, peak: number) => {
-    const lit = Math.round(level * SEGMENTS);
-    const held = Math.round(peak * SEGMENTS);
-    segments.forEach((s, i) => {
-      s.classList.toggle('on', i < lit);
-      s.classList.toggle('peak', i === held - 1 && i >= lit);
-    });
-  };
-  $('mic-test').onclick = async () => {
-    if (micStop) return micStop();
-    let stream: MediaStream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
-      hint($('mic-status'), t('no microphone'), 'bad');
-      return;
-    }
-    const ctx = new AudioContext();
-    const analyser = ctx.createAnalyser();
-    analyser.fftSize = 512;
-    ctx.createMediaStreamSource(stream).connect(analyser);
-    const samples = new Float32Array(analyser.fftSize);
-    const started = performance.now();
-    let peak = 0;
-    let frame = 0;
-    const tick = () => {
-      analyser.getFloatTimeDomainData(samples);
-      let sum = 0;
-      for (const v of samples) sum += v * v;
-      // rms on a log scale: quiet speech lights a few blocks, a shout all of them
-      const db = 20 * Math.log10(Math.sqrt(sum / samples.length) + 1e-6);
-      const level = Math.min(1, Math.max(0, (db + 50) / 50));
-      peak = Math.max(level, peak - 0.012);
-      showLevel(level, peak);
-      const left = Math.ceil(12 - (performance.now() - started) / 1000);
-      $('mic-status').textContent = t('say something | {s} s', { s: left });
-      if (left <= 0) return micStop?.();
-      frame = requestAnimationFrame(tick);
-    };
-    micStop = () => {
-      cancelAnimationFrame(frame);
-      stream.getTracks().forEach((t) => t.stop());
-      void ctx.close();
-      micStop = null;
-      showLevel(0, 0);
-      $('mic-test').textContent = t('test the mic');
-      hint($('mic-status'), peak > 0.05 ? t('the mic works') : t('nothing heard'), peak > 0.05 ? 'good' : 'bad');
-    };
-    $('mic-test').textContent = t('stop');
-    tick();
-  };
   $('intro-add').onclick = () => $('add-server').click();
 
   // the app's own language; the sharkord page keeps its own setting. a change reloads this page

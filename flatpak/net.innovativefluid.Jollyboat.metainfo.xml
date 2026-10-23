@@ -84,9 +84,10 @@
     <release version="0.3.3" date="2026-10-23">
       <description>
         <ul>
-          <li>The Jollyboat theme goes further: pixel type, pill buttons, ink outlines, square avatars</li>
+          <li>The Jollyboat theme goes further: pixel type, pill buttons, ink outlines, square avatars, a few stepped animations</li>
           <li>Settings: a theme choice, Sharkord, Jollyboat or custom</li>
           <li>The voice overlay lets clicks through; place it once with "set position"</li>
+          <li>The overlay's slider is now its transparency</li>
           <li>Updated dependencies, performance and security pass</li>
         </ul>
       </description>
@@ -97,7 +98,7 @@
           <li>Pop out a stream: a share or camera in its own always-on-top window</li>
           <li>Overlay: mute and deafen buttons, optional click-through</li>
           <li>Custom CSS for the server page, with an lcd theme to start from</li>
-          <li>Welcome panel on first run, mic check</li>
+          <li>Welcome panel on first run</li>
           <li>German and Polish</li>
         </ul>
       </description>

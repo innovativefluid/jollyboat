@@ -165,11 +165,13 @@ html .border-r, html .border-l, html .border-b, html .border-t, html .border { b
 
 /* ---- voice ------------------------------------------------------------------------------ */
 
-/* who is talking: an ink outline on the avatar, the louder the thicker, no glow */
-html .speaking-effect-low, html .speaking-effect-medium, html .speaking-effect-high { animation: none; box-shadow: none; }
-html .speaking-effect-low { outline: 2px solid var(--jb-ink); outline-offset: 1px; }
-html .speaking-effect-medium { outline: 3px solid var(--jb-ink); outline-offset: 1px; }
-html .speaking-effect-high { outline: 4px solid var(--jb-ink); outline-offset: 1px; }
+/* who is talking: an ink outline on the avatar that steps out and back like a sound wave on
+   an lcd, the louder the thicker and the quicker. no glow */
+html .speaking-effect-low, html .speaking-effect-medium, html .speaking-effect-high { box-shadow: none; outline-style: solid; outline-color: var(--jb-ink); }
+html .speaking-effect-low { outline-width: 2px; animation: jb-talk 1.2s steps(2, jump-none) infinite; }
+html .speaking-effect-medium { outline-width: 3px; animation: jb-talk 0.8s steps(2, jump-none) infinite; }
+html .speaking-effect-high { outline-width: 4px; animation: jb-talk 0.5s steps(2, jump-none) infinite; }
+@keyframes jb-talk { from { outline-offset: 1px; } to { outline-offset: 3px; } }
 
 /* the few places sharkord colours directly: greens and reds become ink and the one warm tone */
 html [class*="text-green-"], html [class*="text-blue-"], html [class*="text-purple-"] { color: var(--foreground); }
@@ -178,6 +180,52 @@ html .bg-green-500 { background: var(--foreground); }
 html .bg-gray-500, html .bg-yellow-500 { background: var(--jb-dim); }
 html .bg-red-500 { background: var(--destructive); }
 html .border-card { border-color: var(--card); }
+
+/* ---- motion: the setup window's, in small steps ----------------------------------------- */
+
+/* the backdrop: the faint lcd grid of the setup window's paper */
+html body {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--jb-ink) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--jb-ink) 5%, transparent) 1px, transparent 1px);
+  background-size: 6px 6px;
+}
+
+/* cards (settings, profile) breathe a pixel or two in three steps, like the setup panels */
+html [data-slot="card"] {
+  border: 2px solid var(--jb-ink);
+  border-radius: 26px 12px 24px 14px;
+  box-shadow: 4px 4px 0 var(--jb-shadow);
+  animation: jb-breathe 9s steps(3, jump-none) infinite alternate;
+}
+html [data-slot="card"]:nth-of-type(even) { border-radius: 12px 26px 14px 24px; animation-direction: alternate-reverse; }
+@keyframes jb-breathe { from { transform: translate(0, 0); } to { transform: translate(2px, -2px); } }
+
+/* popovers, menus and dialogs rise in like a setup panel */
+html [data-slot="popover-content"][data-state="open"], html [data-slot="dropdown-menu-content"][data-state="open"],
+html [data-slot="context-menu-content"][data-state="open"], html [data-slot="select-content"][data-state="open"],
+html [data-slot="dialog-content"][data-state="open"], html [data-slot="alert-dialog-content"][data-state="open"] {
+  animation: jb-rise 180ms steps(3, jump-none) both;
+}
+@keyframes jb-rise { from { opacity: 0; translate: 0 6px; } to { opacity: 1; translate: 0 0; } }
+
+/* the channel you are on: the bar mark's water drifting under it, a pixel every 0.4 s */
+html [data-testid="channel-item"].bg-accent { position: relative; }
+html [data-testid="channel-item"].bg-accent::after {
+  content: ''; position: absolute; left: 10px; right: 10px; bottom: 2px; height: 2px; pointer-events: none;
+  background: repeating-linear-gradient(to right, var(--background) 0 2px, transparent 2px 4px);
+  animation: jb-drift 1.6s steps(4) infinite;
+}
+@keyframes jb-drift { from { background-position: 0 0; } to { background-position: 4px 0; } }
+
+/* switches and checkboxes snap over in two steps instead of sliding */
+html [data-slot="switch-thumb"] { transition: transform 120ms steps(2, jump-none); }
+
+/* anyone who asked their system for less motion gets none of it */
+@media (prefers-reduced-motion: reduce) {
+  html [data-slot="card"], html .speaking-effect-low, html .speaking-effect-medium, html .speaking-effect-high,
+  html [data-state="open"], html [data-testid="channel-item"].bg-accent::after { animation: none; }
+}
 
 /* ---- scrollbars ------------------------------------------------------------------------ */
 
