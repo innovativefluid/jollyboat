@@ -86,5 +86,8 @@ window.shell.onBarState((state) => {
   $('max-icon').querySelector('path')!.setAttribute('d', state.maximized ? RESTORE : MAXIMIZE);
   $('maximize').title = state.maximized ? t('restore') : t('maximize');
   $('zoom').textContent = `${Math.round(state.zoom * 100)}%`;
+  // the bar zooms with the page under it. css zoom, not the page zoom: chromium shares page zoom
+  // between all pages of one origin, and the setup window, picker and overlay share ours
+  document.documentElement.style.zoom = String(state.zoom);
   $('popout').hidden = !state.streams;
 });

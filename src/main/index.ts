@@ -109,12 +109,16 @@ const rememberBounds = () => {
 // the bar is the title bar on top; full screen hides it so a stream gets the whole screen. a
 // restored window keeps a 1 px edge in the bar's colour around the page, since a frameless
 // window has no border of its own
+// the bar grows with the page's zoom (its page scales its contents to match, see bar/main.ts)
+const barHeight = () => Math.round(BAR_HEIGHT * (page()?.getZoomFactor() ?? 1));
 const layout = () => {
   if (!mainWindow || !serverView || !barView) return;
   const { width, height } = mainWindow.getContentBounds();
   const full = mainWindow.isFullScreen();
   const edge = full || mainWindow.isMaximized() ? 0 : 1;
-  const bar = full ? 0 : BAR_HEIGHT;
+  const bar = full ? 0 : barHeight();
+  // mac: the traffic lights stay in the middle of the bar
+  if (process.platform === 'darwin' && !full) mainWindow.setWindowButtonPosition({ x: 12, y: Math.max(4, Math.round((bar - 16) / 2)) });
   barView.setBounds({ x: 0, y: 0, width, height: bar });
   serverView.setBounds({ x: edge, y: bar, width: Math.max(0, width - 2 * edge), height: Math.max(0, height - bar - edge) });
 };
@@ -128,6 +132,7 @@ const sendBarState = () => {
   const wc = barView?.webContents;
   if (!wc || wc.isDestroyed()) return;
   wc.send('bar:state', { server: serverName, zoom: page()?.getZoomFactor() ?? 1, theme: pageTheme, maximized: !!mainWindow?.isMaximized(), streams: streamCount() });
+  layout();
   setOverlayTheme(barDark() ? 'dark' : 'light');
   const bg = barDark() ? '#18201c' : '#a6b08a';
   barView?.setBackgroundColor(bg);
@@ -229,6 +234,8 @@ const createMainWindow = () => {
 
   bar.loadURL(pageUrl('bar'));
   bar.on('did-finish-load', sendBarState);
+  // a server's zoom is remembered per address: the bar picks it up when the page loads
+  wc.on('did-finish-load', sendBarState);
   bar.setWindowOpenHandler(() => ({ action: 'deny' }));
   bar.on('will-navigate', (event) => event.preventDefault());
   handleShortcuts(wc);
@@ -513,7 +520,7 @@ ipcMain.on('bar:action', (event, action: unknown, at: unknown) => {
   else if (action === 'popout') void popOutStream();
   else if (action === 'menu' && mainWindow) {
     const p = (at ?? {}) as { x?: unknown; y?: unknown };
-    barMenu().popup({ window: mainWindow, x: typeof p.x === 'number' ? p.x : 0, y: typeof p.y === 'number' ? p.y : BAR_HEIGHT });
+    barMenu().popup({ window: mainWindow, x: typeof p.x === 'number' ? p.x : 0, y: typeof p.y === 'number' ? p.y : barHeight() });
   }
 });
 
