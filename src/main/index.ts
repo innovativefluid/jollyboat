@@ -143,10 +143,17 @@ ipcMain.on('server:theme', (event, theme: unknown) => {
 nativeTheme.on('updated', sendBarState);
 onStreams(sendBarState);
 
-const zoom = (delta: number) => {
+// the zoom steps of a browser, up to 300 %; in and out go to the next one
+const ZOOM_STEPS = [0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3];
+const zoom = (direction: 1 | -1) => {
   const wc = page();
   if (!wc) return;
-  wc.setZoomLevel(Math.max(-3, Math.min(3, wc.getZoomLevel() + delta)));
+  const now = wc.getZoomFactor();
+  const next =
+    direction > 0
+      ? (ZOOM_STEPS.find((f) => f > now + 0.001) ?? ZOOM_STEPS[ZOOM_STEPS.length - 1]!)
+      : ([...ZOOM_STEPS].reverse().find((f) => f < now - 0.001) ?? ZOOM_STEPS[0]!);
+  wc.setZoomFactor(next);
   sendBarState();
 };
 const zoomReset = () => {
@@ -176,8 +183,8 @@ const handleShortcuts = (wc: Electron.WebContents) =>
       : ctrl && input.shift && key === 'p' ? () => void popOutStream()
       : ctrl && input.shift && key === 'i' ? () => page()?.toggleDevTools()
       : (ctrl && !input.shift && key === 'r') || input.key === 'F5' ? reloadPage
-      : ctrl && (key === '=' || key === '+') ? () => zoom(+0.5)
-      : ctrl && key === '-' ? () => zoom(-0.5)
+      : ctrl && (key === '=' || key === '+') ? () => zoom(1)
+      : ctrl && key === '-' ? () => zoom(-1)
       : ctrl && key === '0' ? zoomReset
       : input.key === 'F11' ? toggleFullScreen
       : ctrl && !input.shift && key === 'q' ? quit
@@ -248,7 +255,7 @@ const createMainWindow = () => {
   };
   win.on('maximize', onMaximizeChange);
   win.on('unmaximize', onMaximizeChange);
-  wc.on('zoom-changed', (_e, direction) => zoom(direction === 'in' ? +0.5 : -0.5));
+  wc.on('zoom-changed', (_e, direction) => zoom(direction === 'in' ? 1 : -1));
   installCustomCss(page, wc);
   wc.on('page-title-updated', (_e, title) => win.setTitle(`${title} — Jollyboat`));
 
@@ -497,8 +504,8 @@ ipcMain.on('bar:action', (event, action: unknown, at: unknown) => {
   log('bar', String(action));
 
   if (action === 'settings') showLauncher();
-  else if (action === 'zoom-in') zoom(+0.5);
-  else if (action === 'zoom-out') zoom(-0.5);
+  else if (action === 'zoom-in') zoom(1);
+  else if (action === 'zoom-out') zoom(-1);
   else if (action === 'zoom-reset') zoomReset();
   else if (action === 'minimize') mainWindow?.minimize();
   else if (action === 'maximize') mainWindow?.isMaximized() ? mainWindow.unmaximize() : mainWindow?.maximize();
