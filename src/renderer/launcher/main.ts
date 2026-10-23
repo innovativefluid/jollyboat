@@ -326,6 +326,17 @@ const renderSettings = async () => {
     toast(t('saved'));
   });
 
+  // light or dark for the server page, its bar and the overlay (this window stays as it is)
+  segment(
+    $('color-mode'),
+    [{ value: 'auto' as const, label: t('auto') }, { value: 'dark' as const, label: t('dark') }, { value: 'light' as const, label: t('light') }],
+    settings.colorMode,
+    (v) => {
+      window.shell.saveSettings({ colorMode: v });
+      toast(t('saved'));
+    }
+  );
+
   // the server page's theme: Sharkord's own, the app's lcd look, or custom.css next to the settings
   $('css-row').hidden = settings.theme !== 'custom';
   segment(

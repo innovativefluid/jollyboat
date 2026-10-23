@@ -44,6 +44,9 @@ export type TSettings = {
   overlayOpacity: number;
   /** the app's own language: follow the system, or one of ours */
   language: 'system' | 'en' | 'de' | 'pl';
+  /** light or dark for the server page, its bar and the overlay; auto follows the system. the
+   *  app's own windows always stay in the light lcd look */
+  colorMode: 'auto' | 'dark' | 'light';
   /** a theme on the server page: none, the app's own lcd look, or custom.css next to the settings */
   theme: 'none' | 'jollyboat' | 'custom';
   /** where the overlay was left (top-left corner), null = top left of the main display */

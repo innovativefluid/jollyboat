@@ -85,7 +85,7 @@
       <description>
         <ul>
           <li>The Jollyboat theme goes further: pixel type, pill buttons, ink outlines, square avatars, a few stepped animations</li>
-          <li>Settings: a theme choice, Sharkord, Jollyboat or custom</li>
+          <li>Settings: a theme choice, Sharkord, Jollyboat or custom, and a light / dark / auto mode</li>
           <li>The voice overlay lets clicks through; place it once with "set position"</li>
           <li>The overlay's slider is now its transparency</li>
           <li>Updated dependencies, performance and security pass</li>

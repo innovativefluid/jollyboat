@@ -17,6 +17,7 @@ type TBootstrap = {
   lang: 'en' | 'de' | 'pl';
   bridge: { ownedByUs: boolean; token: string } | null;
   login: { token: string | null } | null;
+  colorMode: 'auto' | 'dark' | 'light';
   screenAudio: { pipewire: boolean; virtualMic: string; dropRestrict: boolean } | null;
 };
 
@@ -342,6 +343,17 @@ if (boot.isSavedServer) {
     };
   };
 
+  // a view sharkord renders anew brings its fixed "dark" back: put right once per frame at most
+  let schemeQueued = false;
+  const scheduleScheme = () => {
+    if (schemeQueued) return;
+    schemeQueued = true;
+    requestAnimationFrame(() => {
+      schemeQueued = false;
+      enforceScheme();
+    });
+  };
+
   let scheduled = false;
   const report = () => {
     scheduled = false;
@@ -357,7 +369,41 @@ if (boot.isSavedServer) {
     requestAnimationFrame(report);
   };
 
-  // sharkord's own light/dark choice sits as a class on <html>; the bar above takes it over
+  // --- light / dark: jollyboat's setting decides ------------------------------------------
+  // sharkord reads its choice from localStorage when it starts and puts it on <html>; its main
+  // view carries a fixed "dark" of its own. both are set here (before sharkord starts, and live
+  // when the setting changes) and kept in step when sharkord renders a view anew
+  let colorMode = boot.colorMode;
+  const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+  const resolvedScheme = () => (colorMode === 'auto' ? (systemDark.matches ? 'dark' : 'light') : colorMode);
+  try {
+    localStorage.setItem('vite-ui-theme', colorMode === 'auto' ? 'system' : colorMode);
+  } catch {
+    /* storage refused: sharkord keeps its own choice */
+  }
+  const enforceScheme = () => {
+    const want = resolvedScheme();
+    const other = want === 'dark' ? 'light' : 'dark';
+    const root = document.documentElement;
+    if (!root.classList.contains(want) || root.classList.contains(other)) {
+      root.classList.remove(other);
+      root.classList.add(want);
+    }
+    for (const el of Array.from(document.querySelectorAll(`body .${other}`))) el.classList.replace(other, want);
+  };
+  systemDark.addEventListener('change', () => colorMode === 'auto' && enforceScheme());
+  ipcRenderer.on('shell:color-mode', (_e, mode: 'auto' | 'dark' | 'light') => {
+    if (mode !== 'auto' && mode !== 'dark' && mode !== 'light') return;
+    colorMode = mode;
+    try {
+      localStorage.setItem('vite-ui-theme', mode === 'auto' ? 'system' : mode);
+    } catch {
+      /* see above */
+    }
+    enforceScheme();
+  });
+
+  // the page's light/dark sits as a class on <html>; the bar above takes it over
   let lastTheme = '';
   const reportTheme = () => {
     const c = document.documentElement.classList;
@@ -367,7 +413,11 @@ if (boot.isSavedServer) {
     ipcRenderer.send('server:theme', theme || null);
   };
   const watchTheme = () => {
-    new MutationObserver(reportTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    new MutationObserver(() => {
+      enforceScheme();
+      reportTheme();
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    enforceScheme();
     reportTheme();
   };
   if (document.documentElement) watchTheme();
@@ -405,6 +455,7 @@ if (boot.isSavedServer) {
     new MutationObserver(() => {
       rescope();
       schedule();
+      scheduleScheme();
     }).observe(document.body, { subtree: true, childList: true });
     // a stream video starting or stopping is not a mutation
     for (const ev of ['playing', 'emptied', 'ended', 'loadeddata']) document.addEventListener(ev, schedule, true);

@@ -18,6 +18,7 @@ import { t } from './lang';
 import { setOverlayHostFocused, setOverlayTheme, setOverlayVoice } from './overlay';
 import { bindMainPage, onStreams, popOutStream, setStreams, streamCount } from './popout';
 import { installCustomCss } from './customcss';
+import { applyColorMode } from './colormode';
 
 // windows: toast notifications and taskbar grouping need the same AppUserModelId the installer
 // writes into the start-menu shortcut (electron-builder uses appId)
@@ -635,6 +636,7 @@ if (!app.requestSingleInstanceLock()) {
     // dns: the operating system's resolver (hosts file, mdns .local names, vpn split dns), no doh upgrade
     app.configureHostResolver({ enableBuiltInResolver: false, secureDnsMode: 'off' });
     applySpellcheck(getSettings().spellcheck);
+    applyColorMode();
     const audioStart = performance.now();
     log('start', `ready after ${Math.round(process.uptime() * 1000)} ms`);
     log('start', `screen audio: ${initScreenAudio()} in ${Math.round(performance.now() - audioStart)} ms`);

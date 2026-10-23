@@ -20,7 +20,8 @@ A desktop app for [Sharkord](https://sharkord.com) servers, for Windows and Linu
 **Around it**
 - **Tray** — shows when you are in voice, talking, muted, deafened, and new messages. Closing the window minimizes, hides to the tray or quits.
 - **Servers** — several, with proxy logins (basic auth), staying logged in, one that opens at start, and share codes to pass them on.
-- **One bar on top** — server name, zoom, servers and settings, window buttons; light or dark with Sharkord.
+- **One bar on top** — server name, zoom, servers and settings, window buttons.
+- **Light, dark or auto** — for the Sharkord page, its bar and the overlay, Jollyboat theme included.
 - **Themes** — Sharkord as it is, the **Jollyboat** theme (above, with the setup window's pixel type, pill buttons and a few stepped animations), or your own CSS.
 - **Languages** — English, German and Polish.
 - **Private** — talks to your servers, plus GitHub for update checks (one switch to turn off). No telemetry. On Windows, push-to-talk uses a keyboard hook while a hotkey is set: keys are compared with your hotkeys and never stored or sent.

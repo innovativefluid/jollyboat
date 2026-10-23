@@ -4,6 +4,7 @@ import { finishPositioning, isWayland, refreshOverlay, setOverlayHeight, setOver
 import { setStreams } from './popout';
 import { editCustomCss, refreshCustomCss, useExample } from './customcss';
 import { currentLang, onLanguageChange, t } from './lang';
+import { applyColorMode } from './colormode';
 import { getAutoStart, isAutoStartSupported, setAutoStart } from './autostart';
 import { basicHeaderFor } from './basic-auth';
 import { getBridgeStatus, getBridgeToken } from './hotkeys/bridge';
@@ -65,6 +66,7 @@ const pickSettingsPatch = (patch: unknown): Partial<TSettings> => {
   if (typeof p.notifyTray === 'boolean') out.notifyTray = p.notifyTray;
   if (typeof p.overlay === 'boolean') out.overlay = p.overlay;
   if (p.theme === 'none' || p.theme === 'jollyboat' || p.theme === 'custom') out.theme = p.theme;
+  if (p.colorMode === 'auto' || p.colorMode === 'dark' || p.colorMode === 'light') out.colorMode = p.colorMode;
   if (p.language === 'system' || p.language === 'en' || p.language === 'de' || p.language === 'pl') out.language = p.language;
   if (typeof p.overlayOpacity === 'number' && Number.isFinite(p.overlayOpacity)) out.overlayOpacity = Math.min(100, Math.max(0, Math.round(p.overlayOpacity)));
   if (p.autoConnectServerId === null) out.autoConnectServerId = null;
@@ -158,6 +160,7 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart 
       bridge: server && bridge.ownedByUs ? { ownedByUs: true, token: getBridgeToken() } : null,
       // sharkord's own login, kept across launches (the page would hold it in localStorage anyway)
       login: server && server.keepLogin !== false ? { token: loginTokenFor(server) } : null,
+      colorMode: getSettings().colorMode,
       screenAudio: server
         ? {
             pipewire: getScreenAudioMode() === 'pipewire',
@@ -259,6 +262,7 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart 
     if (picked.checkUpdates === true) startUpdater();
     if (picked.overlay !== undefined || picked.overlayOpacity !== undefined) refreshOverlay();
     if (picked.theme !== undefined) refreshCustomCss();
+    if (picked.colorMode !== undefined) applyColorMode();
     if (picked.language !== undefined) onLanguageChange();
     return saved;
   }));

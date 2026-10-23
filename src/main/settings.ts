@@ -15,6 +15,7 @@ const DEFAULTS: TSettings = {
   overlay: false,
   overlayOpacity: 75,
   theme: 'none',
+  colorMode: 'auto',
   language: 'system',
   overlayPosition: null,
   windowBounds: null,
@@ -62,6 +63,7 @@ const sanitize = (raw: unknown): TSettings => {
   if (typeof r.autoConnectServerId === 'string' && out.servers.some((s) => s.id === r.autoConnectServerId)) {
     out.autoConnectServerId = r.autoConnectServerId;
   }
+  if (r.colorMode === 'auto' || r.colorMode === 'dark' || r.colorMode === 'light') out.colorMode = r.colorMode;
   if (r.theme === 'none' || r.theme === 'jollyboat' || r.theme === 'custom') out.theme = r.theme;
   else if (r.customCss === true) out.theme = 'custom'; // 0.3.2
   if (r.language === 'system' || r.language === 'en' || r.language === 'de' || r.language === 'pl') out.language = r.language;
