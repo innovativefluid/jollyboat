@@ -146,14 +146,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { arch: x86_64, file: x64, runner: ubuntu-latest }
+          # pinned like the arm one: ubuntu-latest is moving to the ubuntu 26 beta image
+          - { arch: x86_64, file: x64, runner: ubuntu-24.04 }
           - { arch: aarch64, file: arm64, runner: ubuntu-24.04-arm }
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       # a stalled download from flathub once held a release for an hour: each attempt gets a
-      # time limit, three attempts, and the step as a whole fifteen minutes
+      # time limit (killed outright if flatpak ignores the polite signal, which a stalled one
+      # does), three attempts, and the step as a whole fifteen minutes
       - name: Install flatpak and the runtimes
         timeout-minutes: 15
         run: |
@@ -162,7 +164,7 @@ jobs:
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           echo "::notice title=flathub branches::$(flatpak remote-ls --user --all flathub --columns=ref | grep -E 'Electron2.BaseApp|Sdk.Extension.node2[0-9]/|/org.freedesktop.Sdk/' | grep "/$(uname -m | sed s/arm64/aarch64/)/" | sort | tail -n 30 | sed ':a;N;$!ba;s/\n/%0A/g')"
           for attempt in 1 2 3; do
-            if timeout 240 flatpak install --user -y --noninteractive flathub org.flatpak.Builder \
+            if timeout -k 15 240 flatpak install --user -y --noninteractive flathub org.flatpak.Builder \
                 org.freedesktop.Platform//26.08 org.freedesktop.Sdk//26.08 \
                 org.freedesktop.Sdk.Extension.node24//26.08 org.electronjs.Electron2.BaseApp//26.08; then
               break
