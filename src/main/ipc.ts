@@ -65,7 +65,7 @@ const pickSettingsPatch = (patch: unknown): Partial<TSettings> => {
   if (typeof p.notifyTray === 'boolean') out.notifyTray = p.notifyTray;
   if (typeof p.overlay === 'boolean') out.overlay = p.overlay;
   if (typeof p.overlayClickThrough === 'boolean') out.overlayClickThrough = p.overlayClickThrough;
-  if (typeof p.customCss === 'boolean') out.customCss = p.customCss;
+  if (p.theme === 'none' || p.theme === 'jollyboat' || p.theme === 'custom') out.theme = p.theme;
   if (p.language === 'system' || p.language === 'en' || p.language === 'de' || p.language === 'pl') out.language = p.language;
   if (typeof p.overlayOpacity === 'number' && Number.isFinite(p.overlayOpacity)) out.overlayOpacity = Math.min(100, Math.max(0, Math.round(p.overlayOpacity)));
   if (p.autoConnectServerId === null) out.autoConnectServerId = null;
@@ -260,7 +260,7 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart 
     if (picked.spellcheck !== undefined) applySpellcheck(saved.spellcheck);
     if (picked.checkUpdates === true) startUpdater();
     if (picked.overlay !== undefined || picked.overlayOpacity !== undefined || picked.overlayClickThrough !== undefined) refreshOverlay();
-    if (picked.customCss !== undefined) refreshCustomCss();
+    if (picked.theme !== undefined) refreshCustomCss();
     if (picked.language !== undefined) onLanguageChange();
     return saved;
   }));

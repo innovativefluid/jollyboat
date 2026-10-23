@@ -10,7 +10,7 @@ A desktop client for [Sharkord](https://sharkord.com) servers, for Windows and L
 - **Global hotkeys and push-to-talk** — mute, deafen and push-to-talk from any window; set them in Sharkord's user settings (push-to-talk: pick it as the mic mode). Works on Wayland (KDE, GNOME 48+), where the desktop asks once.
 - **Voice overlay** (optional) — who is in the call and who talks, on top of your game or other apps, with mute and deafen buttons and an adjustable background.
 - **Pop-out stream** — a share or camera someone sends in its own small always-on-top window (ctrl+shift+p).
-- **Yours to style** — optional custom CSS for the Sharkord page, with an lcd theme to start from. The app speaks English, German and Polish.
+- **Yours to style** — the Jollyboat theme puts the lcd look on the Sharkord page, or apply your own CSS. The app speaks English, German and Polish.
 - **One bar on top** — server name, zoom, servers and settings, window buttons; light or dark with Sharkord.
 - **Tray** — in voice, talking, muted, deafened, new messages. Closing the window minimizes, hides to the tray or quits.
 - **Servers** — several, with proxy logins (basic auth), staying logged in, one that opens at start, and share codes.

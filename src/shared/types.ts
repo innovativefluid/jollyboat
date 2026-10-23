@@ -44,8 +44,8 @@ export type TSettings = {
   overlayOpacity: number;
   /** the app's own language: follow the system, or one of ours */
   language: 'system' | 'en' | 'de' | 'pl';
-  /** custom.css (next to the settings) is applied to the server page */
-  customCss: boolean;
+  /** a theme on the server page: none, the app's own lcd look, or custom.css next to the settings */
+  theme: 'none' | 'jollyboat' | 'custom';
   /** clicks go through the overlay to whatever is under it (the buttons are off then) */
   overlayClickThrough: boolean;
   /** where the overlay was left (top-left corner), null = top left of the main display */

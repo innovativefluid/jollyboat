@@ -326,13 +326,24 @@ const renderSettings = async () => {
     toast(t('saved'));
   });
 
-  // custom css: a file next to the settings, applied to the server page while this is on
-  const customCss = $<HTMLInputElement>('custom-css');
-  customCss.checked = settings.customCss;
-  $('css-row').hidden = !customCss.checked;
-  customCss.onchange = () => {
-    $('css-row').hidden = !customCss.checked;
-    window.shell.saveSettings({ customCss: customCss.checked });
+  // a theme on the server page: the app's own lcd look, or custom.css next to the settings
+  const themeOn = $<HTMLInputElement>('theme-on');
+  let themeKind: 'jollyboat' | 'custom' = settings.theme === 'custom' ? 'custom' : 'jollyboat';
+  const showTheme = () => {
+    $('theme-options').hidden = !themeOn.checked;
+    $('css-row').hidden = themeKind !== 'custom';
+  };
+  themeOn.checked = settings.theme !== 'none';
+  segment($('theme-kind'), [{ value: 'jollyboat' as const, label: 'Jollyboat' }, { value: 'custom' as const, label: t('custom') }], themeKind, (v) => {
+    themeKind = v;
+    showTheme();
+    window.shell.saveSettings({ theme: v });
+    toast(t('saved'));
+  });
+  showTheme();
+  themeOn.onchange = () => {
+    showTheme();
+    window.shell.saveSettings({ theme: themeOn.checked ? themeKind : 'none' });
     toast(t('saved'));
   };
   $('css-edit').onclick = async () => { await window.shell.editCustomCss(); toast(t('opened in your editor')); };

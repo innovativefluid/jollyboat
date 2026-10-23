@@ -122,10 +122,13 @@
             <div class="row" style="margin-top: 8px"><span class="meta" data-i18n>language</span><div id="language"></div></div>
             <label class="check" id="autostart-row" style="margin-top: 6px"><input type="checkbox" id="autostart" /> <span data-i18n>start with the system</span></label>
             <label class="check" style="margin-top: 6px"><input type="checkbox" id="notify-tray" /> <span data-i18n>mark new messages</span></label>
-            <label class="check" style="margin-top: 6px"><input type="checkbox" id="custom-css" /> <span data-i18n>custom css on the server page</span></label>
-            <div class="row" id="css-row" style="margin-top: 6px" hidden>
-              <button class="pill minor small" id="css-edit" data-i18n>edit custom.css</button>
-              <button class="pill minor small alt" id="css-example" data-i18n>start from the lcd theme</button>
+            <label class="check" style="margin-top: 6px"><input type="checkbox" id="theme-on" /> <span data-i18n>apply custom theme</span></label>
+            <div id="theme-options" hidden>
+              <div class="row" style="margin-top: 6px"><div id="theme-kind"></div></div>
+              <div class="row" id="css-row" style="margin-top: 6px" hidden>
+                <button class="pill minor small" id="css-edit" data-i18n>edit custom.css</button>
+                <button class="pill minor small alt" id="css-example" data-i18n>start from the lcd theme</button>
+              </div>
             </div>
             <label class="check" style="margin-top: 6px"><input type="checkbox" id="overlay" /> <span data-i18n>voice overlay</span></label>
             <div id="overlay-options" hidden>
