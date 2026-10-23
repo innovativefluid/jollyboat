@@ -6,6 +6,8 @@
 
    As custom.css you can edit all of it; the file is read again whenever it changes.
    url("jollyboat-font:Name") loads one of the app's own fonts: PixelifySans, Fredoka, Jersey10.
+   (Any other url() in custom.css is fetched by the page like an image on a web page would be:
+   keep to the app's fonts and data urls if you want nothing to leave the computer.)
    (Sharkord puts .dark / .light on <html> and on its main view; the html-prefixed selectors are
    a notch more specific than Sharkord's own, so these win whatever order the stylesheets load.) */
 
