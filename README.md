@@ -35,7 +35,7 @@ Pick one under **servers and settings**. The app's own windows (the bar above th
 
 - **Sharkord** — Sharkord as it is.
 - **Jollyboat** — an lcd look: pixel type for headings, pill buttons, presence you can tell apart at a glance, a few stepped animations.
-- **Water** — white and blue water under glass. Live water with caustics, ripples and air bubbles runs behind everything; the sidebars, the chat and the bar are frosted glass panels floating on it, the buttons glass bubbles, the channel you are on a pill of water that fills as you pick it. Sent messages drop into the water, and whoever talks sends rings across it. It runs at 60 frames a second while the window is in front and 30 behind; without hardware graphics it keeps a lighter version drawn in CSS.
+- **Water** — white and blue water under glass. Live water with caustics, ripples and air bubbles runs behind everything; the sidebars, the chat and the bar are frosted glass panels floating on it, the buttons glass bubbles whose water rises and leans toward the pointer, the channel you are on and the voice channel you are in pills of water that fill as you pick them. Sent messages drop into the water, and whoever talks sends rings across it. It runs at 60 frames a second while the window is in front and 30 behind; without hardware graphics it keeps a lighter version drawn in CSS.
 - **Custom** — your own CSS for the Sharkord page, read again whenever the file changes.
 
 ![The setup window: servers, app settings and privacy](docs/launcher.png)

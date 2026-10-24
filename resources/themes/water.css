@@ -12,7 +12,9 @@
    As custom.css you can edit all of it; the file is read again whenever it changes.
    url("jollyboat-font:Nunito") is the app's own copy of Nunito (as a data url).
    (Sharkord puts .dark / .light on <html> and on its main view; the html-prefixed selectors are
-   a notch more specific than Sharkord's own, so these win whatever order the stylesheets load.) */
+   a notch more specific than Sharkord's own, so these win whatever order the stylesheets load.)
+   (Plugins' buttons that copy Sharkord's button classes without its data-slot, like Jollyvideo's
+   popcorn button, are styled as buttons too.) */
 
 @font-face { font-family: 'Jollyboat Nunito'; src: url("jollyboat-font:Nunito") format('truetype'); font-weight: 200 1000; }
 
@@ -154,8 +156,9 @@ html .h-dvh .bg-card.border-l {
   border-color: rgba(var(--w-edge), var(--w-edge-a));
 }
 html .h-dvh > .bg-card.border-b { background: linear-gradient(to bottom, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 70%), rgba(var(--w-glass), var(--w-bar-a)); }
-/* every part floats a little apart, as the study's panels do, so the water shows between them */
-html .h-dvh > .bg-card.border-b { margin: 8px 10px 0; border-radius: 20px 12px 14px 22px; border: 1px solid rgba(var(--w-edge), var(--w-edge-a)); }
+/* every part floats a little apart, as the study's panels do, so the water shows between them
+   (the top bar is w-full: with its margins it is made narrower, or it runs off the right edge) */
+html .h-dvh > .bg-card.border-b { margin: 8px 10px 0; width: calc(100% - 20px); box-sizing: border-box; border-radius: 20px 12px 14px 22px; border: 1px solid rgba(var(--w-edge), var(--w-edge-a)); }
 /* (sharkord makes them full height: with the margins they stretch instead) */
 html .h-dvh .bg-card.border-r:not(.w-0) { margin: 10px 0 10px 10px; height: auto; border-radius: 30px 14px 16px 28px; border: 1px solid rgba(var(--w-edge), var(--w-edge-a)); overflow: hidden; }
 html .h-dvh .bg-card.border-l:not(.w-0) { margin: 10px 10px 10px 0; height: auto; border-radius: 14px 30px 28px 16px; border: 1px solid rgba(var(--w-edge), var(--w-edge-a)); overflow: hidden; }
@@ -179,7 +182,7 @@ html .border-r, html .border-l, html .border-b, html .border-t, html .border { b
 html h1, html h2, html h3, html h4, html .font-semibold, html .font-bold { letter-spacing: 0.1px; }
 html .font-semibold { font-weight: 700; }
 html .font-bold { font-weight: 800; }
-html [data-testid="channel-item"], html [data-slot="button"] { font-weight: 700; }
+html [data-testid="channel-item"], html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))) { font-weight: 700; }
 html a { color: rgb(var(--w-good)); text-decoration-color: rgba(var(--w-edge), 0.6); }
 html ::selection { background: rgba(var(--w-glow), 0.45); color: var(--foreground); }
 /* text on glass is raised: an etched highlight under it */
@@ -216,14 +219,14 @@ html [data-slot="dialog-content"][data-state="open"], html [data-slot="alert-dia
 
 /* ---- buttons: glass bubbles; the main one filled with water ----------------------------- */
 
-html [data-slot="button"] {
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))) {
   border-radius: 16px 10px 16px 10px;
   transition: transform 240ms cubic-bezier(0.3, 1.7, 0.5, 1), box-shadow 160ms, background-color 160ms;
 }
-html [data-slot="button"]:nth-of-type(even) { border-radius: 10px 16px 10px 16px; }
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))):nth-of-type(even) { border-radius: 10px 16px 10px 16px; }
 /* the study's bubble, in css: a curved gloss lid, light gathering at the bottom inner rim, a
    bright inner line, the outline and a soft shadow; the main ones hold water to 86 % */
-html [data-slot="button"].bg-primary {
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).bg-primary {
   color: #fff;
   border: 1px solid rgba(var(--w-edge), calc(var(--w-edge-a) + 0.2));
   background:
@@ -233,8 +236,8 @@ html [data-slot="button"].bg-primary {
   box-shadow: 0 3.5px 7px -2px rgba(var(--w-shade), calc(var(--w-shade-a) * 1.1)), inset 0 0 0 1px rgba(255, 255, 255, 0.35), inset 0 -4px 7px -4px rgba(var(--w-light), var(--w-light-a));
   text-shadow: 0 1px 1px rgba(var(--w-on-liq-shade), 0.95), 0 0 4px rgba(var(--w-on-liq-shade), 0.5);
 }
-html [data-slot="button"].bg-primary svg { color: #fff; }
-html [data-slot="button"]:is(.bg-secondary, .bg-background, .border):not(.bg-primary):not(.bg-destructive) {
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).bg-primary svg { color: #fff; }
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))):is(.bg-secondary, .bg-background, .border):not(.bg-primary):not(.bg-destructive) {
   background:
     radial-gradient(130% 75% at 50% -18%, rgba(255, 255, 255, 0.85) 0 46%, rgba(255, 255, 255, 0.1) 62%, transparent 63%),
     radial-gradient(90% 55% at 50% 118%, rgba(200, 240, 255, 0.5), transparent 70%),
@@ -242,21 +245,21 @@ html [data-slot="button"]:is(.bg-secondary, .bg-background, .border):not(.bg-pri
   border: 1px solid rgba(var(--w-edge), calc(var(--w-edge-a) + 0.1));
   box-shadow: 0 2.5px 6px -2px rgba(var(--w-shade), calc(var(--w-shade-a) * 0.8)), inset 0 0 0 1px rgba(255, 255, 255, 0.35), inset 0 -4px 7px -4px rgba(var(--w-light), var(--w-light-a));
 }
-html [data-slot="button"].bg-destructive {
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).bg-destructive {
   color: #fff;
   background: linear-gradient(to bottom, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 48%), linear-gradient(to top, #8e1f33, #d9576b);
   border: 1px solid rgba(142, 31, 51, 0.6);
   text-shadow: 0 1px 1px rgba(80, 10, 25, 0.8);
 }
-html [data-slot="button"]:hover:not(:disabled) { box-shadow: 0 3.5px 7px -2px rgba(var(--w-shade), var(--w-shade-a)), 0 0 0 3px rgba(var(--w-glow), 0.15), 0 0 12px rgba(var(--w-glow), calc(var(--w-glow-a) * 0.55)); }
-html [data-slot="button"]:active:not(:disabled) { transform: scale(1.04, 0.95); transition-duration: 60ms; }
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))):hover:not(:disabled) { box-shadow: 0 3.5px 7px -2px rgba(var(--w-shade), var(--w-shade-a)), 0 0 0 3px rgba(var(--w-glow), 0.15), 0 0 12px rgba(var(--w-glow), calc(var(--w-glow-a) * 0.55)); }
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))):active:not(:disabled) { transform: scale(1.04, 0.95); transition-duration: 60ms; }
 /* sharkord's ghost / icon buttons stay quiet: no glass until hovered */
-html [data-slot="button"].hover\:bg-accent:not(.bg-primary):not(.border):not(.bg-secondary),
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).hover\:bg-accent:not(.bg-primary):not(.border):not(.bg-secondary),
 html [data-slot="icon-button"],
-html [data-slot="button"].size-icon, html [data-slot="button"].h-8.w-8, html [data-slot="button"].h-9.w-9 {
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).size-icon, html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).h-8.w-8, html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).h-9.w-9 {
   border-color: transparent; box-shadow: none; border-radius: 10px;
 }
-html [data-slot="button"].hover\:bg-accent:not(.bg-primary):not(.border):hover,
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).hover\:bg-accent:not(.bg-primary):not(.border):hover,
 html [data-slot="icon-button"]:hover { background: rgba(var(--w-glow), 0.16); box-shadow: 0 0 10px rgba(var(--w-glow), 0.35); }
 
 /* ---- wells: inputs, the search box, the message box ------------------------------------- */
@@ -412,5 +415,9 @@ html.jb-water main.bg-background {
   box-shadow: none;
 }
 html.jb-water main.bg-background > .border-b { border-color: rgba(var(--w-edge), 0.18); }
-/* the channel you are on: its pill of water is drawn there too (it fills as you pick it) */
-html.jb-water [data-testid="channel-item"].bg-accent { background: transparent; box-shadow: none; }
+/* the glass the water draws for the page (the channel you are on, the voice channel you are
+   in, the buttons drawn as bubbles): the elements keep only their words */
+html.jb-water [data-jb-glass] { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
+html.jb-water [data-testid="channel-item"][data-jb-glass], html.jb-water [data-testid="channel-item"][data-jb-glass] svg { color: #fff; }
+html.jb-water [data-testid="channel-item"][data-jb-glass] { text-shadow: 0 1px 1px rgba(var(--w-on-liq-shade), 0.95), 0 0 4px rgba(var(--w-on-liq-shade), 0.5); }
+html.jb-water [data-testid="channel-item"][data-jb-glass] [class*="bg-"] { background-color: #fff; }

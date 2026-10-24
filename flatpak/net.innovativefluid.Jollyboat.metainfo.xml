@@ -82,6 +82,11 @@
   </keywords>
 
   <releases>
+    <release version="0.3.8" date="2026-10-24">
+      <description>
+        <p>Water theme: the voice channel you are in is a pill of water too, and Sharkord's buttons in the sidebars and the chat are glass bubbles that answer the pointer like the bar's buttons (the water rises and leans toward it, the glass lights up, a click sets it jiggling). Sharkord's top bar no longer runs off the right edge. Buttons that plugins add next to Sharkord's own, like Jollyvideo's, now look the same in the Water and Jollyboat themes.</p>
+      </description>
+    </release>
     <release version="0.3.7" date="2026-10-24">
       <description>
         <p>The Water theme is real water and glass now: refracting, frosted glass panels and bubble buttons over live water with caustics, ripples and drifting air bubbles, a glass boat on liquid waves. The Sharkord page floats its parts as glass on the same water, which shows through them: the channel you are on fills with water as you pick it, a sent message drops into the water and whoever talks sends rings across it. The dark water is deeper, small print reads better, and the page and the bar run at 60 frames a second while the window is in front, 30 behind. Without hardware graphics, the theme keeps its lighter CSS water.</p>

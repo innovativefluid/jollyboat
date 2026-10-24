@@ -9,7 +9,9 @@
    (Any other url() in custom.css is fetched by the page like an image on a web page would be:
    keep to the app's fonts and data urls if you want nothing to leave the computer.)
    (Sharkord puts .dark / .light on <html> and on its main view; the html-prefixed selectors are
-   a notch more specific than Sharkord's own, so these win whatever order the stylesheets load.) */
+   a notch more specific than Sharkord's own, so these win whatever order the stylesheets load.)
+   (Plugins' buttons that copy Sharkord's button classes without its data-slot, like Jollyvideo's
+   popcorn button, are styled as buttons too.) */
 
 @font-face { font-family: 'Jollyboat Pixel'; src: url("jollyboat-font:PixelifySans") format('truetype'); font-weight: 400 700; }
 @font-face { font-family: 'Jollyboat Round'; src: url("jollyboat-font:Fredoka") format('truetype'); font-weight: 300 700; }
@@ -86,7 +88,7 @@ html .dark {
 html body { font-family: 'Jollyboat Round', system-ui, sans-serif; }
 html h1, html h2, html h3, html h4,
 html [data-testid="channel-item"],
-html [data-slot="button"],
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))),
 html [data-slot="avatar-fallback"],
 html [data-slot="dropdown-menu-item"],
 html [data-slot="context-menu-item"],
@@ -115,23 +117,23 @@ html [data-slot="tooltip-content"] { border-radius: 10px 4px 10px 4px; box-shado
 
 /* ---- buttons: pills, outline or fill ----------------------------------------------------- */
 
-html [data-slot="button"] {
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))) {
   border: 2px solid var(--jb-ink);
   border-radius: 12px 6px 6px 12px;
   box-shadow: 2px 2px 0 var(--jb-shadow);
   font-weight: 600;
   transition: none;
 }
-html [data-slot="button"]:nth-of-type(even) { border-radius: 6px 12px 12px 6px; }
-html [data-slot="button"]:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--jb-shadow); }
-html [data-slot="button"]:disabled { box-shadow: none; }
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))):nth-of-type(even) { border-radius: 6px 12px 12px 6px; }
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))):active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--jb-shadow); }
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))):disabled { box-shadow: none; }
 /* sharkord's ghost / icon buttons stay quiet: no border, no shadow */
-html [data-slot="button"].hover\:bg-accent:not(.bg-primary):not(.border),
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).hover\:bg-accent:not(.bg-primary):not(.border),
 html [data-slot="icon-button"],
-html [data-slot="button"].size-icon, html [data-slot="button"].h-8.w-8, html [data-slot="button"].h-9.w-9 {
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).size-icon, html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).h-8.w-8, html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).h-9.w-9 {
   border-color: transparent; box-shadow: none; border-radius: 4px;
 }
-html [data-slot="button"].bg-destructive { background: var(--destructive); color: var(--background); border-color: var(--destructive); }
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).bg-destructive { background: var(--destructive); color: var(--background); border-color: var(--destructive); }
 
 /* ---- inputs ---------------------------------------------------------------------------- */
 
