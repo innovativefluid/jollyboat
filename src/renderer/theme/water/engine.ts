@@ -48,8 +48,6 @@ export type TGlass = {
   press: number;
   seed: number;
   wobble: number;
-  bulge: number;
-  reach: number;
   jiggle: TRgba;
   liqA: TRgba;
   liqB: TRgba;
@@ -114,6 +112,13 @@ export type TWaterOptions = {
   /** resolution of the water under it, as a share of that (it is mostly seen through frost) */
   waterScale?: number;
   fps?: { focused: number; blurred: number };
+  /** whether the window has focus (default: this document's; the server window's two views
+   * share one window, so they are told) */
+  focused?: () => boolean;
+  /** the pointer's wake under the glass, as a share of the one over open water (default 0) */
+  glassWake?: number;
+  /** after each drawn frame, with the clock (the bar's mark moves along) */
+  onFrame?: (time: number) => void;
   bubbles?: number;
   /** the pool's gradient spans this (a bar takes the window's), and the canvas sits here in it */
   pool?: () => { view: [number, number]; offset: [number, number] };
@@ -199,6 +204,8 @@ export const createWater = (canvas: HTMLCanvasElement, opts: TWaterOptions): TWa
 
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
   const fps = opts.fps ?? { focused: 60, blurred: 30 };
+  const focused = opts.focused ?? (() => document.hasFocus());
+  const glassWake = opts.glassWake ?? 0;
 
   // ---- targets -----------------------------------------------------------------------------
 
@@ -397,14 +404,11 @@ export const createWater = (canvas: HTMLCanvasElement, opts: TWaterOptions): TWa
     gl.uniform2f(u('size'), g.w + 2 * g.pad, g.h + 2 * g.pad);
     gl.uniform1f(u('pad'), g.pad);
     gl.uniform4fv(u('radii'), g.radii);
-    gl.uniform2f(u('mouse'), ptr.x - (g.x - g.pad), ptr.y - (g.y - g.pad));
     gl.uniform1f(u('hover'), g.hover);
     gl.uniform1f(u('press'), g.press);
     gl.uniform1f(u('time'), t);
     gl.uniform1f(u('seed'), g.seed);
     gl.uniform1f(u('wobble'), reduce.matches ? 0 : g.wobble);
-    gl.uniform1f(u('bulge'), reduce.matches || ptr.x < -999 ? 0 : g.bulge);
-    gl.uniform1f(u('reach'), g.reach);
     gl.uniform4fv(u('jiggle'), g.jiggle);
     gl.uniform1f(u('bevel'), g.bevel);
     gl.uniform1f(u('refr'), g.refr);
@@ -487,13 +491,13 @@ export const createWater = (canvas: HTMLCanvasElement, opts: TWaterOptions): TWa
     gl.uniform2f(u('cells'), gw, gh);
     gl.uniform1f(u('speed'), 0.55);
     gl.uniform1f(u('damping'), 0.994);
-    // the pointer's wake, only over open water
+    // the pointer's wake: full over open water, `glassWake` of it under the glass
     const has = ptr.x > -1000 && lastPtr.x > -1000;
     const moved = has ? Math.hypot(ptr.x - lastPtr.x, ptr.y - lastPtr.y) : 0;
-    const open = has && !overSolid(ptr.x, ptr.y);
+    const gain = !has ? 0 : overSolid(ptr.x, ptr.y) ? glassWake : 1;
     gl.uniform4f(u('wakeB'), lastPtr.x / CELL, lastPtr.y / CELL, 0, 0);
     // (a jump, the pointer coming back in somewhere else, leaves no wake: it would draw a line)
-    gl.uniform4f(u('wakeA'), ptr.x / CELL, ptr.y / CELL, 2.0, open && moved > 0.5 && moved < 90 ? -Math.min(moved, 40) * 0.004 : 0);
+    gl.uniform4f(u('wakeA'), ptr.x / CELL, ptr.y / CELL, 2.0, gain > 0 && moved > 0.5 && moved < 90 ? -Math.min(moved, 40) * 0.004 * gain : 0);
     lastPtr = { ...ptr };
     for (let i = 0; i < 4; i++) gl.uniform4fv(u(`drop${i}`), drops.shift() ?? [0, 0, 1, 0]);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -511,7 +515,7 @@ export const createWater = (canvas: HTMLCanvasElement, opts: TWaterOptions): TWa
   const draw = (now: number) => {
     const dt = Math.min(0.1, last ? (now - last) / 1000 : 1 / 60);
     // a long run of slow frames: fewer pixels (not when a software renderer was asked for: tests)
-    if (document.hasFocus() && last && !opts.allowSoftware) {
+    if (focused() && last && !opts.allowSoftware) {
       const gap = now - last;
       const expected = 1000 / fps.focused;
       slow = gap > expected * 1.6 ? slow + Math.min(30, gap / expected) : Math.max(0, slow - 2);
@@ -633,25 +637,33 @@ export const createWater = (canvas: HTMLCanvasElement, opts: TWaterOptions): TWa
     gl.disable(gl.SCISSOR_TEST);
     gl.disable(gl.BLEND);
     frames++;
+    opts.onFrame?.(t);
   };
 
   // ---- the loop ----------------------------------------------------------------------------
 
+  // frames are budgeted, not skipped by a fixed gap: on a 144 hz screen 60 a second stay 60
   let raf = 0;
   let running = true;
-  let lastDrawn = 0;
+  let prevTick = 0;
+  let budget = 0;
   const loop = (now: number) => {
     if (!running) return;
     raf = requestAnimationFrame(loop);
-    const rate = reduce.matches ? 4 : document.hasFocus() ? fps.focused : fps.blurred;
-    if (now - lastDrawn < 1000 / rate - 2) return;
-    lastDrawn = now;
+    const rate = reduce.matches ? 4 : focused() ? fps.focused : fps.blurred;
+    const interval = 1000 / rate;
+    budget = Math.min(budget + (prevTick ? now - prevTick : interval), interval * 2);
+    prevTick = now;
+    // a hair of slack, so a 60 hz screen's jitter does not drop every other frame at 60
+    if (budget < interval - 1.5) return;
+    budget = Math.max(0, budget - interval);
     draw(now);
   };
   const onVisible = () => {
     if (!document.hidden && running) {
       cancelAnimationFrame(raf);
       last = 0;
+      prevTick = 0;
       raf = requestAnimationFrame(loop);
     }
   };

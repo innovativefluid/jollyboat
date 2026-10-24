@@ -30,6 +30,14 @@ type TBootstrap = {
 
 const boot = ipcRenderer.sendSync('shell:bootstrap') as TBootstrap;
 
+// the window's focus. the server window holds two views (the bar, the page) and only one of them
+// has the keyboard, so document.hasFocus() says "blurred" in the other one; main tells both
+let windowFocused: boolean | null = null;
+ipcRenderer.on('shell:focus', (_e, focused: unknown) => {
+  windowFocused = focused === true;
+});
+const hasFocus = () => windowFocused ?? document.hasFocus();
+
 if (boot.ownPage) {
   // the look goes on <html> as data-look before anything is painted (the preload runs before
   // the document has an element: the parser's first insert is caught), then follows the setting
@@ -99,6 +107,7 @@ if (boot.ownPage) {
     },
     bar: {
       barAction: (action: string, at?: { x: number; y: number }) => ipcRenderer.send('bar:action', action, at),
+      windowFocused: hasFocus,
       onBarState: (cb: (state: { server: string; zoom: number; theme: 'light' | 'dark' | null; maximized: boolean }) => void) => {
         ipcRenderer.on('bar:state', (_e, state) => cb(state));
       }
@@ -441,7 +450,7 @@ if (boot.isSavedServer) {
   // --- the water theme: the water behind the page (the theme's css does the rest) ----------
   let pageWater: ReturnType<typeof startPageWater> = null;
   const setWater = (on: boolean) => {
-    if (on && !pageWater && document.body) pageWater = startPageWater(boot.softGl);
+    if (on && !pageWater && document.body) pageWater = startPageWater(boot.softGl, hasFocus);
     if (!on && pageWater) {
       pageWater.stop();
       pageWater = null;

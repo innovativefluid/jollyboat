@@ -243,13 +243,25 @@ const createMainWindow = () => {
   handleShortcuts(wc);
   handleShortcuts(bar);
 
+  // both views learn the window's focus (each one's own document focus says only which of them
+  // has the keyboard): the water runs at full rate in both while the window is in front
+  const sendFocus = (focused: boolean) => {
+    for (const c of [wc, bar]) if (!c.isDestroyed()) c.send('shell:focus', focused);
+  };
+  wc.on('did-finish-load', () => sendFocus(win.isFocused()));
+  bar.on('did-finish-load', () => sendFocus(win.isFocused()));
+
   // reading the window clears the unread marker; typing goes to the page, not the bar
   win.on('focus', () => {
     clearUnread();
     if (!wc.isDestroyed()) wc.focus();
     setOverlayHostFocused(true);
+    sendFocus(true);
   });
-  win.on('blur', () => setOverlayHostFocused(false));
+  win.on('blur', () => {
+    setOverlayHostFocused(false);
+    sendFocus(false);
+  });
   win.on('hide', () => setOverlayHostFocused(false));
   win.on('resize', () => {
     layout();

@@ -45,6 +45,8 @@ declare global {
       onPickerSources: (cb: (sources: TCaptureSource[], lastName: string | null) => void) => void;
       promptAnswer: (answer: boolean) => void;
       barAction: (action: 'settings' | 'zoom-in' | 'zoom-out' | 'zoom-reset' | 'menu' | 'minimize' | 'maximize' | 'close' | 'popout', at?: { x: number; y: number }) => void;
+      /** the server window's focus (the bar never holds the keyboard itself for long) */
+      windowFocused: () => boolean;
       onBarState: (cb: (state: { server: string; zoom: number; theme: 'light' | 'dark' | null; maximized: boolean; streams: number }) => void) => void;
       pickerChoose: (result: TPickerResult) => void;
       onOverlayState: (cb: (state: TOverlayState) => void) => void;

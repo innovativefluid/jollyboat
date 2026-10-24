@@ -102,8 +102,6 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
       press: 0,
       seed: s.seed,
       wobble: 1.2,
-      bulge: 3.5,
-      reach: 34,
       jiggle: s.jiggle,
       liqA: rgba(tk.liqA),
       liqB: rgba(tk.liqB),
@@ -188,7 +186,6 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
       alpha: 1,
       clip: null,
       wobble: 0,
-      bulge: 0,
       jiggle: [0, 0, -100, 0]
     });
 
@@ -252,7 +249,8 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
     const items: TItem[] = [];
     const solid: TRgba[] = [];
 
-    // panels: frosted, thick-rimmed, wobbling and reaching for the pointer
+    // panels: frosted, thick-rimmed, wobbling; they do not follow the pointer (only a source
+    // card, which is clicked, lights up under it)
     for (const el of document.querySelectorAll<HTMLElement>('.panel, .footer, .source')) {
       if (!shown(el)) continue;
       const r = el.getBoundingClientRect();
@@ -269,10 +267,8 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
       g.streaks = small ? 0 : 1;
       g.irid = tk.irid * 0.8;
       g.wobble = small ? 0.9 : 2;
-      g.bulge = small ? 3 : 7;
-      g.reach = small ? 40 : 76;
       g.lift = small ? 3 : 7;
-      g.hover = spring(s.hv, el.matches(':hover') ? 1 : 0, 4, 0.22, dt, calm) * (small ? 0.4 : 0.18);
+      g.hover = el.classList.contains('source') ? spring(s.hv, el.matches(':hover') ? 1 : 0, 4, 0.22, dt, calm) * 0.4 : 0;
       g.shade = rgba(tk.shade, tk.shadeA * (small ? 0.8 : 1.05));
       g.glow = rgba(tk.glow, tk.glowA * 0.5);
       g.halo = el.classList.contains('source') && el.classList.contains('on') ? 1 : 0;
@@ -280,12 +276,13 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
       solid.push([r.left, r.top, r.right, r.bottom]);
     }
 
-    // a slab: glass across a whole bar, its rims beyond the window but for the bottom one
+    // a slab: glass across a whole bar, its rims beyond the window but for the bottom one; it
+    // fills the bar, so it is frosted only lightly and the water shows through
     for (const el of document.querySelectorAll<HTMLElement>('.slab')) {
       if (!shown(el)) continue;
       const r = el.getBoundingClientRect();
       const g = base(tk, el, new DOMRect(r.left - 40, r.top - 40, r.width + 80, r.height + 40 - 1), 20);
-      Object.assign(g, { radii: [0, 0, 10, 10], bevel: 8, frost: 1, refr: 9, tint: rgba(tk.glass, tk.glassA + 0.12), gloss: 0, streaks: 0.6, irid: tk.irid * 0.6, wobble: 0, bulge: 4, reach: 60, lift: 2, shade: rgba(tk.shade, tk.shadeA * 0.8), clip: null });
+      Object.assign(g, { radii: [0, 0, 10, 10], bevel: 8, frost: 0.15, refr: 9, tint: rgba(tk.glass, tk.glassA - 0.02), gloss: 0, streaks: 0.6, irid: tk.irid * 0.6, wobble: 0, lift: 2, shade: rgba(tk.shade, tk.shadeA * 0.8), clip: null });
       items.push(g);
       solid.push([r.left, r.top, r.right, r.bottom]);
     }
@@ -299,7 +296,7 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
     for (const el of document.querySelectorAll<HTMLElement>('canvas.strip')) {
       if (!shown(el)) continue;
       const g = base(tk, el, el.getBoundingClientRect(), 12);
-      Object.assign(g, { radii: [4.5, 4.5, 4.5, 4.5], bevel: 4.5, frost: 0.5, refr: 4, gloss: 0.9, wobble: 0.5, bulge: 2.5, reach: 26, lift: 1.5, liquid: [1, 2, 0.6, 0], flow: 34, shade: rgba(tk.shade, tk.shadeA * 0.6) });
+      Object.assign(g, { radii: [4.5, 4.5, 4.5, 4.5], bevel: 4.5, frost: 0.5, refr: 4, gloss: 0.9, wobble: 0.5, lift: 1.5, liquid: [1, 2, 0.6, 0], flow: 34, shade: rgba(tk.shade, tk.shadeA * 0.6) });
       items.push(g);
     }
     for (const el of document.querySelectorAll<HTMLElement>('.pearls')) {
@@ -328,7 +325,7 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
       if (!shown(el) || el.classList.contains('none')) continue;
       const g = base(tk, el, el.getBoundingClientRect(), 8);
       const rr = g.w / 2;
-      Object.assign(g, { radii: [rr, rr, rr, rr], bevel: rr, frost: 0.5, refr: 3, gloss: 0.9, wobble: 0, bulge: 0, lift: 1, liquid: [el.classList.contains('ok') ? 1 : 0, 1, 0.3, 0], tint: rgba(tk.btn, tk.btnA + 0.25), shade: rgba(tk.shade, tk.shadeA * 0.5) });
+      Object.assign(g, { radii: [rr, rr, rr, rr], bevel: rr, frost: 0.5, refr: 3, gloss: 0.9, wobble: 0, lift: 1, liquid: [el.classList.contains('ok') ? 1 : 0, 1, 0.3, 0], tint: rgba(tk.btn, tk.btnA + 0.25), shade: rgba(tk.shade, tk.shadeA * 0.5) });
       items.push(g);
     }
 
@@ -355,8 +352,6 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
         refr: 9,
         gloss: 0.95,
         wobble: 1,
-        bulge: 3.2,
-        reach: 30,
         liquid: [lvl, major ? 1 : 0, 1.3 + 1.2 * Math.abs(sl), 0],
         slosh: sl * 0.5,
         lift: major ? 3.5 : 2.5,
@@ -380,7 +375,7 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
         const a = i % 2 ? 9 : 15;
         const b = i % 2 ? 15 : 9;
         const g = base(tk, el, r, 16);
-        Object.assign(g, { radii: [a, b, a, b], bevel: 12, hover: hv, press: pr, frost: 0.75, refr: 8, wobble: 0.9, bulge: 2.6, reach: 26, liquid: [lvl, 1, 1.1 + Math.abs(sl), 0], slosh: sl * 0.5, lift: sel ? 3 : 2, shade: rgba(tk.shade, tk.shadeA * (sel ? 1 : 0.6)) });
+        Object.assign(g, { radii: [a, b, a, b], bevel: 12, hover: hv, press: pr, frost: 0.75, refr: 8, wobble: 0.9, liquid: [lvl, 1, 1.1 + Math.abs(sl), 0], slosh: sl * 0.5, lift: sel ? 3 : 2, shade: rgba(tk.shade, tk.shadeA * (sel ? 1 : 0.6)) });
         items.push(g);
       });
     }
@@ -392,7 +387,7 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
       const hv = spring(s.hv, isHot(el) || !!el.closest('.check')?.matches(':hover') ? 1 : 0, 4, 0.22, dt, calm);
       const lvl = spring(s.lvl, el.checked ? 0.88 : 0, 2.6, 0.2, dt, calm);
       const g = base(tk, el, el.getBoundingClientRect(), 14);
-      Object.assign(g, { radii: [7, 5, 7, 5], bevel: 7, hover: hv, press: el.matches(':active') ? 1 : 0, frost: 0.6, refr: 5, wobble: 0.6, bulge: 2, reach: 22, lift: 2, liquid: [lvl, 1, 0.9, 0], shade: rgba(tk.shade, tk.shadeA * 0.7) });
+      Object.assign(g, { radii: [7, 5, 7, 5], bevel: 7, hover: hv, press: el.matches(':active') ? 1 : 0, frost: 0.6, refr: 5, wobble: 0.6, lift: 2, liquid: [lvl, 1, 0.9, 0], shade: rgba(tk.shade, tk.shadeA * 0.7) });
       if (el.disabled) g.alpha *= 0.45;
       items.push(g);
     }
@@ -405,7 +400,7 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
       const hv = spring(s.hv, el.matches(':hover') ? 1 : 0, 4, 0.22, dt, calm);
       const halo = spring(s.halo, lit ? 1 : 0, 5, 0.7, dt, calm);
       const g = base(tk, el, el.getBoundingClientRect(), 16);
-      Object.assign(g, { radii: [11, 17, 11, 17], bevel: 6, inset: 1, frost: 0.85, refr: 4, gloss: 0.18, tint: rgba(tk.well, tk.wellA), lift: 0, shade: rgba(tk.shade, 0), hover: hv * 0.5, halo: Math.max(0, halo), wobble: 0.6 + (lit ? 0.8 : 0), bulge: 2.4, reach: 30, irid: 0 });
+      Object.assign(g, { radii: [11, 17, 11, 17], bevel: 6, inset: 1, frost: 0.85, refr: 4, gloss: 0.18, tint: rgba(tk.well, tk.wellA), lift: 0, shade: rgba(tk.shade, 0), hover: hv * 0.5, halo: Math.max(0, halo), wobble: 0.6 + (lit ? 0.8 : 0), irid: 0 });
       items.push(g);
     }
 
@@ -429,10 +424,10 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
       const pr = spring(s.pr, el.matches(':active') ? 1 : 0, 6, 0.25, dt, calm);
       const cy = r.top + r.height / 2;
       const tube = base(tk, el, new DOMRect(r.left, cy - 5, r.width, 10), 14);
-      Object.assign(tube, { radii: [5, 5, 5, 5], bevel: 5, frost: 0.6, refr: 5, gloss: 0.8, hover: hv * 0.4, wobble: 0.35, bulge: 2.2, reach: 22, lift: 1.5, liquid: [(v * span + knob / 2) / Math.max(1, r.width), 2, 0.9, s.vel], shade: rgba(tk.shade, tk.shadeA * 0.6) });
+      Object.assign(tube, { radii: [5, 5, 5, 5], bevel: 5, frost: 0.6, refr: 5, gloss: 0.8, hover: hv * 0.4, wobble: 0.35, lift: 1.5, liquid: [(v * span + knob / 2) / Math.max(1, r.width), 2, 0.9, s.vel], shade: rgba(tk.shade, tk.shadeA * 0.6) });
       items.push(tube);
       const marble = base(tk, el, new DOMRect(r.left + v * span, cy - knob / 2, knob, knob), 16);
-      Object.assign(marble, { radii: [11, 11, 11, 11], bevel: knob / 2 - 1, hover: hv, press: pr, frost: 0.4, refr: 8, gloss: 1, wobble: 0.7, bulge: 2.6, reach: 24, lift: 3, liquid: [0.72 + 0.1 * pr, 1, 1.4 + 2 * s.vel, 0], slosh: -dir * 0.9, seed: s.seed + 0.5 });
+      Object.assign(marble, { radii: [11, 11, 11, 11], bevel: knob / 2 - 1, hover: hv, press: pr, frost: 0.4, refr: 8, gloss: 1, wobble: 0.7, lift: 3, liquid: [0.72 + 0.1 * pr, 1, 1.4 + 2 * s.vel, 0], slosh: -dir * 0.9, seed: s.seed + 0.5 });
       items.push(marble);
     }
 
@@ -450,7 +445,7 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
       const d = 210 * intro;
       const r = new DOMRect(window.innerWidth / 2 - d / 2, window.innerHeight / 2 - d / 2, d, d);
       const g = base(tk, document.body, r, 24);
-      Object.assign(g, { radii: [d / 2, d / 2, d / 2, d / 2], bevel: Math.max(1, d * 0.2), tint: [1, 1, 1, 0.04], frost: 0, refr: 16, irid: 1, gloss: 0.55, wobble: 2.6, bulge: 0, lift: 0, shade: [0, 0, 0, 0], alpha: 1, clip: null, jiggle: [0, 0, -100, 0] });
+      Object.assign(g, { radii: [d / 2, d / 2, d / 2, d / 2], bevel: Math.max(1, d * 0.2), tint: [1, 1, 1, 0.04], frost: 0, refr: 16, irid: 1, gloss: 0.55, wobble: 2.6, lift: 0, shade: [0, 0, 0, 0], alpha: 1, clip: null, jiggle: [0, 0, -100, 0] });
       items.push(g);
     }
 

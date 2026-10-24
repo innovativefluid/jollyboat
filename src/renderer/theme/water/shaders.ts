@@ -8,7 +8,7 @@
 //        wind texture; under it gradient, aurora ribbons, shafts, caustics focused by the
 //        ripples, air bubbles as diverging lenses; sky reflection, glints, glitter, bloom.
 // GLASS  one glass element (a panel, a pill, a well, the boat's hull, a wave line...): a shape
-//        with a wobbling membrane that reaches for the pointer, squashes and jiggles; the water
+//        with a wobbling membrane that squashes and jiggles (it does not follow the pointer); the water
 //        behind refracted, frosted and tinted; water inside it; rim light, thin film, gloss cap,
 //        window streaks, specular, outline; a soft shadow and a halo around it.
 // TITLE  glass letters holding water, from a text mask; PEARLS a string of drifting glass beads.
@@ -310,8 +310,7 @@ in vec2 vPos;
 uniform vec2 size;       // effect size, px (shape size + 2 * pad)
 uniform float pad;
 uniform vec4 radii;      // top left, top right, bottom right, bottom left
-uniform vec2 mouse;      // pointer in effect px
-uniform float hover, press, time, seed, wobble, bulge, reach;
+uniform float hover, press, time, seed, wobble;
 uniform vec4 jiggle;     // click x, y (effect px) | start time | strength
 uniform float bevel, refr, frost;
 uniform vec4 tint, edge;
@@ -336,7 +335,6 @@ out vec4 o;
 ${NOISE}
 
 vec2 B;   // half extents of the box
-vec2 M;   // pointer, centred
 
 float sdBox(vec2 p, vec2 b, vec4 r) {
   float rr = p.x > 0.0 ? (p.y > 0.0 ? r.z : r.y) : (p.y > 0.0 ? r.w : r.x);
@@ -397,10 +395,6 @@ float shapeAt(vec2 p) {
     w += 0.55 * sin(ang * 3.0 + time * 1.7 + seed * 5.0) * sin(ang * 2.0 - time * 1.1 + seed);
     d -= wobble * (1.0 + 0.9 * hover) * w * 0.5;
   }
-  if (bulge > 0.0) {
-    vec2 dm = p - M;
-    d -= bulge * exp(-dot(dm, dm) / (reach * reach));
-  }
   return d;
 }
 
@@ -422,7 +416,6 @@ void main() {
   float sq = (press * 0.055 + jig * 0.075) * sizeK;
   vec2 scl = vec2(1.0 + sq * 0.8, 1.0 - sq);
   vec2 p = (pos - C) / scl;
-  M = (mouse - C) / scl;
 
   float d = shapeAt(p);
   const float e = 0.6;
@@ -462,8 +455,17 @@ void main() {
     float lod = log2(max(rad / (px * 4.0), 1.0));
     float rot = hash1(floor(pos)) * TAU;
     mat2 rm = mat2(cos(rot), sin(rot), -sin(rot), cos(rot));
-    for (int i = 0; i < 12; ++i) blur += textureLod(bg, suv + off + rm * disk[i] * rad * dev, lod).rgb;
-    blur /= 12.0;
+    if (frost < 0.35) {
+      // light frost (glass that fills a window): four taps a level further down the mips do
+      for (int i = 0; i < 4; ++i) {
+        vec2 q = vec2(i < 2 ? -0.6 : 0.6, (i & 1) == 0 ? -0.6 : 0.6);
+        blur += textureLod(bg, suv + off + rm * q * rad * dev, lod + 0.5).rgb;
+      }
+      blur /= 4.0;
+    } else {
+      for (int i = 0; i < 12; ++i) blur += textureLod(bg, suv + off + rm * disk[i] * rad * dev, lod).rgb;
+      blur /= 12.0;
+    }
   }
   vec3 base = mix(sharp, blur, smoothstep(0.0, 0.2, frost));
   vec3 col = mix(base, tint.rgb, tint.w);
@@ -537,9 +539,9 @@ void main() {
   float cap = capIn * smoothstep(px * 1.5, -px * 1.5, p.y - capBot);
   float capA = cap * mix(0.66, 0.05, clamp((p.y + B.y) / capH, 0.0, 1.0));
   col = mix(col, vec3(1.0), capA * gloss);
-  // window reflections that slide against the pointer
+  // window reflections
   if (streaks > 0.0) {
-    float sx = p.x + p.y * 0.62 - M.x * 0.06 - B.x * 0.15;
+    float sx = p.x + p.y * 0.62 - B.x * 0.15;
     float s1 = smoothstep(0.0, 18.0, sx) * smoothstep(70.0, 40.0, sx);
     float s2 = smoothstep(95.0, 104.0, sx) * smoothstep(122.0, 112.0, sx);
     col = mix(col, vec3(1.0), (s1 * 0.10 + s2 * 0.08) * streaks * (1.0 - v * 0.7));

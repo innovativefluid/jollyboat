@@ -11,7 +11,9 @@ const $ = (id: string) => document.getElementById(id)!;
 translatePage();
 
 // the water look: the bar is a glass slab over the same pool as the page below (its gradient
-// spans a window, not 34 px), the chips glass bubbles. 30 frames a second with focus, 12 without
+// spans a window, not 34 px), the chips glass bubbles. 60 frames a second while the window has
+// focus (the page below usually holds the keyboard: the window's focus counts, not the bar's),
+// 30 without; the mark moves with every frame
 let water: TWater | null = null;
 let waterCanvas: HTMLCanvasElement | null = null;
 const glassDom = createGlassDom();
@@ -41,7 +43,10 @@ const startWater = (look: 'lcd' | 'water') => {
   water = createWater(waterCanvas, {
     tokens: waterTokens,
     scene: dom.scene,
-    fps: { focused: 30, blurred: 12 },
+    fps: { focused: 60, blurred: 30 },
+    focused: window.shell.windowFocused,
+    glassWake: 0.6,
+    onFrame: () => drawWaterMark(performance.now() / 1000, true),
     bubbles: 4,
     allowSoftware: soft,
     pool: () => ({ view: [window.innerWidth, 900], offset: [0, 0] }),
@@ -109,16 +114,17 @@ const repaint = () => {
 
 repaint();
 dark.addEventListener('change', repaint);
-// the water look's mark: the svg boat rocks and bobs, the water line drifts a pixel at a time.
-// only an actual change is drawn, about three times a second (an svg animation in css would
-// make the page tick every frame)
+// the water look's mark: the svg boat rocks and bobs, the water line drifts. with the css water
+// a pixel at a time, only an actual change drawn, about three times a second (an svg animation
+// in css would make the page tick every frame); with the gl water smoothly, once per its frame
 const bob = document.querySelector<SVGGElement>('.mark-water .bob')!;
 const flow = document.querySelector<SVGPathElement>('.mark-water .flow')!;
 const calm = window.matchMedia('(prefers-reduced-motion: reduce)');
 let shownWater = '';
-const drawWaterMark = (t = performance.now() / 1000) => {
-  const swell = Math.round(Math.sin((t * Math.PI * 2) / 3.2) * 3); // -3..3
-  const drift = calm.matches ? 0 : Math.floor(t * 2.5) % 8;
+const drawWaterMark = (t = performance.now() / 1000, smooth = false) => {
+  const wave = Math.sin((t * Math.PI * 2) / 3.2) * 3; // -3..3
+  const swell = smooth ? Math.round(wave * 20) / 20 : Math.round(wave);
+  const drift = calm.matches ? 0 : smooth ? Math.round(((t * 2.5) % 8) * 20) / 20 : Math.floor(t * 2.5) % 8;
   const key = calm.matches ? 'still' : `${swell}:${drift}`;
   if (key === shownWater) return;
   shownWater = key;
@@ -129,7 +135,9 @@ const drawWaterMark = (t = performance.now() / 1000) => {
 
 setInterval(() => {
   if (document.hidden) return;
-  if (document.documentElement.dataset.look === 'water') drawWaterMark();
+  if (document.documentElement.dataset.look === 'water') {
+    if (!water) drawWaterMark();
+  }
   else drawMark();
 }, 100);
 window.shell.onLook(repaint);

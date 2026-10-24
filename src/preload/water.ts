@@ -3,9 +3,11 @@
 // (resources/themes/water.css) makes those parts transparent while html.jb-water is set; without
 // webgl2, or on a software renderer, it keeps its own css water instead.
 //
-// a chat window stays open all day, so this one runs lean: 30 frames a second with focus, 12
-// without, none while hidden, the water at 55 % of the glass's resolution (it is mostly seen
-// through frost; the glass's rims stay sharp), fewer air bubbles; still with reduced motion.
+// the parts fill the window, so the water has to show through them: lightly frosted, thinner
+// tint, the pointer's wake (softer) under them too. the glass does not follow the pointer.
+// 60 frames a second while the window has focus, 30 without, none while hidden; the water at
+// 60 % of the glass's resolution (the rims stay sharp), fewer air bubbles; still with reduced
+// motion.
 
 import { createWater, type TGlass, type TRgba, type TScene, type TWater } from '../renderer/theme/water/engine';
 import { DAY, DEEP } from '../renderer/theme/water/tokens';
@@ -14,6 +16,11 @@ const rgba = (c: [number, number, number], a = 1): TRgba => [c[0] / 255, c[1] / 
 const tokens = () => (document.documentElement.classList.contains('dark') ? DEEP : DAY);
 
 type TSlab = 'top' | 'left' | 'right' | 'main';
+
+// how much of the water shows through: frost 0..1 (the study's panels: 1), the tint's alpha
+// against the token's
+const FROST = 0.15;
+const TINT = -0.12;
 
 // the parts of sharkord's layout, as the theme's css knows them too
 const parts = (): { el: HTMLElement; kind: TSlab }[] => {
@@ -29,7 +36,7 @@ const parts = (): { el: HTMLElement; kind: TSlab }[] => {
   return out;
 };
 
-export const startPageWater = (allowSoftware: boolean): TWater | null => {
+export const startPageWater = (allowSoftware: boolean, focused: () => boolean): TWater | null => {
   const canvas = document.createElement('canvas');
   canvas.className = 'jb-water';
   canvas.style.cssText = 'position:fixed;left:0;top:0;z-index:-1;pointer-events:none;';
@@ -40,7 +47,6 @@ export const startPageWater = (allowSoftware: boolean): TWater | null => {
     if (s === undefined) seeds.set(el, (s = Math.random()));
     return s;
   };
-  const hover = { x: -1, y: -1 };
 
   const scene = (): TScene => {
     const tk = tokens();
@@ -76,8 +82,6 @@ export const startPageWater = (allowSoftware: boolean): TWater | null => {
         press: 0,
         seed: seed(el),
         wobble: 0,
-        bulge: 5,
-        reach: 70,
         jiggle: [0, 0, -100, 0],
         liqA: rgba(tk.liqA),
         liqB: rgba(tk.liqB),
@@ -87,23 +91,22 @@ export const startPageWater = (allowSoftware: boolean): TWater | null => {
         alpha: 1,
         clip: null
       };
-      // every part floats apart like the study's panels: frosted, thick-rimmed, its membrane
-      // wobbling and reaching for the pointer; the glass a little thicker for all the words
+      // every part floats apart like the study's panels: thick-rimmed, its membrane wobbling a
+      // little; frosted only lightly and tinted thinner than the study's, so the caustics and
+      // ripples read through (the tint still carries the text)
       const cs = getComputedStyle(el);
-      const inside = r.left <= hover.x && hover.x <= r.right && r.top <= hover.y && hover.y <= r.bottom;
       const big = kind !== 'top';
       Object.assign(g, {
         radii: [cs.borderTopLeftRadius, cs.borderTopRightRadius, cs.borderBottomRightRadius, cs.borderBottomLeftRadius].map((v) => parseFloat(v) || 0),
         bevel: big ? 18 : 12,
         refr: 13,
+        frost: FROST,
+        tint: rgba(tk.glass, tk.glassA + TINT),
         gloss: big ? 0.38 : 0.3,
-        streaks: 1,
+        streaks: 0.45,
         irid: tk.irid * 0.8,
-        wobble: big ? 2 : 1.2,
-        bulge: big ? 7 : 4,
-        reach: big ? 76 : 50,
+        wobble: big ? 1.4 : 0.9,
         lift: big ? 7 : 5,
-        hover: inside ? 0.18 : 0,
         shade: rgba(tk.shade, tk.shadeA * 1.05)
       });
       items.push(g);
@@ -112,12 +115,11 @@ export const startPageWater = (allowSoftware: boolean): TWater | null => {
     return { stage: [], items, solid };
   };
 
-  const water = createWater(canvas, { tokens, scene, waterScale: 0.55, fps: { focused: 30, blurred: 12 }, bubbles: 8, allowSoftware });
+  const water = createWater(canvas, { tokens, scene, waterScale: 0.6, fps: { focused: 60, blurred: 30 }, focused, glassWake: 0.6, bubbles: 8, allowSoftware });
   if (!water) {
     canvas.remove();
     return null;
   }
-  window.addEventListener('pointermove', (e) => ((hover.x = e.clientX), (hover.y = e.clientY)), { passive: true });
   document.documentElement.classList.add('jb-water');
   const stop = water.stop;
   return {
