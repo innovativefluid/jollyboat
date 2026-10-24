@@ -33,8 +33,8 @@ declare global {
       openWebsite: () => Promise<void>;
       shareCode: (ids: string[] | null, withPasswords: boolean) => Promise<string>;
       exportFile: (ids: string[] | null, withPasswords: boolean) => Promise<string | null>;
-      importText: (text: string) => Promise<string[]>;
-      importFile: () => Promise<string[] | null>;
+      importText: (text: string) => Promise<{ names: string[]; missing: string[] }>;
+      importFile: () => Promise<{ names: string[]; missing: string[] } | null>;
       getAutoStart: () => Promise<{ supported: boolean; enabled: boolean }>;
       setAutoStart: (enabled: boolean) => Promise<boolean>;
       updateStatus: () => Promise<TUpdateStatus>;

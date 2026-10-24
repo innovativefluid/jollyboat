@@ -239,5 +239,5 @@ export const setKeepLogin = (id: string, keep: boolean) => {
 export const publicServers = () =>
   getSettings().servers.map(({ basicAuth, loginEnc, ...rest }) => ({
     ...rest,
-    basicAuth: basicAuth ? { username: basicAuth.username, passwordEnc: '' } : undefined
+    basicAuth: basicAuth ? { username: basicAuth.username, passwordEnc: '', hasPassword: decryptPassword(basicAuth.passwordEnc) !== '' } : undefined
   }));

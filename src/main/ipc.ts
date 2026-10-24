@@ -286,7 +286,7 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart,
     const saved = getSettings().servers.find((s) => s.id === entry.id)!;
     const { basicAuth, ...safe } = saved;
 
-    return { server: { ...safe, basicAuth: basicAuth ? { username: basicAuth.username, passwordEnc: '' } : undefined }, test };
+    return { server: { ...safe, basicAuth: basicAuth ? { username: basicAuth.username, passwordEnc: '', hasPassword: decryptPassword(basicAuth.passwordEnc) !== '' } : undefined }, test };
   }));
   ipcMain.handle('servers:remove', guard((_e, id: unknown) => removeServer(String(id))));
   ipcMain.handle('servers:keepLogin', guard((_e, id: unknown, keep: unknown) => setKeepLogin(String(id), keep === true)));

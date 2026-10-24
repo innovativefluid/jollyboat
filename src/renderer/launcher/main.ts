@@ -79,6 +79,8 @@ const renderServers = async () => {
       : `${server.url.replace(/^https?:\/\//, '')}${server.basicAuth ? ` | ${t('proxy login')}` : ''}${startsInto(server) ? ` | ${t('opens at start')}` : ''}${testLabel(server)}`;
     row.querySelector<HTMLButtonElement>('.connect')!.onclick = (e) => {
       e.stopPropagation();
+      // behind a proxy login without its password (a share code without it): ask for it first
+      if (server.basicAuth && !server.basicAuth.hasPassword) return void askPassword(server.id, t('needs the proxy password first'));
       window.shell.connect(server.id);
     };
     row.onclick = () => openEditor(server);
@@ -170,7 +172,14 @@ authBox.onchange = () => {
   if (authBox.checked) fUser.focus();
 };
 $('save').onclick = save;
-openBtn.onclick = () => editingId && window.shell.connect(editingId);
+// open: a password just typed in is saved first; none at all for a proxy login is asked for
+openBtn.onclick = async () => {
+  if (!editingId) return;
+  const server = servers.find((s) => s.id === editingId);
+  if (fPass.value) await save();
+  else if (authBox.checked && server?.basicAuth && !server.basicAuth.hasPassword) return void askPassword(editingId, t('needs the proxy password first'));
+  if (editingId) window.shell.connect(editingId);
+};
 for (const input of [fUrl, fName, fUser, fPass]) {
   input.addEventListener('keydown', (e) => e.key === 'Enter' && save());
 }
@@ -224,7 +233,8 @@ $('share-copy').onclick = async () => {
     const code = await window.shell.shareCode([editingId], withPasswords());
     await navigator.clipboard.writeText(code);
     fx.burstAt($('share-copy'), 10);
-    hint(shareStatus, `copied${withPasswords() ? ' with password' : ''}`, 'good');
+    const behindLogin = !!servers.find((s) => s.id === editingId)?.basicAuth;
+    hint(shareStatus, !behindLogin ? t('copied') : withPasswords() ? t('copied with the proxy password') : t('copied without the proxy password | they need it too'), 'good');
   } catch (err) {
     hint(shareStatus, (err as Error).message, 'bad');
   }
@@ -243,19 +253,35 @@ $('share-file').onclick = async () => {
 $('export-all').onclick = async () => {
   try {
     const path = await window.shell.exportFile(null, false);
-    if (path) hint(listStatus, `saved | ${path}`, 'good');
+    if (path) hint(listStatus, `${t('saved')} | ${path}${servers.some((s) => s.basicAuth) ? ` | ${t('without proxy passwords')}` : ''}`, 'good');
   } catch (err) {
     hint(listStatus, (err as Error).message, 'bad');
   }
 };
 
-const afterImport = (names: string[] | null) => {
-  if (!names) return;
+const afterImport = async (result: { names: string[]; missing: string[] } | null) => {
+  if (!result) return;
+  const { names, missing } = result;
   toast(names.length === 1 ? t('imported one server') : t('imported {n} servers', { n: names.length }));
-  hint(listStatus, `imported | ${names.join(' | ')}`, 'good');
+  hint(listStatus, `${t('imported')} | ${names.join(' | ')}`, 'good');
   $<HTMLInputElement>('import-code').value = '';
   $('import-row').hidden = true;
   closeEditor(); // an imported server may have replaced the one being edited
+  // the code came without the proxy password: straight to the field for it
+  if (missing[0]) await askPassword(missing[0], t('the code had no proxy password | ask for it and enter it here'));
+};
+
+/** opens a server's editor at its proxy password, with why */
+const askPassword = async (id: string, why: string) => {
+  servers = await window.shell.listServers();
+  const server = servers.find((s) => s.id === id);
+  if (!server) return;
+  openEditor(server);
+  authBox.checked = true;
+  authFields.hidden = false;
+  fPass.placeholder = '';
+  fPass.focus();
+  hint(testStatus, why, 'bad');
 };
 
 const importText = async () => {
@@ -441,6 +467,10 @@ if (failed) {
   if (!query.get('server')) hint(listStatus, `${t('could not open the server')} | ${failed}`, 'bad');
 }
 
-renderServers();
+renderServers().then(() => {
+  // back from a server whose proxy refused the stored login: to its password
+  const id = query.get('server');
+  if (id && failed === t('proxy login refused | check the proxy login')) void askPassword(id, t('the proxy refused this login | check the user and enter the password again'));
+});
 renderBridge();
 renderSettings();

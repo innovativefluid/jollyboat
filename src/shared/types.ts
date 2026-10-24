@@ -11,6 +11,8 @@ export type TServerEntry = {
     username: string;
     /** Encrypted with Electron safeStorage, base64. Never leaves the main process. */
     passwordEnc: string;
+    /** pages only: whether a password is stored (a share code without one leaves it empty) */
+    hasPassword?: boolean;
   };
   /** keep Sharkord's login token across launches (default on) */
   keepLogin?: boolean;

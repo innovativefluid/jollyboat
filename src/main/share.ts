@@ -82,11 +82,13 @@ export const parseShared = (text: string): TShared => {
   return { jollyboat: FORMAT, servers };
 };
 
-/** adds or updates (matched by url); returns the names that were imported */
+/** adds or updates (matched by url); returns the names that were imported, and the ids of those
+ * that sit behind a proxy login but came without its password (none stored either) */
 export const importShared = (doc: TShared) => {
   const existing = getSettings().servers;
+  const missing: string[] = [];
 
-  return doc.servers.map((s) => {
+  const names = doc.servers.map((s) => {
     const current = existing.find((e) => e.url === s.url);
     const input: TServerInput = {
       id: current?.id,
@@ -98,8 +100,11 @@ export const importShared = (doc: TShared) => {
     };
 
     const saved = upsertServer(input);
+    if (saved.basicAuth && decryptPassword(saved.basicAuth.passwordEnc) === '') missing.push(saved.id);
     return `${saved.name} (${new URL(saved.url).host})`;
   });
+
+  return { names, missing };
 };
 
 export const exportToFile = async (win: BrowserWindow | null, doc: TShared) => {
