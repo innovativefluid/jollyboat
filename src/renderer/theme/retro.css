@@ -1,4 +1,5 @@
-/* the retro look of the app's own pages: an old desktop in pink. every panel is a window with a
+/* the retro look of the app's own pages: an old desktop in pink (Retro pink) or mint and blue
+   (Retro green, data-palette="green"). every panel is a window with a
    pink title bar and three little window buttons, controls are bevelled like a nineties
    desktop, fields are sunken, the type is pixel type. on while <html data-look="retro">; pastel
    pink (light) or night purple (dark) with the colour mode, or with the server page's
@@ -51,6 +52,49 @@
     --spark: #ffe3f3; --fg-rgb: 255, 227, 243; --dim-rgb: 217, 170, 203;
     color-scheme: dark;
   }
+}
+/* Retro green (data-palette="green"): the same desktop in mint and sky blue, green to blue title
+   bars; at night a deep teal desktop */
+:root[data-look='retro'][data-palette='green'] {
+  --r-desk: #9fe0c8; --r-desk2: #a9cff5; --r-check: rgba(255, 255, 255, 0.22);
+  --r-dot-a: #ffffff; --r-dot-b: #3fcf95; --r-dot-c: #5a9cf0;
+  --r-face: #eafaf3; --r-light: #ffffff; --r-mid: #cdeedf; --r-shadow: #82bfa8; --r-dark: #1d5446;
+  --r-ink: #0e3a31; --r-dim: #3d6c60; --r-mute: #79a497;
+  --r-title-a: #19a974; --r-title-b: #3b78e7; --r-title-ink: #ffffff; --r-title-off: #a6c9bd;
+  --r-sel: #0f8060; --r-sel-ink: #ffffff; --r-field: #ffffff; --r-accent: #0f7d5a; --r-accent-hi: #6fdfb2; --r-warn: #c4223d;
+  --r-drop: rgba(29, 84, 70, 0.32);
+  --spark: #ffffff; --fg-rgb: 14, 58, 49; --dim-rgb: 61, 108, 96;
+  color-scheme: light;
+}
+:root[data-look='retro'][data-palette='green'][data-theme='dark'] {
+  --r-desk: #0b1f24; --r-desk2: #0c1d3e; --r-check: rgba(111, 227, 180, 0.05);
+  --r-dot-a: #d6fff0; --r-dot-b: #2fd08e; --r-dot-c: #4f8ff0;
+  --r-face: #133130; --r-light: #2f6b62; --r-mid: #1c4642; --r-shadow: #07181a; --r-dark: #020809;
+  --r-ink: #dcfff2; --r-dim: #98cfbe; --r-mute: #6f9f92;
+  --r-title-a: #12a56c; --r-title-b: #2a5bd4; --r-title-ink: #ffffff; --r-title-off: #3a5a55;
+  --r-sel: #108a60; --r-sel-ink: #ffffff; --r-field: #0a1c1c; --r-accent: #0e7f57; --r-accent-hi: #6fe3b4; --r-warn: #ff6f8a;
+  --r-drop: rgba(0, 0, 0, 0.45);
+  --spark: #dcfff2; --fg-rgb: 220, 255, 242; --dim-rgb: 152, 207, 190;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='retro'][data-palette='green']:not([data-theme]) {
+    --r-desk: #0b1f24; --r-desk2: #0c1d3e; --r-check: rgba(111, 227, 180, 0.05);
+    --r-dot-a: #d6fff0; --r-dot-b: #2fd08e; --r-dot-c: #4f8ff0;
+    --r-face: #133130; --r-light: #2f6b62; --r-mid: #1c4642; --r-shadow: #07181a; --r-dark: #020809;
+    --r-ink: #dcfff2; --r-dim: #98cfbe; --r-mute: #6f9f92;
+    --r-title-a: #12a56c; --r-title-b: #2a5bd4; --r-title-ink: #ffffff; --r-title-off: #3a5a55;
+    --r-sel: #108a60; --r-sel-ink: #ffffff; --r-field: #0a1c1c; --r-accent: #0e7f57; --r-accent-hi: #6fe3b4; --r-warn: #ff6f8a;
+    --r-drop: rgba(0, 0, 0, 0.45);
+    --spark: #dcfff2; --fg-rgb: 220, 255, 242; --dim-rgb: 152, 207, 190;
+    color-scheme: dark;
+  }
+}
+:root[data-look='retro'][data-palette='green'] {
+  --r-winbtns: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='12' shape-rendering='crispEdges'%3E%3Cg%3E%3Crect width='14' height='12' fill='%23eafaf3'/%3E%3Cpath d='M0 0h14v1H1v11H0z' fill='%23fff'/%3E%3Cpath d='M13 1h1v11H0v-1h13z' fill='%231d5446'/%3E%3Crect x='4' y='8' width='6' height='2' fill='%230e3a31'/%3E%3C/g%3E%3Cg transform='translate(16)'%3E%3Crect width='14' height='12' fill='%23eafaf3'/%3E%3Cpath d='M0 0h14v1H1v11H0z' fill='%23fff'/%3E%3Cpath d='M13 1h1v11H0v-1h13z' fill='%231d5446'/%3E%3Cpath d='M3 2h8v8H3z M4 4v5h6V4z' fill='%230e3a31' fill-rule='evenodd'/%3E%3C/g%3E%3Cg transform='translate(32)'%3E%3Crect width='14' height='12' fill='%23eafaf3'/%3E%3Cpath d='M0 0h14v1H1v11H0z' fill='%23fff'/%3E%3Cpath d='M13 1h1v11H0v-1h13z' fill='%231d5446'/%3E%3Cpath d='M4 3h2v1h1v1h-1v-1H4z M8 3h2v1H9v1H8V4h0z M6 5h2v2H6z M5 7h1v1H5z M8 7h1v1H8z M4 8h2v1H4z M8 8h2v1H8z' fill='%230e3a31'/%3E%3C/g%3E%3C/svg%3E");
+}
+[data-look='retro'][data-palette='green'] .check input:checked {
+  background: var(--r-field) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' shape-rendering='crispEdges'%3E%3Cpath d='M11 4h1v1h-1zM12 4h1v1h-1zM10 5h1v1h-1zM11 5h1v1h-1zM12 5h1v1h-1zM9 6h1v1h-1zM10 6h1v1h-1zM11 6h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM8 7h1v1h-1zM9 7h1v1h-1zM10 7h1v1h-1zM3 8h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM9 8h1v1h-1zM4 9h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM7 10h1v1h-1zM6 11h1v1h-1z' fill='%230f8060'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
 }
 :root[data-look='retro'] {
   --r-raised: inset -1px -1px var(--r-dark), inset 1px 1px var(--r-light), inset -2px -2px var(--r-shadow), inset 2px 2px var(--r-mid);

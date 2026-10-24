@@ -1,4 +1,5 @@
 {
+  "Custom": "Eigenes",
   "Deafen": "Ton aus",
   "Deafen or undeafen": "Ton aus oder an",
   "Developer tools": "Entwicklerwerkzeuge",
@@ -13,7 +14,8 @@
   "Quit": "Beenden",
   "Releases": "Versionen",
   "Reload": "Neu laden",
-  "Retro": "Retro",
+  "Retro green": "Retro Grün",
+  "Retro pink": "Retro Pink",
   "Servers and settings…": "Server und Einstellungen…",
   "Share your screen": "Bildschirm teilen",
   "Show": "Anzeigen",
@@ -40,7 +42,6 @@
   "copy code": "Code kopieren",
   "copy diagnostics": "Diagnose kopieren",
   "could not open the server": "Server ließ sich nicht öffnen",
-  "custom": "eigenes",
   "dark": "dunkel",
   "deafened": "Ton aus",
   "done": "fertig",

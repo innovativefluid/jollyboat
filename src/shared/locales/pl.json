@@ -1,4 +1,5 @@
 {
+  "Custom": "Własny",
   "Deafen": "Wycisz dźwięk",
   "Deafen or undeafen": "Wycisz lub włącz dźwięk",
   "Developer tools": "Narzędzia deweloperskie",
@@ -13,7 +14,8 @@
   "Quit": "Zakończ",
   "Releases": "Wydania",
   "Reload": "Odśwież",
-  "Retro": "Retro",
+  "Retro green": "Retro zielony",
+  "Retro pink": "Retro różowy",
   "Servers and settings…": "Serwery i ustawienia…",
   "Share your screen": "Udostępnij ekran",
   "Show": "Pokaż",
@@ -40,7 +42,6 @@
   "copy code": "kopiuj kod",
   "copy diagnostics": "kopiuj diagnostykę",
   "could not open the server": "nie udało się otworzyć serwera",
-  "custom": "własny",
   "dark": "ciemny",
   "deafened": "dźwięk wyciszony",
   "done": "gotowe",

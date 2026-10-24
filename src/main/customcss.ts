@@ -13,7 +13,7 @@ const MAX_BYTES = 1024 * 1024;
 const FONTS = ['PixelifySans', 'Fredoka', 'Jersey10', 'Nunito', 'DotGothic16'];
 
 const cssPath = () => join(app.getPath('userData'), 'custom.css');
-const themePath = (name: 'lcd' | 'water' | 'retro' = 'lcd') => join(__dirname, `../../resources/themes/${name}.css`);
+const themePath = (name: 'lcd' | 'water' | 'retro' | 'retro-green' = 'lcd') => join(__dirname, `../../resources/themes/${name}.css`);
 const assetsDir = () => join(__dirname, '../renderer/assets');
 
 let target: (() => WebContents | null) | null = null;
@@ -54,6 +54,8 @@ const themeCss = () => {
   if (theme === 'jollyboat') return readFile(themePath('lcd'));
   if (theme === 'water') return readFile(themePath('water'));
   if (theme === 'retro') return readFile(themePath('retro'));
+  // Retro green: the same theme with green colours over it
+  if (theme === 'retro-green') return `${readFile(themePath('retro'))}\n${readFile(themePath('retro-green'))}`;
   if (theme === 'custom') return readFile(cssPath());
   return '';
 };

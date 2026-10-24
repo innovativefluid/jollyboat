@@ -5,7 +5,7 @@ import { setStreams } from './popout';
 import { editCustomCss, refreshCustomCss, useExample } from './customcss';
 import { currentLang, onLanguageChange, t } from './lang';
 import { applyColorMode } from './colormode';
-import { broadcastLook, currentLook } from './look';
+import { broadcastLook, currentLook, currentPalette } from './look';
 import { getAutoStart, isAutoStartSupported, setAutoStart } from './autostart';
 import { basicHeaderFor } from './basic-auth';
 import { getBridgeStatus, getBridgeToken } from './hotkeys/bridge';
@@ -66,7 +66,7 @@ const pickSettingsPatch = (patch: unknown): Partial<TSettings> => {
   if (p.onClose === 'minimize' || p.onClose === 'tray' || p.onClose === 'quit') out.onClose = p.onClose;
   if (typeof p.notifyTray === 'boolean') out.notifyTray = p.notifyTray;
   if (typeof p.overlay === 'boolean') out.overlay = p.overlay;
-  if (p.theme === 'none' || p.theme === 'jollyboat' || p.theme === 'water' || p.theme === 'retro' || p.theme === 'custom') out.theme = p.theme;
+  if (p.theme === 'none' || p.theme === 'jollyboat' || p.theme === 'water' || p.theme === 'retro' || p.theme === 'retro-green' || p.theme === 'custom') out.theme = p.theme;
   if (p.colorMode === 'auto' || p.colorMode === 'dark' || p.colorMode === 'light') out.colorMode = p.colorMode;
   if (p.language === 'system' || p.language === 'en' || p.language === 'de' || p.language === 'pl') out.language = p.language;
   if (typeof p.overlayOpacity === 'number' && Number.isFinite(p.overlayOpacity)) out.overlayOpacity = Math.min(100, Math.max(0, Math.round(p.overlayOpacity)));
@@ -163,6 +163,7 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart,
       login: server && server.keepLogin !== false ? { token: loginTokenFor(server) } : null,
       colorMode: getSettings().colorMode,
       look: currentLook(),
+      palette: currentPalette(),
       water: !!server && currentLook() === 'water',
       softGl: process.env.JOLLYBOAT_SOFT_GL === '1',
       screenAudio: server

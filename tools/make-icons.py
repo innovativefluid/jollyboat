@@ -102,6 +102,10 @@ PIXEL_SETS = {
     # at rest and hot pink while you talk, square corners like an old window
     'retro': dict(bg=hexc('#2a1838'), ink=hexc('#ff8fcf'), hull=hexc('#8a3f86'), sail=hexc('#ffd6ee'), talk=hexc('#ff3fa4'),
                   cut=hexc('#ffe066'), dot=hexc('#ffe066'), ring=hexc('#1c1029'), radius=2),
+    # Retro green's dark scheme: a dark teal window with a mint frame, the sail pale mint at rest
+    # and bright green while you talk
+    'retro-green': dict(bg=hexc('#10292b'), ink=hexc('#6fe3b4'), hull=hexc('#2f7d76'), sail=hexc('#d6fff0'), talk=hexc('#2fd08e'),
+                        cut=hexc('#ffd84d'), dot=hexc('#ffd84d'), ring=hexc('#06161a'), radius=2),
     'sharkord': dict(bg=hexc('#171717'), ink=hexc('#e5e5e5'), hull=hexc('#525252'), sail=hexc('#fafafa'), talk=hexc('#86efac'),
                      cut=hexc('#ef4444'), dot=hexc('#fafafa'), ring=hexc('#0a0a0a')),
 }

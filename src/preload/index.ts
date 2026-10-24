@@ -4,7 +4,7 @@
 // process decides which kind of page this is from the frame URL.
 
 import { contextBridge, ipcRenderer, webFrame } from 'electron';
-import { LOOKS, type TLook } from '../shared/types';
+import { LOOKS, type TLook, type TPalette } from '../shared/types';
 import type { TOverlayState, TPickerResult, TServerInput, TSettings, TUpdateStatus, TVoiceMember, TVoiceReport } from '../shared/types';
 import { startPageWater } from './water';
 
@@ -22,6 +22,8 @@ type TBootstrap = {
   colorMode: 'auto' | 'dark' | 'light';
   /** the app's own windows: the lcd look or the water look */
   look: TLook;
+  /** the retro look's colours */
+  palette: TPalette;
   /** a saved server page with the water theme: the water runs behind it */
   water: boolean;
   /** tests: the water even on a software renderer */
@@ -42,19 +44,23 @@ const hasFocus = () => windowFocused ?? document.hasFocus();
 if (boot.ownPage) {
   // the look goes on <html> as data-look before anything is painted (the preload runs before
   // the document has an element: the parser's first insert is caught), then follows the setting
-  const markLook = (look: string) => {
+  // (the retro look's colours go along as data-palette)
+  const markLook = (look: string, palette: TPalette) => {
     const root = document.documentElement;
-    if (root) root.dataset.look = look;
+    if (root) {
+      root.dataset.look = look;
+      root.dataset.palette = palette;
+    }
     return !!root;
   };
-  if (!markLook(boot.look)) {
-    const watcher = new MutationObserver(() => markLook(boot.look) && watcher.disconnect());
+  if (!markLook(boot.look, boot.palette)) {
+    const watcher = new MutationObserver(() => markLook(boot.look, boot.palette) && watcher.disconnect());
     watcher.observe(document, { childList: true });
   }
   const lookListeners: ((look: TLook) => void)[] = [];
-  ipcRenderer.on('shell:look', (_e, look: TLook) => {
+  ipcRenderer.on('shell:look', (_e, look: TLook, palette: TPalette) => {
     if (!LOOKS.includes(look)) return;
-    markLook(look);
+    markLook(look, palette === 'green' ? 'green' : 'pink');
     for (const cb of lookListeners) cb(look);
   });
 

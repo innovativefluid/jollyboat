@@ -93,7 +93,7 @@ export const createDesk = (canvas: HTMLCanvasElement, opts: { boat?: boolean } =
 
   const draw = () => {
     if (!running) return;
-    const nextKey = `${window.innerWidth}x${window.innerHeight}|${dark.matches}|${document.documentElement.dataset.theme ?? ''}`;
+    const nextKey = `${window.innerWidth}x${window.innerHeight}|${dark.matches}|${document.documentElement.dataset.theme ?? ''}|${document.documentElement.dataset.palette ?? ''}`;
     if (nextKey !== key) {
       key = nextKey;
       canvas.width = window.innerWidth;

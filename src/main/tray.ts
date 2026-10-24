@@ -40,11 +40,11 @@ const icons = new Map<string, Electron.NativeImage>();
 
 // one set of icons per theme, each from the theme's dark scheme (tools/make-icons.py): the lcd
 // pixel boat for the Jollyboat theme, the same boat in Sharkord's greys for Sharkord itself (and
-// custom css), a glass tile of water for the Water theme, a pink pixel window for Retro
-type TTraySet = 'lcd' | 'sharkord' | 'water' | 'retro';
+// custom css), a glass tile of water for the Water theme, a pink pixel window for Retro pink, a green one for Retro green
+type TTraySet = 'lcd' | 'sharkord' | 'water' | 'retro' | 'retro-green';
 const traySet = (): TTraySet => {
   const theme = getSettings().theme;
-  return theme === 'water' ? 'water' : theme === 'retro' ? 'retro' : theme === 'jollyboat' ? 'lcd' : 'sharkord';
+  return theme === 'water' ? 'water' : theme === 'retro' ? 'retro' : theme === 'retro-green' ? 'retro-green' : theme === 'jollyboat' ? 'lcd' : 'sharkord';
 };
 
 // windows wants an .ico (several sizes); everywhere else the png is fine

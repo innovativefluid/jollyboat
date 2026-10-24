@@ -12,9 +12,9 @@ A desktop app for [Sharkord](https://sharkord.com) servers, for Windows and Linu
 
 <sub>The Water theme, light (left) and dark (right).</sub>
 
-![The same server in the Retro theme: light on the left, dark on the right](docs/retro-theme.png)
+![The same server in the Retro themes: Retro pink in light mode on the left, Retro green in dark mode on the right](docs/retro-theme.png)
 
-<sub>The Retro theme, light (left) and dark (right).</sub>
+<sub>Retro pink, light (left), and Retro green, dark (right).</sub>
 
 ## What it adds
 
@@ -35,12 +35,12 @@ A desktop app for [Sharkord](https://sharkord.com) servers, for Windows and Linu
 
 ## Themes
 
-Pick one under **servers and settings**. The app's own windows (the bar above the page, the setup window, the overlay) follow along, in the lcd look, in glass with Water, or as pink old-desktop windows with Retro; each theme has its own tray icon.
+Pick one under **servers and settings**. The app's own windows (the bar above the page, the setup window, the overlay) follow along, in the lcd look, in glass with Water, or as old-desktop windows with Retro; each theme has its own tray icon.
 
 - **Sharkord** — Sharkord as it is.
 - **Jollyboat** — an lcd look: pixel type for headings, pill buttons, presence you can tell apart at a glance, a few stepped animations.
 - **Water** — white and blue water under glass. Live water with caustics, ripples and air bubbles runs behind everything; the sidebars, the chat and the bar are frosted glass panels floating on it, the buttons glass bubbles whose water rises and leans toward the pointer, the channel you are on and the voice channel you are in pills of water that fill as you pick them. Sent messages drop into the water, and whoever talks sends rings across it. It runs at 60 frames a second while the window is in front and 30 behind; without hardware graphics it keeps a lighter version drawn in CSS.
-- **Retro** — a pink nineties desktop. The sidebars, the chat and the member list are windows with pink-to-lilac title bars floating on a pastel desktop (deep purple at night); buttons are bevelled, fields sunken, scrollbars the old kind, the type pixel type, and the channel you are on is picked out like a selected file. Whoever talks gets a blinking pink frame; menus open in a few steps, the way old desktops drew them.
+- **Retro pink** and **Retro green** — a nineties desktop, in pink or in mint and sky blue. The sidebars, the chat and the member list are windows with gradient title bars (pink to lilac, or green to blue) floating on a pastel desktop (deep purple or deep teal at night); buttons are bevelled, fields sunken, scrollbars the old kind, the type pixel type, and the channel you are on is picked out like a selected file. Whoever talks gets a blinking frame; menus open in a few steps, the way old desktops drew them.
 - **Custom** — your own CSS for the Sharkord page, read again whenever the file changes.
 
 ![The setup window: servers, app settings and privacy](docs/launcher.png)

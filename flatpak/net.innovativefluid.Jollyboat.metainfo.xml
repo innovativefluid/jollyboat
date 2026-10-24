@@ -84,7 +84,7 @@
   <releases>
     <release version="0.3.11" date="2026-10-25">
       <description>
-        <p>A new theme, Retro: a pink nineties desktop. The sidebars, the chat and the member list are windows with pink title bars on a pastel desktop (a deep purple one at night), with bevelled buttons, sunken fields, old scrollbars and pixel type; the app's own windows, the overlay and the tray icon match. The theme is now picked from a drop-down menu. The voice overlay is see-through around its card again.</p>
+        <p>Two new themes, Retro pink and Retro green: a nineties desktop in pink, or in mint and sky blue. The sidebars, the chat and the member list are windows with gradient title bars on a pastel desktop (deep purple or deep teal at night), with bevelled buttons, sunken fields, old scrollbars and pixel type; the app's own windows, the overlay and the tray icon match. The theme is now picked from a drop-down menu. The voice overlay is see-through around its card again.</p>
       </description>
     </release>
     <release version="0.3.10" date="2026-10-24">

@@ -5,20 +5,24 @@
 
 import { nativeTheme, webContents } from 'electron';
 import { isOwnPageUrl } from './paths';
-import type { TLook } from '../shared/types';
+import type { TLook, TPalette } from '../shared/types';
 import { findServerByUrl, getSettings } from './settings';
 
-export type { TLook };
+export type { TLook, TPalette };
 
 export const currentLook = (): TLook => {
   const { theme } = getSettings();
-  return theme === 'water' ? 'water' : theme === 'retro' ? 'retro' : 'lcd';
+  return theme === 'water' ? 'water' : theme === 'retro' || theme === 'retro-green' ? 'retro' : 'lcd';
 };
+
+/** the retro look's colours: green with Retro green, else pink */
+export const currentPalette = (): TPalette => (getSettings().theme === 'retro-green' ? 'green' : 'pink');
 
 /** what a window shows before its page has painted: the page's own background colour */
 export const windowBackground = (dark = nativeTheme.shouldUseDarkColors) => {
   const look = currentLook();
   if (look === 'water') return dark ? '#06203c' : '#9fd8f6';
+  if (look === 'retro' && currentPalette() === 'green') return dark ? '#0b1f24' : '#9fe0c8';
   if (look === 'retro') return dark ? '#1c1029' : '#f9c9e4';
   return dark ? '#18201c' : '#a6b08a';
 };
@@ -26,9 +30,10 @@ export const windowBackground = (dark = nativeTheme.shouldUseDarkColors) => {
 /** tells every open page of ours, and saved server pages whether the water runs behind them */
 export const broadcastLook = () => {
   const look = currentLook();
+  const palette = currentPalette();
   for (const wc of webContents.getAllWebContents()) {
     if (wc.isDestroyed()) continue;
-    if (isOwnPageUrl(wc.getURL())) wc.send('shell:look', look);
+    if (isOwnPageUrl(wc.getURL())) wc.send('shell:look', look, palette);
     else if (findServerByUrl(wc.getURL())) wc.send('shell:water', look === 'water');
   }
 };

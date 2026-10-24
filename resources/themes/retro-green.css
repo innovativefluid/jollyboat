@@ -1,0 +1,76 @@
+/* Retro green: Jollyboat's retro theme in mint and sky blue, green to blue title bars on a
+   mint desktop; at night a deep teal desktop. Put after retro.css, it only changes the colours. */
+
+html:root,
+html .light {
+  --background: #eafaf3;
+  --foreground: #0e3a31;
+  --card: #eafaf3;
+  --card-foreground: #0e3a31;
+  --popover: #eafaf3;
+  --popover-foreground: #0e3a31;
+  --primary: #0f7d5a;
+  --primary-foreground: #ffffff;
+  --secondary: #cdeedf;
+  --secondary-foreground: #0e3a31;
+  --muted: #cdeedf;
+  --muted-foreground: #3d6c60;
+  --accent: #cdeedf;
+  --accent-foreground: #0e3a31;
+  --destructive: #c4223d;
+  --border: #82bfa8;
+  --input: #82bfa8;
+  --ring: #19a974;
+  --sidebar: #eafaf3;
+  --sidebar-foreground: #0e3a31;
+  --sidebar-primary: #0f7d5a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #cdeedf;
+  --sidebar-accent-foreground: #0e3a31;
+  --sidebar-border: #82bfa8;
+  --sidebar-ring: #19a974;
+  --r-desk: #9fe0c8; --r-desk2: #a9cff5; --r-check: rgba(255, 255, 255, 0.22);
+  --r-face: #eafaf3; --r-light: #ffffff; --r-mid: #cdeedf; --r-shadow: #82bfa8; --r-dark: #1d5446;
+  --r-ink: #0e3a31; --r-dim: #3d6c60;
+  --r-title-a: #19a974; --r-title-b: #3b78e7; --r-title-ink: #ffffff;
+  --r-sel: #0f8060; --r-sel-ink: #ffffff; --r-field: #ffffff; --r-accent: #0f7d5a; --r-accent-hi: #6fdfb2; --r-warn: #c4223d;
+  --r-tip: #fff6c9;
+  --r-drop: rgba(29, 84, 70, 0.3);
+}
+
+html.dark,
+html .dark {
+  --background: #133130;
+  --foreground: #dcfff2;
+  --card: #133130;
+  --card-foreground: #dcfff2;
+  --popover: #133130;
+  --popover-foreground: #dcfff2;
+  --primary: #2fd08e;
+  --primary-foreground: #04140f;
+  --secondary: #1c4642;
+  --secondary-foreground: #dcfff2;
+  --muted: #1c4642;
+  --muted-foreground: #98cfbe;
+  --accent: #1c4642;
+  --accent-foreground: #dcfff2;
+  --destructive: #ff6f8a;
+  --border: #07181a;
+  --input: #07181a;
+  --ring: #2fd08e;
+  --sidebar: #133130;
+  --sidebar-foreground: #dcfff2;
+  --sidebar-primary: #2fd08e;
+  --sidebar-primary-foreground: #04140f;
+  --sidebar-accent: #1c4642;
+  --sidebar-accent-foreground: #dcfff2;
+  --sidebar-border: #07181a;
+  --sidebar-ring: #2fd08e;
+  --r-desk: #0b1f24; --r-desk2: #0c1d3e; --r-check: rgba(111, 227, 180, 0.05);
+  --r-face: #133130; --r-light: #2f6b62; --r-mid: #1c4642; --r-shadow: #07181a; --r-dark: #020809;
+  --r-ink: #dcfff2; --r-dim: #98cfbe;
+  --r-title-a: #12a56c; --r-title-b: #2a5bd4; --r-title-ink: #ffffff;
+  --r-sel: #108a60; --r-sel-ink: #ffffff; --r-field: #0a1c1c; --r-accent: #0e7f57; --r-accent-hi: #6fe3b4; --r-warn: #ff6f8a;
+  --r-tip: #1c4642;
+  --r-drop: rgba(0, 0, 0, 0.45);
+}

@@ -3,6 +3,8 @@
 /** the look of the app's own windows */
 export type TLook = 'lcd' | 'water' | 'retro';
 export const LOOKS: readonly TLook[] = ['lcd', 'water', 'retro'];
+/** the colours of the retro look: Retro pink (theme 'retro') or Retro green ('retro-green') */
+export type TPalette = 'pink' | 'green';
 
 export type TServerEntry = {
   id: string;
@@ -56,7 +58,7 @@ export type TSettings = {
   /** a theme on the server page: none, the app's own lcd look, the water look, the retro look,
    *  or custom.css next to the settings. the app's own windows take the water look with 'water',
    *  the retro look with 'retro', else the lcd one */
-  theme: 'none' | 'jollyboat' | 'water' | 'retro' | 'custom';
+  theme: 'none' | 'jollyboat' | 'water' | 'retro' | 'retro-green' | 'custom';
   /** where the overlay was left (top-left corner), null = top left of the main display */
   overlayPosition: { x: number; y: number } | null;
   /** flatpak: what the background portal last granted for starting at login (the portal's

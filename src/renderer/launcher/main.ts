@@ -372,8 +372,9 @@ const renderSettings = async () => {
     { value: 'none', label: 'Sharkord' },
     { value: 'jollyboat', label: 'Jollyboat' },
     { value: 'water', label: t('Water') },
-    { value: 'retro', label: t('Retro') },
-    { value: 'custom', label: t('custom') }
+    { value: 'retro', label: t('Retro pink') },
+    { value: 'retro-green', label: t('Retro green') },
+    { value: 'custom', label: t('Custom') }
   ];
   themeSelect.replaceChildren(...themes.map((o) => new Option(o.label, o.value, false, o.value === settings.theme)));
   themeSelect.onchange = () => {
