@@ -6,15 +6,26 @@
 import { createPaper } from './paper';
 import { createSparks } from './sparks';
 import { createStrip } from './strip';
-import { createWater, type TWater } from './water/water';
+import { createWater, type TWater } from './water/engine';
+import { createGlassDom, type TGlassDom } from './water/glass-dom';
 import { waterTokens } from './water/tokens';
 
 type TLook = 'lcd' | 'water';
-type TBackdrop = { stop: () => void; water?: TWater };
+type TBackdrop = { stop: () => void; water?: TWater; dom?: TGlassDom };
+
+// the hook a toast uses to make its bubble jiggle when it pops in
+let onToast: ((el: Element) => void) | null = null;
+const allowSoftGl = () => {
+  try {
+    return localStorage.getItem('jollyboat-soft-gl') === '1';
+  } catch {
+    return false;
+  }
+};
 
 const lookNow = (): TLook => (document.documentElement.dataset.look === 'water' ? 'water' : 'lcd');
 
-export const bootTheme = ({ intro = 'quick' }: { intro?: 'bubble' | 'quick' } = {}) => {
+export const bootTheme = ({ intro = 'quick', boat = false, fps, pool }: { intro?: 'bubble' | 'quick'; boat?: boolean; fps?: { focused: number; blurred: number }; pool?: () => { view: [number, number]; offset: [number, number] } } = {}) => {
   const sparksCanvas = document.createElement('canvas');
   sparksCanvas.className = 'sparks';
   document.body.append(sparksCanvas);
@@ -28,21 +39,36 @@ export const bootTheme = ({ intro = 'quick' }: { intro?: 'bubble' | 'quick' } = 
     backdropCanvas?.remove();
     backdrop = null;
     backdropCanvas = null;
-    document.documentElement.classList.remove('no-gl');
+    document.documentElement.classList.remove('no-gl', 'gl');
     const canvas = document.createElement('canvas');
     document.body.prepend(canvas);
 
     if (look === 'water') {
       canvas.className = 'water';
-      // an air bubble surfacing: a couple of twinkles
-      const water = createWater(canvas, { onPop: (x, y) => fx.burst(x, y, 1) });
+      const dom = createGlassDom({ boat });
+      // an air bubble popped: fizz when clicked, a little for a big one surfacing
+      const water = createWater(canvas, {
+        tokens: waterTokens,
+        scene: dom.scene,
+        fps,
+        pool,
+        allowSoftware: allowSoftGl(),
+        onPop: (x, y, strong, r) => (strong ? fx.burst(x, y, 10) : r > 10 && fx.burst(x, y, 4))
+      });
       if (!water) {
         canvas.remove();
         document.documentElement.classList.add('no-gl');
         return;
       }
-      backdrop = { stop: water.stop, water };
+      dom.setPointer(water.pointer);
+      document.documentElement.classList.add('gl');
+      backdrop = { stop: water.stop, water, dom };
+      onToast = (el) => {
+        const r = el.getBoundingClientRect();
+        dom.poke(el, r.width / 2, r.height / 2, 1);
+      };
     } else {
+      onToast = null;
       canvas.className = 'paper';
       const paper = createPaper(canvas);
       // for tuning from devtools: window.__paperCost(), window.__paperFrames()
@@ -61,37 +87,39 @@ export const bootTheme = ({ intro = 'quick' }: { intro?: 'bubble' | 'quick' } = 
 
   const rippleUnder = (el: Element, amp: number) => {
     const r = el.getBoundingClientRect();
-    backdrop?.water?.ripple(r.left + r.width / 2, r.top + r.height / 2, amp, 4);
+    backdrop?.water?.ripple(r.left + r.width / 2, r.top + r.height / 2, amp, 7);
   };
-  const jiggle = (el: Element) => {
-    if (lookNow() !== 'water') return;
-    el.classList.remove('jiggle');
-    void (el as HTMLElement).offsetWidth;
-    el.classList.add('jiggle');
-    el.addEventListener('animationend', () => el.classList.remove('jiggle'), { once: true });
+  const poke = (el: Element, e: MouseEvent, strength: number) => {
+    const r = el.getBoundingClientRect();
+    backdrop?.dom?.poke(el, e.detail ? e.clientX - r.left : r.width / 2, e.detail ? e.clientY - r.top : r.height / 2, strength);
   };
 
   document.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
-    const control = target.closest('.pill, .seg button');
+    const control = target.closest('.pill, .seg button, .chip');
     if (control) {
       if ((control as HTMLButtonElement).disabled) return;
       fx.burstAt(control, 5);
-      rippleUnder(control, -0.45);
-      jiggle(control);
+      if (control.matches('.pill')) rippleUnder(control, -0.45);
+      poke(control, e, control.matches('.seg button') ? 0.8 : 1);
       return;
     }
     const box = target.closest('.check')?.querySelector('input');
     if (box && target instanceof HTMLInputElement) {
       fx.burstAt(box, 4);
-      jiggle(box);
+      backdrop?.dom?.poke(box, 10, 10, 0.9);
+      return;
+    }
+    // a tap on a panel: its membrane jiggles
+    const panel = target.closest('.panel, .footer, .source');
+    if (panel && !target.closest('button, input, label, a')) {
+      poke(panel, e, 0.55);
       return;
     }
     // a tap on open water: pop an air bubble, else a drop
     const water = backdrop?.water;
-    if (water && !target.closest('.panel, button, input, label, .footer, .title-block, .toast, a')) {
-      if (water.popAt(e.clientX, e.clientY)) fx.burst(e.clientX, e.clientY, 10);
-      else water.ripple(e.clientX, e.clientY, -1.0, 5);
+    if (water && !target.closest('button, input, label, .footer, .title-block, .toast, a')) {
+      if (!water.popAt(e.clientX, e.clientY)) water.ripple(e.clientX, e.clientY, -1.0, 5);
     }
   });
   // a slider let go: three bubbles at the marble
@@ -131,88 +159,42 @@ export const bootTheme = ({ intro = 'quick' }: { intro?: 'bubble' | 'quick' } = 
   };
 
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const startWater = (backdrop as TBackdrop | null)?.water;
-  if (intro === 'bubble' && lookNow() === 'water' && startWater && !reduce) soapBubble(page, enter, startWater, fx);
+  const current = backdrop as TBackdrop | null;
+  if (intro === 'bubble' && lookNow() === 'water' && current?.water && current.dom && !reduce) soapBubble(page, enter, current.water, current.dom, fx);
   else enter();
 
   return { fx, ripple: (x: number, y: number, amp: number) => backdrop?.water?.ripple(x, y, amp) };
 };
 
-// the water look's intro (§7): a clear soap bubble swells at the centre to 210 px over 520 ms,
-// holds 180 ms and pops into two ripples and a ring of fizz; then the page comes in. a click skips
-// to the pop, and 2.5 s is the most it can take
-const soapBubble = (page: HTMLElement | null, enter: () => void, water: TWater, fx: ReturnType<typeof createSparks>) => {
+// the water look's intro (the study's): a clear soap bubble swells at the centre to 210 px over
+// 520 ms, holds 180 ms and pops into two ripples and a ring of fizz; then the page comes in. a
+// click skips to the pop, and 2.5 s is the most it can take
+const soapBubble = (page: HTMLElement | null, enter: () => void, water: TWater, dom: TGlassDom, fx: ReturnType<typeof createSparks>) => {
   page?.classList.add('hidden');
-  const canvas = document.createElement('canvas');
-  canvas.className = 'intro';
-  document.body.append(canvas);
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = Math.round(window.innerWidth * dpr);
-  canvas.height = Math.round(window.innerHeight * dpr);
-  const ctx = canvas.getContext('2d')!;
-  const cx = window.innerWidth / 2;
-  const cy = window.innerHeight / 2;
-  const R = 105;
   const start = performance.now();
   let popped = false;
-
+  let grow = 0;
   const pop = () => {
     if (popped) return;
     popped = true;
-    canvas.remove();
-    water.ripple(cx, cy, -1.3, 9);
-    water.ripple(cx + 34, cy - 22, -0.6, 5);
-    fx.ring(cx, cy, 30, R * 0.9);
+    dom.setIntro(null);
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    water.ripple(cx, cy, -1.3, 8);
+    water.ripple(cx, cy, -0.6, 20);
+    fx.ring(cx, cy, 30, 100 * Math.max(0.3, grow));
     enter();
   };
-
-  const draw = (now: number) => {
+  const step = (now: number) => {
     if (popped) return;
     const ms = now - start;
     if (ms > 700) return pop();
     const k = Math.min(1, ms / 520);
-    const r = Math.max(2, R * (1 - Math.pow(1 - k, 3)));
-    const tk = waterTokens();
-    const rgba = (c: number[], a: number) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
-
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // the body: nearly clear, a little lighter toward the rim
-    const body = ctx.createRadialGradient(cx, cy, r * 0.2, cx, cy, r);
-    body.addColorStop(0, rgba(tk.spark, 0.02));
-    body.addColorStop(0.8, rgba(tk.spark, 0.08));
-    body.addColorStop(1, rgba(tk.spark, 0.22));
-    ctx.fillStyle = body;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fill();
-    // the full thin-film rim, its colours turning
-    const film = ctx.createConicGradient(ms / 600, cx, cy);
-    ['#ff9ad5', '#ffe08a', '#8affd6', '#8ab8ff', '#d79aff', '#ff9ad5'].forEach((c, i, a) => film.addColorStop(i / (a.length - 1), c));
-    ctx.globalAlpha = 0.5;
-    ctx.strokeStyle = film;
-    ctx.lineWidth = Math.max(1, r * 0.08);
-    ctx.beginPath();
-    ctx.arc(cx, cy, r * 0.955, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-    ctx.strokeStyle = rgba(tk.spark, 0.85);
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.stroke();
-    // the window highlight and a smaller one opposite
-    ctx.fillStyle = rgba(tk.spark, 0.9);
-    ctx.beginPath();
-    ctx.ellipse(cx - r * 0.38, cy - r * 0.42, r * 0.22, r * 0.12, -0.7, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = rgba(tk.spark, 0.4);
-    ctx.beginPath();
-    ctx.ellipse(cx + r * 0.42, cy + r * 0.46, r * 0.1, r * 0.05, -0.7, 0, Math.PI * 2);
-    ctx.fill();
-    requestAnimationFrame(draw);
+    grow = 1 - Math.pow(1 - k, 3);
+    dom.setIntro(grow);
+    requestAnimationFrame(step);
   };
-  requestAnimationFrame(draw);
+  requestAnimationFrame(step);
   window.addEventListener('pointerdown', pop, { once: true });
   window.setTimeout(pop, 2500);
 };
@@ -228,6 +210,7 @@ export const toast = (text: string) => {
   }
   toastEl.textContent = text;
   toastEl.classList.add('show');
+  onToast?.(toastEl);
   clearTimeout(toastTimer);
   toastTimer = window.setTimeout(() => toastEl?.classList.remove('show'), 2500);
 };

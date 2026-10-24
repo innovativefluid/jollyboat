@@ -1,5 +1,6 @@
 // the strip under the title. lcd: the plasma, 3 px cells, 3 rows, bg → fg by 0.55 + (v − .5)·1.1
-// plus dither. water: a glass tube of water streaming right with fizz, at device resolution.
+// plus dither. water: the glass renderer draws it (a tube of water streaming along); only
+// without webgl2 (html.no-gl) is it drawn here, as a flat tube.
 
 import { lcdScheme } from './scheme';
 import { css, waterTokens } from './water/tokens';
@@ -93,6 +94,12 @@ export const createStrip = (canvas: HTMLCanvasElement) => {
     const t = ((performance.now() - start) / 1000) * (reduce.matches ? 0 : 1);
 
     if (look === 'water') {
+      if (document.documentElement.classList.contains('gl')) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        window.setTimeout(() => requestAnimationFrame(frame), 500);
+        return;
+      }
       tube(t);
       requestAnimationFrame(frame);
       return;

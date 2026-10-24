@@ -163,6 +163,8 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart,
       login: server && server.keepLogin !== false ? { token: loginTokenFor(server) } : null,
       colorMode: getSettings().colorMode,
       look: currentLook(),
+      water: !!server && currentLook() === 'water',
+      softGl: process.env.JOLLYBOAT_SOFT_GL === '1',
       screenAudio: server
         ? {
             pipewire: getScreenAudioMode() === 'pipewire',

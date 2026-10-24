@@ -82,6 +82,11 @@
   </keywords>
 
   <releases>
+    <release version="0.3.7" date="2026-10-24">
+      <description>
+        <p>The Water theme is real water and glass now: refracting, frosted glass panels and bubble buttons over live water with caustics, ripples and drifting air bubbles, a glass boat on liquid waves. The Sharkord page floats its parts on the same water. Without hardware graphics, the theme keeps its lighter CSS water.</p>
+      </description>
+    </release>
     <release version="0.3.6" date="2026-10-24">
       <description>
         <p>A new Water theme: white and blue water under glass, light and dark, for the Sharkord page and for the app's own windows (live water with ripples, air bubbles and the boat riding the waves). The light and dark setting now reaches the setup window too.</p>

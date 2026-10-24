@@ -1,170 +1,350 @@
-// the water look's shaders (design_handoff_aqua.md §5, §6), ported from the qml ones to webgl2.
-// everything works in css px with y up (gl's own direction); the js side turns dom rects around.
+// the water look's shaders, ported from the aquacard design study (qml/Aqua/shaders) to webgl2.
+// everything works in css px with y down, like the study; gl's own y-up framebuffer rows are
+// turned around where a position is made (p.y = view.y - gl_FragCoord.y / scale).
 //
-// SIM: a damped wave equation, one fragment per 5 × 5 px cell, ping-ponged in an rgba16f texture
-//      holding (height, previous height, gradient x, gradient y).
-// WATER: the pool seen through the moving surface: gradient, aurora ribbons, light shafts,
-//      caustics focused by the ripples, air bubbles as lenses, sky reflection, sun glints, glitter,
-//      bloom; then the jolly boat and its wave lines as glass on top. into a mipmapped texture.
-// GLASS: that texture on screen, with the panels as frosted glass slabs over it: a membrane edge
-//      that wobbles and reaches for the pointer, refraction at the rim, frost, tint, rim light,
-//      thin film, a gloss cap, window streaks, an outline and a soft shadow.
+// SIM    one step of a damped wave equation, one fragment per 5 × 5 px cell, ping-ponged in an
+//        rgba16f texture (height, previous height, gradient x, gradient y). rows are y-down.
+// WATER  the lit surface over a luminous pool: simulated ripples (bicubic), a slow swell, fine
+//        wind texture; under it gradient, aurora ribbons, shafts, caustics focused by the
+//        ripples, air bubbles as diverging lenses; sky reflection, glints, glitter, bloom.
+// GLASS  one glass element (a panel, a pill, a well, the boat's hull, a wave line...): a shape
+//        with a wobbling membrane that reaches for the pointer, squashes and jiggles; the water
+//        behind refracted, frosted and tinted; water inside it; rim light, thin film, gloss cap,
+//        window streaks, specular, outline; a soft shadow and a halo around it.
+// TITLE  glass letters holding water, from a text mask; PEARLS a string of drifting glass beads.
 
-export const VS = /* glsl */ `#version 300 es
+export const VS_FULL = /* glsl */ `#version 300 es
 in vec2 aPos;
-void main() { gl_Position = vec4(aPos, 0.0, 1.0); }
+void main() { gl_Position = vec4(aPos * 2.0 - 1.0, 0.0, 1.0); }
 `;
 
-const COMMON = /* glsl */ `
-float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+// an element's quad: uQuad is its effect box (shape + pad) in css px, y down
+export const VS_QUAD = /* glsl */ `#version 300 es
+in vec2 aPos;
+uniform vec4 uQuad;
+uniform vec2 uView;
+out vec2 vPos;
+void main() {
+  vPos = aPos * uQuad.zw;
+  vec2 p = uQuad.xy + vPos;
+  gl_Position = vec4(p.x / uView.x * 2.0 - 1.0, 1.0 - p.y / uView.y * 2.0, 0.0, 1.0);
+}
+`;
+
+const NOISE = /* glsl */ `
+const float TAU = 6.28318531;
+float hash1(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 vec2 hash2(vec2 p) { return fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453); }
 float vnoise(vec2 p) {
   vec2 i = floor(p), f = fract(p);
   vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+  return mix(mix(hash1(i), hash1(i + vec2(1, 0)), u.x), mix(hash1(i + vec2(0, 1)), hash1(i + vec2(1, 1)), u.x), u.y);
 }
 `;
 
 export const SIM_FS = /* glsl */ `#version 300 es
 precision highp float;
-uniform sampler2D uState;
-uniform vec2 uGrid;
-uniform vec4 uDrop[4];   // x, y (cells), radius (cells), amplitude
-uniform int uDrops;
-uniform vec4 uWake;      // the pointer's segment since the last step, in cells
-uniform float uWakeAmt;
+uniform sampler2D prev;
+uniform vec2 cells;
+uniform vec4 wakeA;   // pointer now: x, y (cells) | radius (cells) | amount
+uniform vec4 wakeB;   // pointer one step ago
+uniform vec4 drop0, drop1, drop2, drop3;
+uniform float speed, damping;
 out vec4 o;
 
+float H(vec2 uv) { return texture(prev, uv).r; }
+float bump(vec2 c, vec4 d) {
+  if (d.w == 0.0) return 0.0;
+  float r = length(c - d.xy) / d.z;
+  return r < 1.0 ? d.w * (0.5 + 0.5 * cos(3.14159265 * r)) : 0.0;
+}
+float segDist(vec2 p, vec2 a, vec2 b) {
+  vec2 pa = p - a, ba = b - a;
+  float h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-4), 0.0, 1.0);
+  return length(pa - ba * h);
+}
+
 void main() {
-  ivec2 ic = ivec2(gl_FragCoord.xy);
-  ivec2 mx = ivec2(uGrid) - 1;
-  #define H(dx, dy) texelFetch(uState, clamp(ic + ivec2(dx, dy), ivec2(0), mx), 0).r
-  vec4 s = texelFetch(uState, ic, 0);
-  float h = s.r;
-  float n = H(0, 1), so = H(0, -1), e = H(1, 0), w = H(-1, 0);
-  float lap = (4.0 * (n + so + e + w) + (H(1, 1) + H(-1, 1) + H(1, -1) + H(-1, -1)) - 20.0 * h) / 6.0;
-  float v = (h - s.g) * 0.994;
-  float hn = (h + v + 0.55 * lap) * 0.9994;
-
-  vec2 c = vec2(ic) + 0.5;
-  for (int i = 0; i < 4; i++) {
-    if (i >= uDrops) break;
-    vec4 d = uDrop[i];
-    float r = length(c - d.xy);
-    if (r < d.z) hn += d.w * 0.5 * (1.0 + cos(3.14159265 * r / d.z));
+  vec2 uv = gl_FragCoord.xy / cells;
+  vec2 t = 1.0 / cells;
+  vec4 c = texture(prev, uv);
+  float h = c.r, hp = c.g;
+  float l = H(uv - vec2(t.x, 0.0)), r = H(uv + vec2(t.x, 0.0));
+  float u = H(uv - vec2(0.0, t.y)), d = H(uv + vec2(0.0, t.y));
+  float ul = H(uv - t), dr = H(uv + t);
+  float ur = H(uv + vec2(t.x, -t.y)), dl = H(uv + vec2(-t.x, t.y));
+  // isotropic 9-point laplacian: ripples stay round instead of turning into diamonds
+  float lap = (4.0 * (l + r + u + d) + (ul + ur + dl + dr) - 20.0 * h) / 6.0;
+  // soak waves up near the window edges so they do not bounce back as clutter
+  vec2 cell = uv * cells;
+  float edge = min(min(cell.x, cells.x - cell.x), min(cell.y, cells.y - cell.y));
+  float damp = damping * mix(0.86, 1.0, smoothstep(0.0, 9.0, edge));
+  float hn = h + (h - hp) * damp + speed * lap;
+  hn *= 0.9994;
+  hn += bump(cell, drop0) + bump(cell, drop1) + bump(cell, drop2) + bump(cell, drop3);
+  if (wakeA.w != 0.0) {
+    float sd = segDist(cell, wakeB.xy, wakeA.xy);
+    hn += wakeA.w * exp(-(sd * sd) / (wakeA.z * wakeA.z));
   }
-  if (uWakeAmt != 0.0) {
-    vec2 a = uWake.xy, ab = uWake.zw - uWake.xy;
-    float t = clamp(dot(c - a, ab) / max(dot(ab, ab), 1e-4), 0.0, 1.0);
-    float dd = length(c - (a + ab * t));
-    hn += uWakeAmt * exp(-dd * dd / 4.0);
-  }
-
-  // the last 9 cells at every edge swallow what reaches them
-  vec2 ed = min(c, uGrid - c);
-  float absorb = mix(0.8, 1.0, smoothstep(0.0, 9.0, min(ed.x, ed.y)));
-  o = vec4(hn * absorb, h * absorb, (e - w) * 0.5, (n - so) * 0.5);
+  o = vec4(hn, h, (r - l) * 0.5, (d - u) * 0.5);
 }
 `;
 
 export const WATER_FS = /* glsl */ `#version 300 es
 precision highp float;
-uniform vec2 uRes;
-uniform float uScale;
-uniform float uTime;
-uniform sampler2D uSim;
-uniform vec2 uGrid;
-uniform float uSimOn;
-uniform vec3 uPoolTop, uPoolMid, uPoolBot, uLight, uSky, uBubble, uSpark, uLiqA, uLiqB, uEdge, uFg;
-uniform float uLightA, uSkyA, uBubbleA, uCaustics, uSun, uEdgeA, uIrid, uDeep;
-uniform vec4 uBub[14];   // x, y, r, phase
-uniform int uBubN;
-uniform vec4 uBoat;      // x, waterline y, tilt, scale (0: no boat)
-uniform float uWaterY;
+uniform vec2 view;        // css px
+uniform vec2 poolView;    // the size the pool's gradient spans (the window, for a bar)
+uniform vec2 poolOffset;  // where this canvas sits in that
+uniform float scale;      // device px per css px of this pass
+uniform vec2 cells;
+uniform float cell;
+uniform float time;
+uniform vec4 cTop, cMid, cBot, cLight, cSky, cBubble;
+uniform float caustics, sun, swell, depth, rippleGain, simOn;
+uniform vec4 bub[14];     // x, y, r, alpha
+uniform sampler2D sim;
 out vec4 o;
-${COMMON}
+${NOISE}
 
-vec4 cubicW(float v) {
-  vec4 n = vec4(1.0, 2.0, 3.0, 4.0) - v;
-  vec4 s = n * n * n;
-  float x = s.x, y = s.y - 4.0 * s.x, z = s.z - 4.0 * s.y + 6.0 * s.x;
-  return vec4(x, y, z, 6.0 - x - y - z) * (1.0 / 6.0);
-}
-vec4 simCubic(vec2 cell) {
-  vec2 c = cell - 0.5;
-  vec2 f = fract(c);
-  c -= f;
-  vec4 xc = cubicW(f.x), yc = cubicW(f.y);
-  vec4 cc = c.xxyy + vec2(-0.5, 1.5).xyxy;
-  vec4 s = vec4(xc.xz + xc.yw, yc.xz + yc.yw);
-  vec4 off = (cc + vec4(xc.yw, yc.yw) / s) / uGrid.xxyy;
-  vec4 s0 = texture(uSim, off.xz), s1 = texture(uSim, off.yz), s2 = texture(uSim, off.xw), s3 = texture(uSim, off.yw);
-  float sx = s.x / (s.x + s.y), sy = s.z / (s.z + s.w);
-  return mix(mix(s3, s2, sx), mix(s1, s0, sx), sy);
+// value noise with analytic derivatives: x = value, yz = gradient
+vec3 vnoised(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  vec2 du = 6.0 * f * (1.0 - f);
+  float a = hash1(i), b = hash1(i + vec2(1, 0)), c = hash1(i + vec2(0, 1)), d = hash1(i + vec2(1, 1));
+  float k = a - b - c + d;
+  return vec3(a + (b - a) * u.x + (c - a) * u.y + k * u.x * u.y, du * (vec2(b - a, c - a) + k * u.yx));
 }
 
-// F2 − F1 of a moving voronoi: thin bright lines where two cells meet
-float vEdge(vec2 x, float t) {
-  vec2 n = floor(x), f = fract(x);
-  float f1 = 8.0, f2 = 8.0;
-  for (int j = -1; j <= 1; j++)
-    for (int i = -1; i <= 1; i++) {
+// bicubic b-spline fetch from four bilinear taps: smooth normals from a coarse grid
+vec4 cubicTex(sampler2D t, vec2 uv, vec2 ts) {
+  vec2 st = uv * ts - 0.5;
+  vec2 i = floor(st), f = st - i;
+  vec2 f2 = f * f, f3 = f2 * f;
+  vec2 w0 = (-f3 + 3.0 * f2 - 3.0 * f + 1.0) / 6.0;
+  vec2 w1 = (3.0 * f3 - 6.0 * f2 + 4.0) / 6.0;
+  vec2 w2 = (-3.0 * f3 + 3.0 * f2 + 3.0 * f + 1.0) / 6.0;
+  vec2 w3 = f3 / 6.0;
+  vec2 g0 = w0 + w1, g1 = w2 + w3;
+  vec2 h0 = (i - 1.0 + w1 / g0 + 0.5) / ts;
+  vec2 h1 = (i + 1.0 + w3 / g1 + 0.5) / ts;
+  vec4 a = texture(t, vec2(h0.x, h0.y)), b = texture(t, vec2(h1.x, h0.y));
+  vec4 c = texture(t, vec2(h0.x, h1.y)), d = texture(t, vec2(h1.x, h1.y));
+  return g0.y * (g0.x * a + g1.x * b) + g1.y * (g0.x * c + g1.x * d);
+}
+
+// voronoi border distance: ~0 on the cell walls, where caustic light gathers
+float voro(vec2 p, float t) {
+  vec2 ip = floor(p), fp = fract(p);
+  float d1 = 9.0, d2 = 9.0;
+  for (int j = -1; j <= 1; ++j)
+    for (int i = -1; i <= 1; ++i) {
       vec2 g = vec2(float(i), float(j));
-      vec2 h = hash2(n + g);
-      vec2 r = g + 0.5 + 0.42 * sin(t + 6.2831 * h) - f;
+      vec2 o2 = hash2(ip + g);
+      o2 = 0.5 + 0.42 * sin(t * (0.45 + 0.5 * o2.yx) + TAU * o2);
+      vec2 r = g + o2 - fp;
       float d = dot(r, r);
-      if (d < f1) { f2 = f1; f1 = d; } else if (d < f2) f2 = d;
+      if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) { d2 = d; }
     }
-  return sqrt(f2) - sqrt(f1);
+  return sqrt(d2) - sqrt(d1);
 }
-
-vec3 pool(vec2 q, float T, float focus) {
-  vec2 u = q / uRes;
-  float dpt = clamp(0.62 * (1.0 - u.y) + 0.38 * u.x, 0.0, 1.0);
-  vec3 c = mix(mix(uPoolTop, uPoolMid, smoothstep(0.0, 0.5, dpt)), uPoolBot, smoothstep(0.45, 1.05, dpt));
-  vec3 L = uLight * uLightA;
-
-  // three aurora ribbons: a wide sheet, a 3 px bright edge, a halo
-  for (int k = 0; k < 3; k++) {
-    float fk = float(k);
-    float yk = uRes.y * (0.8 - 0.25 * fk) + 46.0 * sin(q.x * 0.0043 + T * 0.11 + fk * 2.1) + 20.0 * sin(q.x * 0.0105 - T * 0.07 + fk * 1.7);
-    float dd = q.y - yk;
-    float w = 36.0 + 18.0 * fk;
-    float along = 0.5 + 0.5 * sin(q.x * 0.0052 - T * 0.16 + fk * 2.6);
-    float sheet = smoothstep(w, 0.0, -dd) * step(dd, 0.0) * 0.1;
-    float edge = exp(-dd * dd / 4.0) * 0.32;
-    float halo = exp(-dd * dd / 260.0) * 0.09;
-    c += L * (sheet + edge + halo) * along;
-  }
-
-  // light shafts fanning from above the top left
-  vec2 v = q - vec2(-0.12 * uRes.x, 1.2 * uRes.y);
+float causticAt(vec2 q, float t) {
+  vec2 p = q / 120.0;
+  p += 0.22 * vec2(sin(p.y * 2.3 + t * 0.41), cos(p.x * 1.9 - t * 0.33));
+  float e1 = voro(p, t * 0.85);
+  float e2 = voro(p * 1.7 + vec2(3.7, 1.9), t * 1.1 + 1.3);
+  float c1 = exp(-e1 * 10.0), c2 = exp(-e2 * 13.0);
+  return c1 * 0.7 + c2 * 0.45 + c1 * c2 * 1.4;
+}
+float ribbon(vec2 uv, float k, float t) {
+  float yc = 0.60 + 0.13 * sin(uv.x * 2.2 + t * 0.055 + k * 2.3) + 0.05 * sin(uv.x * 5.3 - t * 0.083 + k * 4.1) - k * 0.11;
+  float w = 0.06 + 0.03 * sin(uv.x * 3.1 + k * 1.7 + t * 0.04);
+  float dy = uv.y - yc;
+  float sheet = exp(-pow(max(dy, 0.0) / (w * 2.4), 2.0)) * smoothstep(-0.003, 0.003, dy);
+  float edge = exp(-pow(dy / 0.0028, 2.0));
+  float halo = exp(-pow(dy / (w * 0.8), 2.0));
+  return sheet * 0.30 + edge * 0.75 + halo * 0.20;
+}
+vec3 poolAt(vec2 q0, float focus) {
+  vec2 q = q0 + poolOffset;
+  vec2 uv = q / poolView;
+  float y = clamp(uv.y + 0.05 * sin(uv.x * 2.7 + time * 0.04), 0.0, 1.0);
+  vec3 col = mix(cTop.rgb, cMid.rgb, smoothstep(0.0, 0.55, y));
+  col = mix(col, cBot.rgb, smoothstep(0.45, 1.05, y));
+  col = mix(col, cBot.rgb, 0.28 * smoothstep(0.4, 1.3, uv.x * 0.8 + uv.y * 0.5));
+  // aurora ribbons, the swoosh of the era
+  float rb = ribbon(uv, 0.0, time) + 0.7 * ribbon(uv + vec2(0.3, 0.0), 1.0, time * 1.2) + 0.45 * ribbon(uv * vec2(1.3, 1.0), 2.0, time * 0.8);
+  col = mix(col, cLight.rgb, clamp(rb * 0.42 * cLight.w, 0.0, 0.9));
+  // light shafts from above the top left corner
+  vec2 v = q - vec2(-0.08, -0.45) * poolView;
   float a = atan(v.y, v.x);
-  float rays = pow(0.5 + 0.5 * sin(a * 31.0 + 1.7 * sin(a * 11.0 + T * 0.13) + T * 0.04), 5.0) * 0.6 + pow(0.5 + 0.5 * sin(a * 17.0 - T * 0.06), 8.0) * 0.4;
-  c += L * rays * 0.1 * smoothstep(1.6 * uRes.y, 0.15 * uRes.y, length(v));
-
-  // caustics: two warped voronoi layers, in patches, focused or spread by the ripples above
-  float patchy = smoothstep(0.3, 0.85, vnoise(q * 0.0032 + vec2(T * 0.02, -T * 0.015)));
-  vec2 w2 = q + 24.0 * vec2(sin(q.y * 0.009 + T * 0.3) + 0.5 * sin(q.x * 0.021 - T * 0.2), cos(q.x * 0.008 - T * 0.25) + 0.5 * cos(q.y * 0.019 + T * 0.23));
-  float e1 = vEdge(w2 / 120.0, T * 0.35);
-  float e2 = vEdge(w2 / 70.0 + 3.7, T * 0.5);
-  float c1 = pow(1.0 - smoothstep(0.0, 0.13, e1), 3.0);
-  float c2 = pow(1.0 - smoothstep(0.0, 0.15, e2), 3.0);
-  float cs = c1 * 0.55 + c2 * 0.35 + c1 * c2 * 0.6;
-  c += L * cs * (0.12 + 0.88 * patchy) * uCaustics * focus * 0.3;
-  return c;
+  float sh = 0.5 + 0.5 * sin(a * 23.0 + time * 0.11) * sin(a * 37.0 - time * 0.07 + 1.7);
+  sh = pow(sh, 3.0) * exp(-length(v) / (poolView.y * 1.25));
+  col += cLight.rgb * sh * 0.20 * cLight.w;
+  // caustics, stronger near the light, focused or spread by the ripples above
+  float patchy = 0.3 + 0.9 * smoothstep(0.25, 0.8, vnoised(q / 380.0 + vec2(time * 0.015, -time * 0.011)).x);
+  float ca = causticAt(q, time) * caustics * (0.62 + 0.38 * (1.0 - y)) * patchy * focus;
+  col += cLight.rgb * ca * 0.30;
+  return col;
 }
 
-float waveY(float k, float x, float T) {
-  return uWaterY - k * 15.0 + 8.0 * sin(x * 0.018 + T * 0.6 + k * 1.3) + 4.0 * sin(x * 0.046 - T * 0.9 + k);
+vec3 bubble(vec3 col, vec2 q, vec4 b, float idx, float focus) {
+  if (b.z <= 0.5 || b.w <= 0.0) return col;
+  vec2 dv = q - b.xy;
+  float r0 = b.z;
+  if (dot(dv, dv) > r0 * r0 * 1.7) return col;
+  float ang = atan(dv.y, dv.x);
+  float r = r0 * (1.0 + 0.035 * sin(3.0 * ang + time * 2.1 + idx) + 0.025 * sin(5.0 * ang - time * 2.9 + idx * 2.3));
+  float d = length(dv);
+  float nd = d / r;
+  float aa = fwidth(d) + 0.5;
+  float body = clamp((r - d) / aa + 0.5, 0.0, 1.0);
+  if (body <= 0.0) {
+    // a faint contact shadow / glow just outside the rim
+    float halo = exp(-(d - r) / (r * 0.18)) * 0.10 * b.w;
+    return mix(col, cBubble.rgb * 0.7, halo);
+  }
+  // an air bubble in water is a diverging lens: it shows a wider, upright view
+  float k = 1.35 + 1.1 * nd * nd;
+  vec3 inside = poolAt(b.xy + dv * k, focus) * 1.06 + 0.04;
+  float rim = smoothstep(0.55, 1.0, nd);
+  float th = nd * 2.2 + ang * 0.25 + time * 0.15 + idx;
+  vec3 film = 0.5 + 0.5 * cos(TAU * (th + vec3(0.0, 0.33, 0.67)));
+  vec3 c = mix(inside, vec3(1.0), rim * rim * 0.55);
+  c = mix(c, c * 0.55 + film * 0.55, rim * rim * 0.30);
+  c = mix(c, cBubble.rgb, smoothstep(0.86, 1.0, nd) * 0.55);
+  c = mix(c, vec3(1.0), exp(-pow((nd - 0.9) / 0.05, 2.0)) * 0.6);
+  // highlights: a soft window up-left, a small bounce down-right
+  vec2 hp = (dv / r - vec2(-0.36, -0.42)) * vec2(1.0, 1.5);
+  hp = mat2(0.80, 0.60, -0.60, 0.80) * hp;
+  float hl = smoothstep(0.30, 0.05, length(hp * vec2(1.0, 1.7)));
+  c = mix(c, vec3(1.0), hl * 0.92);
+  float hl2 = smoothstep(0.13, 0.0, length(dv / r - vec2(0.45, 0.48)));
+  c = mix(c, vec3(1.0), hl2 * 0.6);
+  return mix(col, c, body * b.w * cBubble.w);
 }
 
-float sdSeg(vec2 p, vec2 a, vec2 b) {
-  vec2 pa = p - a, ba = b - a;
-  return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0));
+void main() {
+  vec2 p = vec2(gl_FragCoord.x / scale, view.y - gl_FragCoord.y / scale);
+  vec2 tc = p / view;
+
+  // simulated ripples
+  vec2 slope = vec2(0.0);
+  float focus = 1.0;
+  if (simOn > 0.5) {
+    vec4 s = cubicTex(sim, tc, cells);
+    slope = s.zw * rippleGain / cell;
+    // soft limit: a hard splash bends the light a lot, but never tears the picture
+    slope = slope / (1.0 + length(slope) * 1.4);
+    vec2 tx = 1.0 / cells;
+    float lap = (texture(sim, tc + vec2(tx.x, 0.0)).z - texture(sim, tc - vec2(tx.x, 0.0)).z
+      + texture(sim, tc + vec2(0.0, tx.y)).w - texture(sim, tc - vec2(0.0, tx.y)).w) * 0.5;
+    focus = clamp(1.0 - lap * rippleGain * 9.0, 0.45, 2.6);
+  }
+  vec2 simSlope = slope;
+
+  // slow swell: the same four-sine plasma as the lcd paper, now as a height field
+  vec2 c5 = p / 5.0;
+  vec2 rc = (p - view * 0.5) / 5.0;
+  float rl = length(rc) + 1e-3;
+  float tt = time * 0.6;
+  float a1 = c5.x * 0.085 + tt, a2 = c5.y * 0.11 - 0.7 * tt;
+  float a3 = c5.x * 0.06 + c5.y * 0.07 + 0.5 * tt, a4 = rl * 0.09 - 0.9 * tt;
+  vec2 gs = vec2(0.085 * cos(a1) + 0.06 * cos(a3) + 0.09 * cos(a4) * rc.x / rl, 0.11 * cos(a2) + 0.07 * cos(a3) + 0.09 * cos(a4) * rc.y / rl);
+  slope += gs * swell;
+
+  // fine wind texture (kept out of the glint term so the sun does not paint blobs)
+  vec3 g1 = vnoised(p / 34.0 + vec2(time * 0.21, -time * 0.17));
+  vec3 g2 = vnoised(p / 15.0 + vec2(-time * 0.29, time * 0.23) + 7.3);
+  vec2 fine = (g1.yz / 34.0 * 1.6 + g2.yz / 15.0 * 0.6) * swell;
+  vec2 smoothSlope = slope;
+  slope += fine;
+  vec3 nsim = normalize(vec3(-simSlope, 1.0));
+  vec3 n = normalize(vec3(-slope, 1.0));
+  vec3 ns = normalize(vec3(-smoothSlope, 1.0));
+
+  // refraction through the surface
+  vec2 q = p + n.xy * depth;
+  vec3 col = poolAt(q, focus);
+  for (int i = 0; i < 14; i++) col = bubble(col, q, bub[i], float(i), focus);
+
+  // the ripples catch light on one flank and shade the other
+  vec3 L = normalize(vec3(-0.22, -0.30, 0.93));
+  col *= clamp(1.0 + dot(-slope, L.xy) * 1.8, 0.82, 1.25);
+
+  // reflection of a bright sky (fresnel), sun glints on the crests
+  vec3 R = vec3(2.0 * n.z * n.xy, 2.0 * n.z * n.z - 1.0);
+  float fres = 0.02 + 0.98 * pow(1.0 - n.z, 5.0);
+  vec3 sky = mix(cSky.rgb, vec3(1.0), smoothstep(0.0, -0.5, R.y));
+  col = mix(col, sky, clamp(fres * cSky.w * 6.0, 0.0, 0.55));
+  // glints: crisp highlights on the ripple flanks, plus glitter specks where the surface faces
+  // the sun (tiny round spots that twinkle in and out)
+  vec3 Rs = vec3(2.0 * ns.z * ns.xy, 2.0 * ns.z * ns.z - 1.0);
+  vec3 Rr = vec3(2.0 * nsim.z * nsim.xy, 2.0 * nsim.z * nsim.z - 1.0);
+  float rl2 = max(dot(Rs, L), 0.0);
+  float rr2 = max(dot(Rr, L), 0.0);
+  col += sun * (pow(rr2, 700.0) * 1.5 + pow(rr2, 90.0) * 0.18);
+  vec2 gc = floor(p / 5.0);
+  vec2 gj = hash2(gc + 3.1);
+  float gh = hash1(gc);
+  vec2 gp = (gc + 0.2 + 0.6 * gj) * 5.0;
+  float tw = 0.5 + 0.5 * sin(time * (2.0 + 5.0 * gh) + gh * 40.0);
+  float face = smoothstep(0.55, 0.95, pow(rl2, 24.0));
+  float spot = step(0.975, gh) * pow(tw, 8.0) * face * exp(-dot(p - gp, p - gp) / 0.9);
+  col += sun * spot * 1.4;
+
+  // a gentle bloom from the top left, a little depth toward the corners
+  vec2 uv = (p + poolOffset) / poolView;
+  col += cLight.rgb * 0.05 * cLight.w * exp(-dot(uv - vec2(0.12, 0.0), uv - vec2(0.12, 0.0)) * 3.0);
+  col *= 1.0 - 0.10 * pow(length((uv - 0.5) * vec2(1.1, 1.3)), 2.5);
+
+  // tiny dither, no banding in the smooth gradients
+  col += (hash1(p + fract(time)) - 0.5) / 255.0;
+  o = vec4(clamp(col, 0.0, 1.0), 1.0);
+}
+`;
+
+export const GLASS_FS = /* glsl */ `#version 300 es
+precision highp float;
+in vec2 vPos;
+uniform vec2 size;       // effect size, px (shape size + 2 * pad)
+uniform float pad;
+uniform vec4 radii;      // top left, top right, bottom right, bottom left
+uniform vec2 mouse;      // pointer in effect px
+uniform float hover, press, time, seed, wobble, bulge, reach;
+uniform vec4 jiggle;     // click x, y (effect px) | start time | strength
+uniform float bevel, refr, frost;
+uniform vec4 tint, edge;
+uniform float gloss, streaks, irid;
+uniform vec4 shade;
+uniform float lift;
+uniform vec4 glow;
+uniform float halo, inset;
+uniform vec4 liqA, liqB;
+uniform vec4 liquid;     // level 0..1 | mode 0 none, 1 rises from the bottom, 2 fills from the left | wave px | speed
+uniform float slosh, flow;
+uniform vec2 screen;     // the framebuffer, device px
+uniform float alpha;
+uniform sampler2D bg;
+// shapes beyond the rounded box (the boat and its waves): kind 1 hull, 2 sail, 3 a wave line.
+// shapeA: scale (px per icon unit), the shape's centre in icon units (x, y), rotation.
+// wave: x0 of the effect in the window, base y, wave index, thickness
+uniform int kind;
+uniform vec4 shapeA;
+uniform vec4 wave;
+out vec4 o;
+${NOISE}
+
+vec2 B;   // half extents of the box
+vec2 M;   // pointer, centred
+
+float sdBox(vec2 p, vec2 b, vec4 r) {
+  float rr = p.x > 0.0 ? (p.y > 0.0 ? r.z : r.y) : (p.y > 0.0 ? r.w : r.x);
+  rr = min(rr, min(b.x, b.y));
+  vec2 q = abs(p) - b + rr;
+  return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - rr;
 }
 
-// the boat in the icon's 28-unit grid (y down): hull, sail, mast
 const vec2 HULL[5] = vec2[5](vec2(2.2, 17.0), vec2(26.6, 17.0), vec2(26.2, 19.8), vec2(24.4, 22.6), vec2(7.4, 22.6));
 const vec2 SAIL[4] = vec2[4](vec2(15.2, 2.8), vec2(24.2, 12.6), vec2(23.4, 14.4), vec2(15.2, 14.6));
 float sdHull(vec2 p) {
@@ -191,272 +371,305 @@ float sdSail(vec2 p) {
   }
   return s * sqrt(d);
 }
+float waveY(vec2 pw) {
+  float k = wave.z;
+  return wave.y + k * 15.0 + 8.0 * sin(pw.x * 0.018 + time * 0.6 + k * 1.3) + 4.0 * sin(pw.x * 0.046 - time * 0.9 + k);
+}
+float baseShape(vec2 p) {
+  if (kind == 0) return sdBox(p, B, radii);
+  if (kind == 3) {
+    vec2 pw = p + B + pad + vec2(wave.x, 0.0);
+    float y = waveY(pw);
+    float dy = (waveY(pw + vec2(1.0, 0.0)) - waveY(pw - vec2(1.0, 0.0))) * 0.5;
+    return abs(pw.y - y) / sqrt(1.0 + dy * dy) - wave.w;
+  }
+  float c = cos(shapeA.w), s = sin(shapeA.w);
+  vec2 u = vec2(c * p.x + s * p.y, -s * p.x + c * p.y) / shapeA.x + shapeA.yz;
+  return (kind == 1 ? sdHull(u) - 0.35 : sdSail(u) - 0.25) * shapeA.x;
+}
+
+float shapeAt(vec2 p) {
+  float d = baseShape(p);
+  if (wobble > 0.0) {
+    vec2 np = p * 0.045 + vec2(time * 0.35 + seed * 7.1, -time * 0.27 + seed * 3.3);
+    float w = (vnoise(np) - 0.5) * 2.0;
+    float ang = atan(p.y / max(B.y, 1.0), p.x / max(B.x, 1.0));
+    w += 0.55 * sin(ang * 3.0 + time * 1.7 + seed * 5.0) * sin(ang * 2.0 - time * 1.1 + seed);
+    d -= wobble * (1.0 + 0.9 * hover) * w * 0.5;
+  }
+  if (bulge > 0.0) {
+    vec2 dm = p - M;
+    d -= bulge * exp(-dot(dm, dm) / (reach * reach));
+  }
+  return d;
+}
+
+const vec2 disk[12] = vec2[12](
+  vec2(-0.326, -0.406), vec2(-0.840, -0.074), vec2(-0.696, 0.457), vec2(-0.203, 0.621),
+  vec2(0.962, -0.195), vec2(0.473, -0.480), vec2(0.519, 0.767), vec2(0.185, -0.893),
+  vec2(0.507, 0.064), vec2(0.896, 0.412), vec2(-0.322, -0.933), vec2(-0.792, -0.598));
 
 void main() {
-  vec2 p = gl_FragCoord.xy / uScale;
-  float T = uTime;
+  vec2 pos = vPos;
+  vec2 C = size * 0.5;
+  B = size * 0.5 - pad + hover * 0.8;
+  float px = max(fwidth(pos.x), 1e-3);
 
-  // the surface: ripples from the simulation, the lcd paper's four sines as a slow swell, and a
-  // fine texture
-  vec2 sl = vec2(0.0);
-  float focus = 1.0;
-  if (uSimOn > 0.5) {
-    vec2 cell = p / 5.0;
-    vec4 st = simCubic(cell);
-    sl = st.zw * 13.0 / 5.0;
-    vec2 ts = 1.0 / uGrid;
-    vec2 cu = cell / uGrid;
-    float lap = texture(uSim, cu + vec2(ts.x, 0.0)).r + texture(uSim, cu - vec2(ts.x, 0.0)).r + texture(uSim, cu + vec2(0.0, ts.y)).r + texture(uSim, cu - vec2(0.0, ts.y)).r - 4.0 * st.r;
-    focus = clamp(1.0 - lap * 9.0 * 1.6, 0.45, 2.6);
+  // squash on press, wobble back after a click
+  float tj = time - jiggle.z;
+  float jig = tj >= 0.0 ? jiggle.w * exp(-tj * 4.2) * sin(tj * 25.0) : 0.0;
+  float sizeK = clamp(34.0 / max(B.y, 1.0), 0.12, 1.0);
+  float sq = (press * 0.055 + jig * 0.075) * sizeK;
+  vec2 scl = vec2(1.0 + sq * 0.8, 1.0 - sq);
+  vec2 p = (pos - C) / scl;
+  M = (mouse - C) / scl;
+
+  float d = shapeAt(p);
+  const float e = 0.6;
+  vec2 g = vec2(shapeAt(p + vec2(e, 0.0)) - d, shapeAt(p + vec2(0.0, e)) - d) / e;
+  float gl = length(g);
+  g = gl > 1e-4 ? g / gl : vec2(0.0, -1.0);
+  float aa = clamp(0.5 - d / px, 0.0, 1.0);
+
+  // ---- outside: soft shadow and halo
+  float dsh = shapeAt(p - vec2(0.0, lift * (1.0 + 0.4 * hover - 0.6 * press)));
+  float shA = shade.w * (1.0 - smoothstep(-lift * 0.8, lift * 3.2 + 2.0, dsh));
+  float on = max(hover * 0.75, halo);
+  float glA = glow.w * on * exp(-max(d, 0.0) / (5.0 + 3.0 * halo)) * step(0.0, d);
+  vec4 outside = vec4(glow.rgb * glA, glA) + vec4(shade.rgb * shA, shA) * (1.0 - glA);
+  if (aa <= 0.0) { o = outside * alpha; return; }
+
+  // ---- surface normal from the rim profile (a quarter circle of width bevel)
+  float t = clamp(-d / max(bevel, 0.5), 0.0, 1.0);
+  float s = 1.0 - t;
+  float k = s / sqrt(max(1.0 - s * s, 0.03));
+  vec2 nxy = g * k * mix(1.0, -0.55, inset);
+  // click ripple travelling across the body
+  vec2 jp = pos - jiggle.xy;
+  float jr = length(jp);
+  float ring = tj >= 0.0 ? exp(-pow((jr - tj * 260.0) / 8.0, 2.0)) * exp(-tj * 2.6) * jiggle.w : 0.0;
+  nxy += (jr > 0.5 ? jp / jr : vec2(0.0)) * ring * 0.7;
+  vec3 n = normalize(vec3(nxy, 1.0));
+
+  // ---- what is behind: the water, refracted and frosted (the texture's rows run up)
+  vec2 suv = gl_FragCoord.xy / screen;
+  vec2 dev = 1.0 / (px * screen);
+  vec2 off = vec2(n.x, -n.y) * refr * dev;
+  vec3 sharp = vec3(texture(bg, suv + off * 1.06).r, texture(bg, suv + off).g, texture(bg, suv + off * 0.94).b);
+  vec3 blur = vec3(0.0);
+  if (frost > 0.01) {
+    float rad = mix(3.0, 26.0, frost);
+    float lod = log2(max(rad / (px * 4.0), 1.0));
+    float rot = hash1(floor(pos)) * TAU;
+    mat2 rm = mat2(cos(rot), sin(rot), -sin(rot), cos(rot));
+    for (int i = 0; i < 12; ++i) blur += textureLod(bg, suv + off + rm * disk[i] * rad * dev, lod).rgb;
+    blur /= 12.0;
   }
-  vec2 pc = p / 5.0;
-  float Tp = T * 0.6;
-  vec2 cc = pc - uRes / 10.0;
-  float rr = length(cc) + 1e-3;
-  vec2 swell = vec2(0.085 * cos(pc.x * 0.085 + Tp), 0.11 * cos(pc.y * 0.11 - 0.7 * Tp))
-    + vec2(0.06, 0.07) * cos(pc.x * 0.06 + pc.y * 0.07 + 0.5 * Tp)
-    + 0.09 * cos(rr * 0.09 - 0.9 * Tp) * cc / rr;
-  swell *= 0.045;
-  vec2 fine = (vec2(vnoise(p * 0.03 + vec2(T * 0.11, 0.0)), vnoise(p * 0.03 + vec2(5.2, -T * 0.09))) - 0.5) * 0.012;
-  sl += swell + fine;
-  sl = sl / (1.0 + 1.4 * length(sl));
+  vec3 base = mix(sharp, blur, smoothstep(0.0, 0.2, frost));
+  vec3 col = mix(base, tint.rgb, tint.w);
 
-  // refraction, and the air bubbles as diverging lenses (a wider view of the pool)
-  vec2 q = p + sl * 38.0;
-  int hit = -1;
-  vec2 bdv = vec2(0.0);
-  float br = 1.0;
-  for (int i = 0; i < 14; i++) {
-    if (i >= uBubN) break;
-    vec4 b = uBub[i];
-    float r = b.z * (1.0 + 0.045 * sin(T * 6.5 + b.w * 9.0));
-    vec2 dv = p - b.xy;
-    float d = length(dv);
-    if (d < r) {
-      float k = d / r;
-      q = b.xy + dv * (1.9 - 0.9 * k * k) + sl * 10.0;
-      hit = i; bdv = dv; br = r;
-      break;
+  // ---- liquid (it stays level: the boat's hull tilts, its water does not)
+  if (liquid.y > 0.5 && liquid.x > 0.001) {
+    float dl, depthK;
+    vec2 lp = p;
+    if (liquid.y < 1.5) {
+      float yl = B.y - liquid.x * 2.0 * B.y;
+      float wv = liquid.z * (0.6 * sin(lp.x * 0.11 + time * 3.3 + seed * 4.0) + 0.4 * sin(lp.x * 0.27 - time * 5.1 + seed));
+      float ys = yl + wv + slosh * lp.x * 0.35;
+      dl = lp.y - ys;
+      depthK = clamp(dl / max(2.0 * B.y, 1.0), 0.0, 1.0);
+    } else {
+      float xl = -B.x + liquid.x * 2.0 * B.x;
+      float wv = liquid.z * (sin(lp.y * 0.30 + time * 6.0) * (1.0 + 6.0 * liquid.w) + 0.6 * sin(time * 2.3 + seed));
+      dl = (liquid.x >= 0.999 ? 1e4 : (xl + wv - lp.x));
+      depthK = clamp((lp.y + B.y) / max(2.0 * B.y, 1.0), 0.0, 1.0);
+      if (kind == 3) depthK = clamp(0.5 + (p.y + B.y + pad - waveY(p + B + pad + vec2(wave.x, 0.0))) / max(2.0 * wave.w, 1.0), 0.0, 1.0);
     }
-  }
-  vec3 col = pool(q, T, focus);
-
-  if (hit >= 0) {
-    float k = length(bdv) / br;
-    float aa = 1.5 / br;
-    float rim = smoothstep(0.6, 1.0, k);
-    col = col * 1.06 + 0.04;
-    vec3 film = 0.5 + 0.5 * cos(6.2831 * (vec3(0.0, 0.33, 0.67) + k * 1.4 + atan(bdv.y, bdv.x) * 0.16 + T * 0.05));
-    col += film * uIrid * 0.28 * rim;
-    col = mix(col, uSpark, rim * 0.32);
-    float ring = smoothstep(1.0 - 3.5 * aa, 1.0 - aa, k);
-    col = mix(col, uBubble, ring * uBubbleA * 0.75);
-    vec2 hp = (bdv / br - vec2(-0.34, 0.36)) / vec2(0.27, 0.16);
-    col = mix(col, uSpark, smoothstep(1.0, 0.55, length(hp)) * 0.85);
-  }
-
-  // light on the surface: slope shading, the sky's reflection, sun glints on ripple flanks only,
-  // glitter where the swell faces the sun, a soft bloom, a light vignette
-  vec3 n = normalize(vec3(-sl, 1.0));
-  float lam = clamp(0.5 + dot(sl, normalize(vec2(-0.7, 0.7))) * 2.4, 0.0, 1.0);
-  col *= mix(0.82, 1.25, lam) / 1.035;
-  float fres = 0.04 + 0.96 * pow(1.0 - n.z, 5.0);
-  col = mix(col, uSky, uSkyA * clamp(0.05 + fres * 6.0, 0.0, 0.5));
-  vec3 sunD = normalize(vec3(-0.5, 0.55, 0.67));
-  vec3 rf = reflect(vec3(0.0, 0.0, -1.0), n);
-  float glint = pow(max(dot(rf, sunD), 0.0), 900.0) * smoothstep(0.02, 0.07, length(sl - swell - fine));
-  col += uSpark * glint * 2.2 * uSun;
-  float h1 = hash(floor(p / 3.0));
-  float tw = pow(max(0.0, sin(T * (2.0 + h1 * 3.0) + h1 * 40.0)), 8.0);
-  float faces = smoothstep(0.0012, 0.0035, dot(swell, normalize(vec2(-0.5, 0.55))));
-  col += uSpark * step(0.986, h1) * tw * faces * 0.55 * uSun;
-  vec2 bl = (p - vec2(0.0, uRes.y)) / (0.55 * uRes.x);
-  col += uLight * uLightA * 0.2 * exp(-dot(bl, bl) * 1.6);
-  vec2 vu = p / uRes - 0.5;
-  col *= 1.0 - 0.15 * pow(length(vu * vec2(1.0, 1.2)) * 1.25, 2.4);
-
-  // the jolly boat and its wave lines, glass on the water: the hull holds water, the sail is
-  // frosted, the mast a thin rod; the first wave line runs in front of the hull
-  if (uBoat.w > 0.0) {
-    float S = uBoat.w;
-    vec2 bp = p - uBoat.xy;
-    float ct = cos(uBoat.z), st = sin(uBoat.z);
-    bp = vec2(ct * bp.x + st * bp.y, -st * bp.x + ct * bp.y);
-    vec2 lp = vec2(bp.x / S + 14.0, 21.2 - bp.y / S);
-    if (lp.x > -1.0 && lp.x < 29.0 && lp.y > 0.5 && lp.y < 24.5) {
-      vec2 dx = vec2(0.05, 0.0), dy = vec2(0.0, 0.05);
-      float dh = (sdHull(lp) - 0.35) * S;
-      float ds = (sdSail(lp) - 0.25) * S;
-      float dm = (sdSeg(lp, vec2(14.4, 1.6), vec2(14.4, 17.2)) - 0.42) * S;
-      vec3 behind = col;
-      if (ds < 1.0) {
-        vec2 g = normalize(vec2(sdSail(lp + dx) - sdSail(lp - dx), sdSail(lp + dy) - sdSail(lp - dy)) + 1e-5);
-        float e = max(-ds, 0.0);
-        float k = clamp(1.0 - e / 6.0, 0.0, 1.0);
-        vec3 body = pool(q - vec2(g.x, -g.y) * k * 7.0, T, focus);
-        body = mix(body, uSpark, mix(0.62, 0.32, uDeep));
-        body += uIrid * 0.12 * k * k * (0.5 + 0.5 * cos(6.2831 * (vec3(0.0, 0.33, 0.67) + lp.y * 0.05 + T * 0.04)));
-        body = mix(body, uSpark, 0.5 * k * k * max(0.0, dot(vec2(g.x, -g.y), normalize(vec2(-1.0, 1.0)))));
-        body = mix(body, uEdge, clamp(uEdgeA * 1.8, 0.0, 1.0) * smoothstep(1.4, 0.2, abs(ds)));
-        col = mix(col, body, smoothstep(1.0, -1.0, ds));
-      }
-      if (dm < 1.0) col = mix(col, mix(uEdge, uFg, 0.55), smoothstep(1.0, -0.6, dm) * 0.9);
-      if (dh < 1.0) {
-        vec2 g = normalize(vec2(sdHull(lp + dx) - sdHull(lp - dx), sdHull(lp + dy) - sdHull(lp - dy)) + 1e-5);
-        float e = max(-dh, 0.0);
-        float k = clamp(1.0 - e / 7.0, 0.0, 1.0);
-        vec3 body = pool(q - vec2(g.x, -g.y) * k * 9.0, T, focus);
-        body = mix(body, mix(uLiqA, uLiqB, clamp((lp.y - 17.0) / 6.0, 0.0, 1.0)), 0.74);
-        body += uSpark * 0.42 * smoothstep(1.5, 0.3, lp.y - 17.3) * step(1.5, e);
-        body = mix(body, uSpark, 0.45 * k * k * max(0.0, dot(vec2(g.x, -g.y), normalize(vec2(-1.0, 1.0)))));
-        body = mix(body, uEdge, clamp(uEdgeA * 1.8, 0.0, 1.0) * smoothstep(1.4, 0.2, abs(dh)));
-        col = mix(col, body, smoothstep(1.0, -1.0, dh));
-      }
-    }
-  }
-  if (uWaterY > 0.0 && p.y < uWaterY + 26.0 && p.y > uWaterY - 60.0) {
-    for (int k = 0; k < 3; k++) {
-      float fk = float(k);
-      float y = waveY(fk, p.x, T);
-      float dyx = (waveY(fk, p.x + 1.0, T) - waveY(fk, p.x - 1.0, T)) * 0.5;
-      float dist = (p.y - y) / sqrt(1.0 + dyx * dyx);
-      float th = 2.6 - 0.5 * fk;
-      float a = smoothstep(th + 1.0, th - 0.2, abs(dist)) * (1.0 - 0.3 * fk);
-      if (a > 0.0) {
-        float side = clamp(dist / th, -1.0, 1.0);
-        vec3 rod = mix(uLiqB, uLiqA, 0.5 + side * 0.5);
-        rod = mix(rod, uSpark, smoothstep(0.15, 0.95, side) * 0.75);
-        col = mix(col, rod, a * 0.88);
-      }
+    float inL = clamp(dl / px + 0.5, 0.0, 1.0);
+    if (inL > 0.0) {
+      vec3 lc = mix(liqA.rgb, liqB.rgb, smoothstep(0.0, 1.0, depthK));
+      // the water behind shows through, darkened and tinted
+      vec3 thru = mix(sharp, blur, 0.5);
+      float lum = dot(thru, vec3(0.299, 0.587, 0.114));
+      lc *= 0.72 + 0.5 * lum;
+      // drifting light inside
+      vec2 fp = lp + vec2(-flow * time, 0.0);
+      float sh = sin(fp.x * 0.09 + sin(fp.y * 0.13 + time * 1.3) * 1.6 + time * 1.1) * sin(fp.y * 0.11 - time * 0.9 + fp.x * 0.03);
+      lc += liqA.rgb * 0.16 * sh;
+      // fizz: tiny bubbles climbing (and riding the flow)
+      vec2 bp = (lp + vec2(-flow * time, time * 16.0)) / 9.0;
+      vec2 bc = floor(bp);
+      vec2 bh = hash2(bc + seed);
+      vec2 bo = fract(bp) - 0.5 - (bh - 0.5) * 0.5;
+      float br = 0.07 + 0.08 * bh.y;
+      float bl = length(bo);
+      float fz = step(0.66, bh.x) * (smoothstep(0.06, 0.0, abs(bl - br)) * 0.45 + smoothstep(br * 0.55, 0.0, length(bo + br * 0.35)) * 0.5);
+      lc = mix(lc, vec3(1.0), fz * 0.6);
+      // meniscus: a bright skin and a shadow just under it
+      float men = exp(-pow(dl / 1.3, 2.0));
+      float under = exp(-pow((dl - 3.5) / 2.5, 2.0));
+      lc = mix(lc, lc * 0.82, under * 0.5);
+      lc = mix(lc, vec3(1.0), men * 0.75);
+      col = mix(col, lc, inL * liqA.w);
     }
   }
 
-  col += (hash(gl_FragCoord.xy + fract(T) * 61.0) - 0.5) / 255.0;
-  o = vec4(col, 1.0);
+  // ---- the glass itself
+  float v = clamp((p.y + B.y) / max(2.0 * B.y, 1.0), 0.0, 1.0);
+  vec3 L = normalize(vec3(-0.45, -0.62, 0.64));
+  vec3 Hh = normalize(L + vec3(0.0, 0.0, 1.0));
+  float ndh = max(dot(n, Hh), 0.0);
+  float rimF = pow(1.0 - n.z, 1.6);
+  float raised = 1.0 - inset;
+  // transmitted light gathers at the bottom inner rim
+  float bot = smoothstep(0.35, 1.0, v) * exp(d / max(bevel * 0.9, 1.0));
+  col += mix(vec3(0.75, 0.95, 1.0), liqA.rgb + 0.35, 0.3) * bot * (0.22 + 0.25 * hover) * raised;
+  // fresnel: rims turn white, then pick up thin-film colour
+  col = mix(col, vec3(1.0), rimF * 0.45 * raised);
+  float th = vnoise(p * 0.03 + vec2(time * 0.08, seed)) * 2.2 + n.x * 0.8 - n.y * 0.5 + time * 0.05;
+  vec3 film = 0.5 + 0.5 * cos(TAU * (th + vec3(0.0, 0.33, 0.67)));
+  col = mix(col, col * 0.55 + film * 0.6, irid * rimF);
+  // gloss cap: the bright lid over the upper half
+  float capH = min(B.y * 0.86, 30.0);
+  float curve = (p.x / max(B.x, 1.0)) * (p.x / max(B.x, 1.0)) * capH * 0.35;
+  float capIn = smoothstep(px, -px, d + 1.8 + capH * 0.08);
+  float capBot = -B.y + capH - curve;
+  float cap = capIn * smoothstep(px * 1.5, -px * 1.5, p.y - capBot);
+  float capA = cap * mix(0.66, 0.05, clamp((p.y + B.y) / capH, 0.0, 1.0));
+  col = mix(col, vec3(1.0), capA * gloss);
+  // window reflections that slide against the pointer
+  if (streaks > 0.0) {
+    float sx = p.x + p.y * 0.62 - M.x * 0.06 - B.x * 0.15;
+    float s1 = smoothstep(0.0, 18.0, sx) * smoothstep(70.0, 40.0, sx);
+    float s2 = smoothstep(95.0, 104.0, sx) * smoothstep(122.0, 112.0, sx);
+    col = mix(col, vec3(1.0), (s1 * 0.10 + s2 * 0.08) * streaks * (1.0 - v * 0.7));
+  }
+  // specular from the light, top left
+  col += vec3(1.0) * (pow(ndh, 70.0) * 0.85 + pow(ndh, 12.0) * 0.06) * raised;
+  // recessed wells: a soft inner shadow along the top
+  col *= 1.0 - inset * 0.16 * exp(d / 5.0) * (1.0 - v);
+  // the thin bright inner line and the outline
+  float inner = exp(-pow((d + 1.7) / 0.85, 2.0)) * (0.45 + 0.55 * (1.0 - v));
+  col = mix(col, vec3(1.0), inner * 0.6 * (1.0 - 0.5 * inset));
+  float outer = exp(-pow((d + 0.45) / 0.7, 2.0));
+  col = mix(col, edge.rgb, outer * edge.w * (1.0 + 0.5 * halo));
+  col = mix(col, glow.rgb, outer * glow.w * on * 0.6);
+  col += (hash1(pos + fract(time)) - 0.5) / 255.0;
+
+  vec4 inside = vec4(clamp(col, 0.0, 1.0), 1.0);
+  o = (inside * aa + outside * (1.0 - aa)) * alpha;
 }
 `;
 
-export const GLASS_FS = /* glsl */ `#version 300 es
+export const TITLE_FS = /* glsl */ `#version 300 es
 precision highp float;
-uniform sampler2D uWater;
-uniform vec2 uRes;
-uniform float uScale;
-uniform float uTime;
-uniform float uMaxLod;
-uniform vec2 uPtr;
-uniform float uPtrIn;
-uniform vec4 uRect[8];   // x, y (bottom left), w, h
-uniform vec4 uRad[8];    // radii: top left, top right, bottom right, bottom left
-uniform vec4 uClip[8];   // x0, y0, x1, y1
-uniform float uAlpha[8];
-uniform int uN;
-uniform vec3 uGlass, uEdge, uLight, uShade;
-uniform float uGlassA, uEdgeA, uLightA, uShadeA, uIrid, uDeep;
+in vec2 vPos;
+uniform vec2 size;
+uniform float time, level, pad, slosh, alpha;
+uniform vec4 glassCol, liqA, liqB, haloCol, shadeCol, edgeCol;
+uniform sampler2D src;   // the text mask, rows down
 out vec4 o;
-${COMMON}
-
-float sdRB(vec2 p, vec2 b, vec4 r) {
-  // r: top right, bottom right, top left, bottom left
-  r.xy = (p.x > 0.0) ? r.xy : r.zw;
-  r.x = (p.y > 0.0) ? r.x : r.y;
-  vec2 q = abs(p) - b + r.x;
-  return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r.x;
-}
-
-float shape(int i, vec2 p) {
-  vec4 R = uRect[i];
-  vec4 r = uRad[i];
-  return sdRB(p - (R.xy + R.zw * 0.5), R.zw * 0.5, vec4(r.y, r.z, r.x, r.w));
-}
-
-// the membrane: slow noise and two angular sines push the edge, and it bulges toward the pointer
-float panelSd(int i, vec2 p, float T) {
-  vec4 R = uRect[i];
-  vec2 lp = p - (R.xy + R.zw * 0.5);
-  float a = atan(lp.y, lp.x);
-  float ph = float(i) * 1.7;
-  vec2 ring = vec2(cos(a), sin(a));
-  float wob = (vnoise(ring * 1.6 + vec2(ph, T * 0.35)) - 0.5) * 1.6 + 0.35 * sin(a * 3.0 + T * 0.7 + ph) + 0.25 * sin(a * 5.0 - T * 0.9);
-  vec2 dp = p - uPtr;
-  return shape(i, p) - 2.0 * wob - 7.0 * uPtrIn * exp(-dot(dp, dp) / (76.0 * 76.0));
-}
-
-const vec2 K[8] = vec2[8](vec2(1.0, 0.0), vec2(0.42, 0.42), vec2(0.0, 1.0), vec2(-0.42, 0.42), vec2(-1.0, 0.0), vec2(-0.42, -0.42), vec2(0.0, -1.0), vec2(0.42, -0.42));
-
-vec3 frost(vec2 q, float R, float lod) {
-  vec3 s = vec3(0.0);
-  for (int i = 0; i < 8; i++) s += textureLod(uWater, (q + K[i] * R) / uRes, lod).rgb;
-  return s / 8.0;
-}
-
-vec3 glass(int i, vec2 p, float d, float T) {
-  vec2 g = vec2(panelSd(i, p + vec2(1.0, 0.0), T) - panelSd(i, p - vec2(1.0, 0.0), T), panelSd(i, p + vec2(0.0, 1.0), T) - panelSd(i, p - vec2(0.0, 1.0), T));
-  g = normalize(g + 1e-5);
-  float e = max(-d, 0.0);
-  float k = clamp(1.0 - e / 18.0, 0.0, 1.0);
-  float k2 = k * k;
-
-  // refraction through the quarter-circle rim, a chromatic split, then frost and the tint
-  vec2 off = -g * k * 13.0;
-  float lod = clamp(log2(max(16.0 * uScale / 3.0, 1.0)), 0.0, uMaxLod);
-  vec3 c = frost(p + off, 15.0, lod);
-  c.r = mix(c.r, textureLod(uWater, (p + off * 1.06) / uRes, lod).r, 0.6);
-  c.b = mix(c.b, textureLod(uWater, (p + off * 0.94) / uRes, lod).b, 0.6);
-  c = mix(c, uGlass, uGlassA);
-
-  // light: glow carried along the bottom inner rim, fresnel whitening, thin film colours
-  c += uLight * uLightA * 0.5 * k2 * smoothstep(-0.2, 0.9, -g.y);
-  c = mix(c, mix(vec3(1.0), uLight, uDeep), 0.3 * k2 * k);
-  float ang = atan(g.y, g.x);
-  c += uIrid * 0.1 * k2 * (0.5 + 0.5 * cos(6.2831 * (vec3(0.0, 0.33, 0.67) + ang * 0.35 + T * 0.04)));
-
-  // a gloss cap over the upper part, at most 30 px tall
-  vec4 R = uRect[i];
-  float ty = R.y + R.w - p.y;
-  float xn = (p.x - (R.x + R.z * 0.5)) / (R.z * 0.5);
-  float capH = min(30.0, R.w * 0.4) * (1.0 - 0.3 * xn * xn);
-  float cap = (1.0 - smoothstep(capH * 0.7, capH, ty)) * smoothstep(2.0, 7.0, e) * mix(0.66, 0.05, clamp(ty / capH, 0.0, 1.0));
-  c = mix(c, vec3(1.0), 0.38 * cap * mix(1.0, 0.5, uDeep));
-
-  // window streaks that slide against the pointer
-  float s = p.x * 0.8 + p.y * 0.55 - uPtr.x * 0.35 - uPtr.y * 0.2;
-  c += vec3(pow(0.5 + 0.5 * sin(s * 0.021), 22.0) * 0.06 + pow(0.5 + 0.5 * sin(s * 0.043 + 1.3), 34.0) * 0.045) * mix(1.0, 0.5, uDeep);
-
-  // specular from the top left, a 1 px inner highlight, the outline
-  c += vec3(0.45) * k2 * k * max(0.0, dot(g, normalize(vec2(-1.0, 1.0))));
-  c = mix(c, vec3(1.0), 0.5 * smoothstep(2.6, 1.6, e) * smoothstep(0.4, 1.2, e) * (0.4 + 0.6 * max(g.y, 0.0)) * mix(1.0, 0.55, uDeep));
-  c = mix(c, uEdge, clamp(uEdgeA * 1.4, 0.0, 1.0) * smoothstep(1.4, 0.2, abs(d)));
-  return c;
-}
 
 void main() {
-  vec2 p = gl_FragCoord.xy / uScale;
-  vec3 col = texture(uWater, p / uRes).rgb;
-  float T = uTime;
-
-  // soft shadows of the same shapes, 7 px down
-  float sh = 0.0;
-  for (int i = 0; i < 8; i++) {
-    if (i >= uN) break;
-    vec4 cl = uClip[i];
-    if (p.x < cl.x || p.y < cl.y - 20.0 || p.x > cl.z || p.y > cl.w) continue;
-    float ds = shape(i, p + vec2(0.0, 7.0));
-    sh = max(sh, (1.0 - smoothstep(-6.0, 16.0, ds)) * uAlpha[i]);
-  }
-
-  float best = 1e5;
-  int bi = -1;
-  for (int i = 0; i < 8; i++) {
-    if (i >= uN) break;
-    vec4 cl = uClip[i];
-    if (p.x < cl.x || p.y < cl.y || p.x > cl.z || p.y > cl.w) continue;
-    if (shape(i, p) > 14.0) continue;
-    float d = panelSd(i, p, T);
-    if (d < best) { best = d; bi = i; }
-  }
-
-  col = mix(col, uShade, uShadeA * 0.8 * sh * smoothstep(-1.0, 1.0, best));
-  if (bi >= 0 && best < 1.5) col = mix(col, glass(bi, p, best, T), smoothstep(1.0, -1.0, best) * uAlpha[bi]);
-  o = vec4(col, 1.0);
+  vec2 uv = vPos / size;
+  vec2 p = vPos;
+  vec2 tx = 1.0 / size;
+  float a = texture(src, uv).a;
+  float l = textureLod(src, uv - vec2(1.6 * tx.x, 0.0), 1.2).a;
+  float r = textureLod(src, uv + vec2(1.6 * tx.x, 0.0), 1.2).a;
+  float u = textureLod(src, uv - vec2(0.0, 1.6 * tx.y), 1.2).a;
+  float d = textureLod(src, uv + vec2(0.0, 1.6 * tx.y), 1.2).a;
+  vec2 g = vec2(r - l, d - u);
+  vec3 n = normalize(vec3(-g * 2.4, 1.0));
+  float halo = textureLod(src, uv, 3.2).a;
+  float shadow = textureLod(src, uv - vec2(0.0, 3.5 * tx.y), 2.2).a;
+  // glass body
+  float v = clamp((p.y - pad) / max(size.y - 2.0 * pad, 1.0), 0.0, 1.0);
+  vec3 col = glassCol.rgb;
+  // water inside the letters
+  float ys = (1.0 - level) + 0.035 * sin(p.x * 0.05 + time * 2.6) + 0.02 * sin(p.x * 0.13 - time * 3.7) + slosh * (p.x / size.x - 0.5) * 0.25;
+  float dl = (v - ys) * (size.y - 2.0 * pad);
+  float inL = clamp(dl + 0.5, 0.0, 1.0);
+  vec3 lc = mix(liqA.rgb, liqB.rgb, smoothstep(ys, 1.0, v));
+  lc += 0.10 * sin(p.x * 0.08 + time * 1.4 + sin(p.y * 0.2 + time) * 1.5) * liqA.rgb;
+  lc = mix(lc, vec3(1.0), exp(-pow(dl / 1.1, 2.0)) * 0.8);
+  col = mix(col, lc, inL);
+  // bevel light: white rim up-left, specular, fresnel
+  vec3 L = normalize(vec3(-0.45, -0.65, 0.62));
+  vec3 H = normalize(L + vec3(0.0, 0.0, 1.0));
+  float rimF = pow(1.0 - n.z, 1.5);
+  col = mix(col, vec3(1.0), rimF * 0.55);
+  col += pow(max(dot(n, H), 0.0), 40.0) * 0.8;
+  // gloss over the upper half of the letters
+  float cap = smoothstep(0.52, 0.40, v) * mix(0.55, 0.12, v / 0.52);
+  col = mix(col, vec3(1.0), cap);
+  // definition at the edge, from the blurred mask so it stays smooth
+  float e = (l + r + u + d) * 0.25;
+  float edgeL = smoothstep(0.05, 0.5, e) * (1.0 - smoothstep(0.5, 0.97, e));
+  col = mix(col, edgeCol.rgb, edgeL * edgeCol.a);
+  vec4 body = vec4(clamp(col, 0.0, 1.0), 1.0) * a;
+  float ha = haloCol.a * halo * 0.9;
+  float sa = shadeCol.a * shadow * 0.8;
+  vec4 under = vec4(haloCol.rgb * ha, ha) + vec4(shadeCol.rgb * sa, sa) * (1.0 - ha);
+  o = (body + under * (1.0 - body.a)) * alpha;
 }
+`;
+
+export const PEARLS_FS = /* glsl */ `#version 300 es
+precision highp float;
+in vec2 vPos;
+uniform vec2 size, mouse;
+uniform float time, seed, spacing, drift, alpha;
+uniform vec4 rimCol, bodyCol, fillCol;
+out vec4 o;
+
+float hash1(float n) { return fract(sin(n * 127.1 + 311.7) * 43758.5453); }
+vec4 over(vec4 a, vec4 b) { return a + b * (1.0 - a.a); }
+
+void main() {
+  vec2 p = vPos;
+  float px = max(fwidth(p.x), 1e-3);
+  float cy = size.y * 0.5;
+  float shift = time * drift + seed * 53.0;
+  float ci = floor((p.x + shift) / spacing);
+  vec4 acc = vec4(0.0);
+  for (int k = -2; k <= 2; ++k) {
+    float i = ci + float(k);
+    float h = hash1(i + seed * 17.0);
+    float h2 = hash1(i * 3.7 + 1.3 + seed);
+    vec2 c = vec2((i + 0.5) * spacing - shift + (h - 0.5) * spacing * 0.35, cy + 1.5 * sin(i * 1.7 + time * 1.4 + h * 6.0));
+    float r = 1.5 + 2.5 * h2;
+    vec2 dm = c - mouse;
+    float dist = length(dm);
+    float near = exp(-dist * dist / (30.0 * 30.0));
+    c += (dist > 0.01 ? dm / dist : vec2(0.0, 1.0)) * 11.0 * near;
+    r *= 1.0 + 0.45 * near;
+    vec2 dv = p - c;
+    float ang = atan(dv.y, dv.x);
+    float rr = r * (1.0 + 0.06 * sin(3.0 * ang + time * 3.0 + i));
+    float d = length(dv) - rr;
+    float body = clamp(0.5 - d / px, 0.0, 1.0);
+    if (body <= 0.0) continue;
+    float nd = clamp(length(dv) / rr, 0.0, 1.0);
+    bool filled = h2 > 1.0 - fillCol.w;
+    vec3 col = filled ? mix(fillCol.rgb * 1.25, fillCol.rgb * 0.8, smoothstep(-rr, rr, dv.y)) : bodyCol.rgb;
+    float a = filled ? 0.95 : bodyCol.a;
+    float rim = smoothstep(0.55, 1.0, nd);
+    col = mix(col, rimCol.rgb, rim * rimCol.a);
+    a = max(a, rim * rimCol.a);
+    float hl = smoothstep(0.42, 0.12, length(dv / rr - vec2(-0.35, -0.38)));
+    col = mix(col, vec3(1.0), hl * 0.95);
+    a = max(a, hl * 0.95);
+    acc = over(acc, vec4(col * a, a) * body);
+  }
+  o = acc * alpha;
+}
+`;
+
+export const BLIT_FS = /* glsl */ `#version 300 es
+precision highp float;
+uniform sampler2D src;
+uniform vec2 screen;
+out vec4 o;
+void main() { o = texture(src, gl_FragCoord.xy / screen); }
 `;

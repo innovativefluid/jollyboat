@@ -3,9 +3,61 @@
 
 import boatMap from '../../../build/pixel/icon-16.txt?raw';
 import { t, translatePage } from '../i18n';
+import { createWater, type TWater } from '../theme/water/engine';
+import { createGlassDom } from '../theme/water/glass-dom';
+import { waterTokens } from '../theme/water/tokens';
 
 const $ = (id: string) => document.getElementById(id)!;
 translatePage();
+
+// the water look: the bar is a glass slab over the same pool as the page below (its gradient
+// spans a window, not 34 px), the chips glass bubbles. 30 frames a second with focus, 12 without
+let water: TWater | null = null;
+let waterCanvas: HTMLCanvasElement | null = null;
+const glassDom = createGlassDom();
+document.addEventListener('click', (e) => {
+  const chip = (e.target as HTMLElement).closest('.chip');
+  if (!chip || !water) return;
+  const r = chip.getBoundingClientRect();
+  glassDom.poke(chip, e.clientX - r.left, e.clientY - r.top, 1);
+});
+const startWater = (look: 'lcd' | 'water') => {
+  water?.stop();
+  waterCanvas?.remove();
+  water = null;
+  waterCanvas = null;
+  document.documentElement.classList.remove('gl', 'no-gl');
+  if (look !== 'water') return;
+  waterCanvas = document.createElement('canvas');
+  waterCanvas.className = 'water';
+  document.body.prepend(waterCanvas);
+  const dom = glassDom;
+  let soft = false;
+  try {
+    soft = localStorage.getItem('jollyboat-soft-gl') === '1';
+  } catch {
+    /* storage blocked */
+  }
+  water = createWater(waterCanvas, {
+    tokens: waterTokens,
+    scene: dom.scene,
+    fps: { focused: 30, blurred: 12 },
+    bubbles: 4,
+    allowSoftware: soft,
+    pool: () => ({ view: [window.innerWidth, 900], offset: [0, 0] }),
+    zoom: () => parseFloat(document.documentElement.style.zoom) || 1
+  });
+  if (!water) {
+    waterCanvas.remove();
+    waterCanvas = null;
+    document.documentElement.classList.add('no-gl');
+    return;
+  }
+  dom.setPointer(water.pointer);
+  document.documentElement.classList.add('gl');
+};
+startWater(window.shell.look);
+window.shell.onLook(startWater);
 if (window.shell.platform === 'darwin') document.body.classList.add('mac');
 const dark = window.matchMedia('(prefers-color-scheme: dark)');
 
@@ -110,5 +162,6 @@ window.shell.onBarState((state) => {
   // the bar zooms with the page under it. css zoom, not the page zoom: chromium shares page zoom
   // between all pages of one origin, and the setup window, picker and overlay share ours
   document.documentElement.style.zoom = String(state.zoom);
+  water?.resize();
   $('popout').hidden = !state.streams;
 });

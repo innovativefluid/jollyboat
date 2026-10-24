@@ -55,6 +55,10 @@
         [data-look='water']:not([data-theme]) body { background: linear-gradient(to bottom, rgba(134, 226, 255, 0.1), rgba(134, 226, 255, 0) 55%), linear-gradient(to bottom, rgb(18, 52, 86), rgb(9, 33, 58)); }
       }
       [data-look='water'] canvas.mark { display: none; }
+      /* with webgl2 the bar is a glass slab over water, its chips glass bubbles (water/glass-dom.ts) */
+      canvas.water { position: fixed; left: 0; top: 0; z-index: 0; pointer-events: none; }
+      .bar { position: relative; z-index: 1; }
+      [data-look='water'].gl body { background: transparent; border-bottom: 0; box-shadow: none; }
       [data-look='water'] svg.mark-water { display: block; width: 28px; height: 28px; flex: none; overflow: hidden; }
       [data-look='water'] .name { font: 800 14px/1 var(--w-font); color: rgb(var(--w-fg)); text-shadow: 0 1px 0 rgba(var(--w-text-glow), var(--w-text-glow-a)); }
       [data-look='water'] .name .app { color: rgb(var(--w-dim)); font-weight: 600; }
@@ -85,7 +89,7 @@
     </style>
   </head>
   <body>
-    <div class="bar">
+    <div class="bar slab">
       <canvas class="mark" width="14" height="14"></canvas>
       <svg class="mark-water" viewBox="0 0 28 28" aria-hidden="true">
         <defs>

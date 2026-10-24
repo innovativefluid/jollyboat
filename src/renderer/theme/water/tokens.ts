@@ -22,6 +22,10 @@ export type TWaterTokens = {
   dim: TRgb;
   glass: TRgb;
   glassA: number;
+  well: TRgb;
+  wellA: number;
+  btn: TRgb;
+  btnA: number;
   edge: TRgb;
   edgeA: number;
   liqA: TRgb;
@@ -52,6 +56,10 @@ export const DAY: TWaterTokens = {
   dim: hex('#335c7c'),
   glass: hex('#f2f9ff'),
   glassA: 0.54,
+  well: hex('#ffffff'),
+  wellA: 0.62,
+  btn: hex('#ffffff'),
+  btnA: 0.34,
   edge: hex('#2a6aa3'),
   edgeA: 0.42,
   liqA: hex('#5cc0f7'),
@@ -80,6 +88,10 @@ export const DEEP: TWaterTokens = {
   dim: hex('#9cc5e2'),
   glass: hex('#0d2a46'),
   glassA: 0.64,
+  well: hex('#071a2e'),
+  wellA: 0.66,
+  btn: hex('#14406a'),
+  btnA: 0.42,
   edge: hex('#8fd8ff'),
   edgeA: 0.34,
   liqA: hex('#4fcfff'),

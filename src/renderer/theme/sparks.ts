@@ -1,9 +1,11 @@
 // particles. the lcd look: bursts of dots and 3-cell rings, snapped to the 5 px cell grid. the
-// water look: fizz, glass bubble sprites that shrink as they rise, with a few twinkles
-// (design_handoff_aqua.md §7). the look of a burst is decided when it starts.
+// water look: fizz as in the design study (Sparks.qml): glass bubble sprites that burst out,
+// float up, wander and shrink, with a third as many twinkles. the look of a burst is decided
+// when it starts.
 
 import { lcdScheme } from './scheme';
-import { css, waterTokens } from './water/tokens';
+import bubbleUrl from './water/img/bubble.png';
+import glintUrl from './water/img/glint.png';
 
 const CELL = 5;
 
@@ -16,12 +18,24 @@ type TParticle = {
   age: number;
   ring: boolean;
   spark: boolean;
-  /** water: a bubble of this size, or a twinkle when 0 */
+  /** water: a bubble from this size to 9 px, or a twinkle (glint) from this size to 4 */
   size?: number;
+  glint?: boolean;
+  ay?: number;
+  rot?: number;
+  spin?: number;
   wander?: number;
 };
 
 const water = () => document.documentElement.dataset.look === 'water';
+const image = (src: string) => {
+  const img = new Image();
+  img.src = src;
+  return img;
+};
+const bubbleImg = image(bubbleUrl);
+const glintImg = image(glintUrl);
+const vary = (base: number, v: number) => base + (Math.random() * 2 - 1) * v;
 
 export const createSparks = (canvas: HTMLCanvasElement) => {
   const ctx = canvas.getContext('2d')!;
@@ -29,8 +43,6 @@ export const createSparks = (canvas: HTMLCanvasElement) => {
   let last = performance.now();
   let raf = 0;
   let dpr = 1;
-  let sprite: HTMLCanvasElement | null = null;
-  let spriteKey = '';
 
   const resize = () => {
     dpr = window.devicePixelRatio || 1;
@@ -41,47 +53,6 @@ export const createSparks = (canvas: HTMLCanvasElement) => {
   const rgb = (c: number[]) => `rgb(${c[0]},${c[1]},${c[2]})`;
   const snap = (v: number) => Math.round(v / CELL) * CELL;
 
-  // one glass bubble, drawn once per scheme at 64 px and scaled
-  const bubbleSprite = () => {
-    const tk = waterTokens();
-    const key = tk.bubble.join();
-    if (sprite && key === spriteKey) return sprite;
-    spriteKey = key;
-    sprite = document.createElement('canvas');
-    sprite.width = sprite.height = 64;
-    const g = sprite.getContext('2d')!;
-    const body = g.createRadialGradient(32, 32, 10, 32, 32, 31);
-    body.addColorStop(0, css(tk.spark, 0.04));
-    body.addColorStop(0.72, css(tk.spark, 0.14));
-    body.addColorStop(0.92, css(tk.bubble, tk.bubbleA * 0.55));
-    body.addColorStop(1, css(tk.bubble, 0));
-    g.fillStyle = body;
-    g.beginPath();
-    g.arc(32, 32, 31, 0, Math.PI * 2);
-    g.fill();
-    g.strokeStyle = css(tk.spark, 0.75);
-    g.lineWidth = 2.2;
-    g.beginPath();
-    g.arc(32, 32, 28.5, Math.PI * 1.05, Math.PI * 1.55);
-    g.stroke();
-    g.fillStyle = css(tk.spark, 0.92);
-    g.beginPath();
-    g.ellipse(22, 20, 7, 4.2, -0.6, 0, Math.PI * 2);
-    g.fill();
-    return sprite;
-  };
-
-  const drawTwinkle = (x: number, y: number, s: number, colour: string) => {
-    ctx.fillStyle = colour;
-    ctx.beginPath();
-    ctx.moveTo(x, y - s);
-    ctx.quadraticCurveTo(x, y, x + s, y);
-    ctx.quadraticCurveTo(x, y, x, y + s);
-    ctx.quadraticCurveTo(x, y, x - s, y);
-    ctx.quadraticCurveTo(x, y, x, y - s);
-    ctx.fill();
-  };
-
   const tick = (now: number) => {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
@@ -89,7 +60,6 @@ export const createSparks = (canvas: HTMLCanvasElement) => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const scheme = lcdScheme();
-    const tk = waterTokens();
 
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
@@ -101,20 +71,30 @@ export const createSparks = (canvas: HTMLCanvasElement) => {
       const k = p.age / p.life;
 
       if (p.size !== undefined) {
-        // fizz: friction 1.3, buoyancy 95 px/s² upward, a little wander
+        // friction 1.3, buoyancy upward, a wander from side to side
         p.vx -= p.vx * 1.3 * dt;
-        p.vy -= p.vy * 1.3 * dt + 95 * dt;
-        p.wander = (p.wander ?? 0) + dt * 3;
-        p.x += (p.vx + Math.sin(p.wander * 2.3 + i) * 14) * dt;
+        p.vy -= p.vy * 1.3 * dt;
+        if (!p.glint) {
+          p.vy += (p.ay ?? -95) * dt;
+          p.wander = (p.wander ?? Math.random() * 6) + dt * 2.2;
+          p.vx += Math.sin(p.wander) * 40 * dt * 2;
+        }
+        p.x += p.vx * dt;
         p.y += p.vy * dt;
-        const alpha = k < 0.1 ? k / 0.1 : k > 0.75 ? (1 - k) / 0.25 : 1;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.globalAlpha = alpha;
-        if (p.size > 0) {
-          const s = p.size + (9 - p.size) * k;
-          ctx.drawImage(bubbleSprite(), p.x - s / 2, p.y - s / 2, s, s);
+        if (p.glint) {
+          const s = p.size + (4 - p.size) * k;
+          p.rot = (p.rot ?? 0) + (p.spin ?? 0) * dt;
+          ctx.globalAlpha = k < 0.25 ? k / 0.25 : 1 - (k - 0.25) / 0.75;
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.drawImage(glintImg, -s / 2, -s / 2, s, s);
         } else {
-          drawTwinkle(p.x, p.y, 3.5 * (1 - Math.abs(0.5 - k)), css(tk.spark, 0.95));
+          // entry: the bubble scales in
+          const grow = Math.min(1, p.age / 0.12);
+          const s = (p.size + (9 - p.size) * k) * grow;
+          ctx.globalAlpha = 0.95 * (k > 0.8 ? (1 - k) / 0.2 : 1);
+          ctx.drawImage(bubbleImg, p.x - s / 2, p.y - s / 2, s, s);
         }
         continue;
       }
@@ -152,18 +132,23 @@ export const createSparks = (canvas: HTMLCanvasElement) => {
     }
   };
 
+  // the study's emitters: fizz 1.5 ± .5 s, 13 ± 8 px to 9, 150 ± 110 px/s any way, buoyancy
+  // 95 ± 30 px/s² up; glints .7 ± .3 s, 18 ± 8 px to 4, 90 ± 60 px/s, turning
+  const fizz = (x: number, y: number) => {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.max(0, vary(150, 110));
+    particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: vary(1.5, 0.5), age: 0, ring: false, spark: false, size: Math.max(4, vary(13, 8)), ay: -vary(95, 30) });
+  };
+  const glint = (x: number, y: number) => {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.max(0, vary(90, 60));
+    particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: vary(0.7, 0.3), age: 0, ring: false, spark: false, size: vary(18, 8), glint: true, rot: Math.random() * 0.8, spin: vary(0, 1.6) });
+  };
+
   const burst = (x: number, y: number, n: number) => {
     if (water()) {
-      for (let i = 0; i < n; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = Math.max(20, 150 + (Math.random() * 2 - 1) * 110);
-        particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 1 + Math.random(), age: 0, ring: false, spark: false, size: 13 + (Math.random() * 2 - 1) * 8 });
-      }
-      for (let i = 0; i < Math.max(1, Math.round(n / 3)); i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = 60 + Math.random() * 120;
-        particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 0.6 + Math.random() * 0.5, age: 0, ring: false, spark: true, size: 0 });
-      }
+      for (let i = 0; i < n; i++) fizz(x, y);
+      for (let i = 0; i < Math.max(1, Math.round(n / 3)); i++) glint(x, y);
       kick();
       return;
     }
@@ -188,19 +173,9 @@ export const createSparks = (canvas: HTMLCanvasElement) => {
   const ring = (x: number, y: number, n: number, radius: number) => {
     for (let i = 0; i < n; i++) {
       const angle = (i / n) * Math.PI * 2;
-      const speed = 120 + Math.random() * 80;
-      particles.push({
-        x: x + Math.cos(angle) * radius,
-        y: y + Math.sin(angle) * radius,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        life: 1 + Math.random() * 0.8,
-        age: 0,
-        ring: false,
-        spark: false,
-        size: i % 4 === 0 ? 0 : 10 + Math.random() * 10
-      });
+      fizz(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius);
     }
+    for (let i = 0; i < Math.round(n / 4); i++) glint(x, y);
     kick();
   };
 

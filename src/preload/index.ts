@@ -5,6 +5,7 @@
 
 import { contextBridge, ipcRenderer, webFrame } from 'electron';
 import type { TOverlayState, TPickerResult, TServerInput, TSettings, TUpdateStatus, TVoiceMember, TVoiceReport } from '../shared/types';
+import { startPageWater } from './water';
 
 type TBootstrap = {
   ownPage: 'launcher' | 'picker' | 'prompt' | 'bar' | 'overlay' | null;
@@ -20,6 +21,10 @@ type TBootstrap = {
   colorMode: 'auto' | 'dark' | 'light';
   /** the app's own windows: the lcd look or the water look */
   look: 'lcd' | 'water';
+  /** a saved server page with the water theme: the water runs behind it */
+  water: boolean;
+  /** tests: the water even on a software renderer */
+  softGl: boolean;
   screenAudio: { pipewire: boolean; virtualMic: string; dropRestrict: boolean } | null;
 };
 
@@ -431,6 +436,22 @@ if (boot.isSavedServer) {
       /* see above */
     }
     enforceScheme();
+  });
+
+  // --- the water theme: the water behind the page (the theme's css does the rest) ----------
+  let pageWater: ReturnType<typeof startPageWater> = null;
+  const setWater = (on: boolean) => {
+    if (on && !pageWater && document.body) pageWater = startPageWater(boot.softGl);
+    if (!on && pageWater) {
+      pageWater.stop();
+      pageWater = null;
+    }
+  };
+  let wantWater = boot.water;
+  window.addEventListener('DOMContentLoaded', () => setWater(wantWater), { once: true });
+  ipcRenderer.on('shell:water', (_e, on: unknown) => {
+    wantWater = on === true;
+    if (document.body) setWater(wantWater);
   });
 
   // the page's light/dark sits as a class on <html>; the bar above takes it over

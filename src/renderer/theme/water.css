@@ -77,7 +77,6 @@
 }
 [data-look='water'] ::selection { background: rgba(var(--w-glow), 0.45); color: rgb(var(--w-fg)); }
 canvas.water { position: fixed; left: 0; top: 0; z-index: 0; }
-canvas.intro { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 11; pointer-events: none; }
 [data-look='water'] .page { padding: 12px 22px 10px; }
 
 /* text on glass is raised: an etched highlight under it */
@@ -218,15 +217,6 @@ canvas.intro { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 11
 [data-look='water'] .seg { gap: 7px; flex-wrap: wrap; }
 [data-look='water'] .seg button { height: 28px; padding: 0 12px; font-size: 13px; border-radius: 14px 9px 14px 9px; }
 [data-look='water'] .seg button:nth-child(even) { border-radius: 9px 14px 9px 14px; }
-/* a click: squash and a jiggle that dies away */
-[data-look='water'] .jiggle { animation: w-jiggle 480ms ease-out; }
-@keyframes w-jiggle {
-  0% { transform: scale(1.044, 0.945); }
-  22% { transform: scale(0.975, 1.03); }
-  44% { transform: scale(1.014, 0.987); }
-  66% { transform: scale(0.994, 1.006); }
-  100% { transform: none; }
-}
 
 /* ---- wells (inputs): recessed glass ------------------------------------------------------ */
 
@@ -352,5 +342,30 @@ canvas.intro { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 11
 [data-look='water'] .toast.show { transform: translateX(-50%) scale(1); }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-look='water'] .title, [data-look='water'] .panel, [data-look='water'] .jiggle { animation: none; }
+  [data-look='water'] .title, [data-look='water'] .panel { animation: none; }
 }
+
+/* ---- with webgl2 (html.gl): the glass is drawn under the page (water/glass-dom.ts); the
+   elements keep their words, sizes and clicks and lose their css glass ------------------- */
+
+[data-look='water'].gl :is(.pill, .seg button, .chip, .toast, .footer, .source, .dot),
+[data-look='water'].gl :is(input[type='text'], input[type='password'], input[type='url'], .check input) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+[data-look='water'].gl :is(.pill, .seg button, .chip)::before { content: none; }
+[data-look='water'].gl :is(.pill, .seg button, .chip):active:not(:disabled),
+[data-look='water'].gl .toast, [data-look='water'].gl .toast.show { transform: none; }
+[data-look='water'].gl .toast { transform: translateX(-50%) scale(0.6); transition: opacity 250ms cubic-bezier(0.2, 0.8, 0.3, 1), transform 520ms cubic-bezier(0.3, 2.2, 0.5, 1); }
+[data-look='water'].gl .toast.show { transform: translateX(-50%) scale(1); }
+[data-look='water'].gl .check input:checked { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M3 7.4l2.6 2.6L11 4.4' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 14px no-repeat; }
+[data-look='water'].gl .slider::-webkit-slider-runnable-track { background: transparent; border-color: transparent; box-shadow: none; }
+[data-look='water'].gl .slider::-webkit-slider-thumb { opacity: 0; }
+/* the title: glass letters drawn from these, which stay only as the shape */
+[data-look='water'].gl .title { color: transparent; background: none; -webkit-text-stroke: 0; filter: none; animation: none; }
+/* text on glass is raised, on water it carries the water's shade */
+[data-look='water'].gl :is(.pill:not(.minor), .seg button.on, .chip.fill, .toast) { color: #fff; text-shadow: 0 1px 1px rgba(var(--w-on-liq-shade), 0.95), 0 0 5px rgba(var(--w-on-liq-shade), 0.45); }
+.pearls { display: none; }
+[data-look='water'].gl .pearls { display: block; height: 14px; }

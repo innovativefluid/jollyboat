@@ -1,9 +1,11 @@
 /* Jollyboat's water look for the Sharkord page: white and blue water under glass (frutiger aero),
    the same tokens as the app's own water windows. day in :root, deep (the night pool) in .dark.
 
-   The water is css only, and cheap on purpose: a chat window stays open all day. A layer of
-   pre-drawn caustics drifts over a still one in whole-pixel steps, two a second, on the
-   compositor; nothing on the page itself repaints for it. The sidebars and the top bar are
+   In Jollyboat the water itself runs behind the page (webgl2, the design study's shaders) and
+   draws the top bar, the sidebars and the chat as glass slabs; html.jb-water is set then, and
+   those parts here only keep their shape. Without it (custom.css elsewhere, no webgl2, a
+   software renderer) this file paints its own water: a layer of pre-drawn caustics drifting
+   over a still one in whole-pixel steps, two a second, on the compositor. The sidebars and the top bar are
    frosted glass over it, the chat a glass panel floating a little apart. Readable text always
    sits on glass, never on the moving water. Anyone who asked for less motion gets still water.
 
@@ -152,6 +154,11 @@ html .h-dvh .bg-card.border-l {
   border-color: rgba(var(--w-edge), var(--w-edge-a));
 }
 html .h-dvh > .bg-card.border-b { background: linear-gradient(to bottom, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 70%), rgba(var(--w-glass), var(--w-bar-a)); }
+/* every part floats a little apart, as the study's panels do, so the water shows between them */
+html .h-dvh > .bg-card.border-b { margin: 8px 10px 0; border-radius: 20px 12px 14px 22px; border: 1px solid rgba(var(--w-edge), var(--w-edge-a)); }
+/* (sharkord makes them full height: with the margins they stretch instead) */
+html .h-dvh .bg-card.border-r:not(.w-0) { margin: 10px 0 10px 10px; height: auto; border-radius: 30px 14px 16px 28px; border: 1px solid rgba(var(--w-edge), var(--w-edge-a)); overflow: hidden; }
+html .h-dvh .bg-card.border-l:not(.w-0) { margin: 10px 10px 10px 0; height: auto; border-radius: 14px 30px 28px 16px; border: 1px solid rgba(var(--w-edge), var(--w-edge-a)); overflow: hidden; }
 html main.bg-background {
   margin: 10px;
   border-radius: 30px 14px 16px 28px;
@@ -214,20 +221,26 @@ html [data-slot="button"] {
   transition: transform 240ms cubic-bezier(0.3, 1.7, 0.5, 1), box-shadow 160ms, background-color 160ms;
 }
 html [data-slot="button"]:nth-of-type(even) { border-radius: 10px 16px 10px 16px; }
+/* the study's bubble, in css: a curved gloss lid, light gathering at the bottom inner rim, a
+   bright inner line, the outline and a soft shadow; the main ones hold water to 86 % */
 html [data-slot="button"].bg-primary {
   color: #fff;
   border: 1px solid rgba(var(--w-edge), calc(var(--w-edge-a) + 0.2));
   background:
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.06) 46%, rgba(255, 255, 255, 0) 48%),
-    linear-gradient(to top, rgb(var(--w-liq-b)), color-mix(in srgb, rgb(var(--w-liq-b)) 50%, rgb(var(--w-liq-a))) 55%, rgb(var(--w-liq-a)) 84%, rgba(255, 255, 255, 0.9) 87%, rgba(var(--w-btn), var(--w-btn-a)) 90%);
-  box-shadow: 0 3.5px 7px -2px rgba(var(--w-shade), var(--w-shade-a)), inset 0 -5px 8px -4px rgba(var(--w-light), var(--w-light-a));
+    radial-gradient(130% 75% at 50% -18%, rgba(255, 255, 255, 0.8) 0 46%, rgba(255, 255, 255, 0.12) 62%, transparent 63%),
+    radial-gradient(90% 55% at 50% 118%, rgba(200, 240, 255, 0.55), transparent 70%),
+    linear-gradient(to top, rgb(var(--w-liq-b)), color-mix(in srgb, rgb(var(--w-liq-b)) 50%, rgb(var(--w-liq-a))) 55%, rgb(var(--w-liq-a)) 82%, rgba(255, 255, 255, 0.95) 85%, rgba(var(--w-liq-b), 0.25) 87%, rgba(var(--w-btn), var(--w-btn-a)) 88%);
+  box-shadow: 0 3.5px 7px -2px rgba(var(--w-shade), calc(var(--w-shade-a) * 1.1)), inset 0 0 0 1px rgba(255, 255, 255, 0.35), inset 0 -4px 7px -4px rgba(var(--w-light), var(--w-light-a));
   text-shadow: 0 1px 1px rgba(var(--w-on-liq-shade), 0.95), 0 0 4px rgba(var(--w-on-liq-shade), 0.5);
 }
 html [data-slot="button"].bg-primary svg { color: #fff; }
 html [data-slot="button"]:is(.bg-secondary, .bg-background, .border):not(.bg-primary):not(.bg-destructive) {
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.06) 48%, rgba(255, 255, 255, 0) 50%), rgba(var(--w-btn), var(--w-btn-a));
+  background:
+    radial-gradient(130% 75% at 50% -18%, rgba(255, 255, 255, 0.85) 0 46%, rgba(255, 255, 255, 0.1) 62%, transparent 63%),
+    radial-gradient(90% 55% at 50% 118%, rgba(200, 240, 255, 0.5), transparent 70%),
+    rgba(var(--w-btn), calc(var(--w-btn-a) + 0.1));
   border: 1px solid rgba(var(--w-edge), calc(var(--w-edge-a) + 0.1));
-  box-shadow: 0 3px 6px -2px rgba(var(--w-shade), var(--w-shade-a)), inset 0 -4px 7px -4px rgba(var(--w-light), var(--w-light-a));
+  box-shadow: 0 2.5px 6px -2px rgba(var(--w-shade), calc(var(--w-shade-a) * 0.8)), inset 0 0 0 1px rgba(255, 255, 255, 0.35), inset 0 -4px 7px -4px rgba(var(--w-light), var(--w-light-a));
 }
 html [data-slot="button"].bg-destructive {
   color: #fff;
@@ -381,3 +394,17 @@ html body { scrollbar-color: rgba(var(--w-liq-a), 0.6) transparent; }
 @media (prefers-reduced-motion: reduce) {
   html body::before, html .speaking-effect-medium, html .speaking-effect-high, html [data-state="open"] { animation: none; }
 }
+
+/* ---- with the water running behind (html.jb-water): the layout's glass is drawn there ----- */
+
+html.jb-water { background: rgb(var(--w-pool-mid)); }
+html.jb-water body::before { content: none; animation: none; }
+html.jb-water .h-dvh > .bg-card.border-b,
+html.jb-water .h-dvh .bg-card.border-r,
+html.jb-water .h-dvh .bg-card.border-l,
+html.jb-water main.bg-background {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+html.jb-water main.bg-background > .border-b { border-color: rgba(var(--w-edge), 0.18); }
