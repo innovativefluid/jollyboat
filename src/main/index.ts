@@ -13,7 +13,7 @@ import { diagnostics } from './diagnostics';
 import { clearUnread, createTray, hasTray, setServerName } from './tray';
 import { applySpellcheck, blockDictionaryDownloads } from './privacy';
 import { initScreenAudio, stopPipeWireShare } from './screen-audio';
-import { startUpdater } from './updater';
+import { loadAutoUpdater, startUpdater } from './updater';
 import { askPrompt } from './prompt';
 import { t } from './lang';
 import { setOverlayHostFocused, setOverlayTheme, setOverlayVoice } from './overlay';
@@ -591,12 +591,15 @@ const runSmokeTest = async () => {
     const bar = await barView!.webContents.executeJavaScript("document.getElementById('settings') ? 'ok' : 'missing'");
 
     const keys = getBridgeStatus().keyUp ? 'push-to-talk' : 'presses only';
-    const line = `[smoke] ${process.platform} ${process.arch} | electron ${process.versions.electron} | jollyboat ${__APP_VERSION__} | setup panels ${panels} | bar ${bar} | keys ${keys}${PORTABLE ? ' | portable' : ''}`;
+    // the installed windows build updates itself: its updater has to load (0.3.1–0.3.8 shipped
+    // one that did not)
+    const updater = process.platform === 'win32' && !PORTABLE ? await loadAutoUpdater().then(() => 'ok', (err: Error) => `failed: ${err.message}`) : 'n/a';
+    const line = `[smoke] ${process.platform} ${process.arch} | electron ${process.versions.electron} | jollyboat ${__APP_VERSION__} | setup panels ${panels} | bar ${bar} | keys ${keys} | updater ${updater}${PORTABLE ? ' | portable' : ''}`;
     console.log(line);
     // the portable launcher does not pass the app's output on: the line also goes next to the data
     if (PORTABLE) writeFileSync(join(app.getPath('userData'), 'smoke.log'), `${line}\n`);
     clearTimeout(timer);
-    app.exit(panels >= 3 && bar === 'ok' ? 0 : 1);
+    app.exit(panels >= 3 && bar === 'ok' && (updater === 'ok' || updater === 'n/a') ? 0 : 1);
   } catch (err) {
     console.error('[smoke] failed', err);
     app.exit(1);

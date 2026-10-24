@@ -52,8 +52,19 @@ const checkGitHub = async () => {
   }
 };
 
+// electron-updater is commonjs: imported from our esm bundle its exports sit on `default`
+// (a named import came back undefined, and every installed copy up to 0.3.8 failed its update
+// check with "cannot set properties of undefined (setting 'autoDownload')")
+type TUpdater = typeof import('electron-updater');
+export const loadAutoUpdater = async () => {
+  const mod = (await import('electron-updater')) as TUpdater & { default?: TUpdater };
+  const autoUpdater = mod.autoUpdater ?? mod.default?.autoUpdater;
+  if (!autoUpdater) throw new Error('electron-updater did not load');
+  return autoUpdater;
+};
+
 const startWindows = async () => {
-  const { autoUpdater } = await import('electron-updater');
+  const autoUpdater = await loadAutoUpdater();
 
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
@@ -81,7 +92,8 @@ export const startUpdater = async () => {
   try {
     // the portable exe cannot replace itself: like linux and mac it gets the notice
     const portable = !!process.env.PORTABLE_EXECUTABLE_DIR;
-    const run = process.platform === 'win32' && !portable ? await startWindows() : checkGitHub;
+    // (if the updater itself fails to load, at least the notice still comes)
+    const run = process.platform === 'win32' && !portable ? await startWindows().catch(() => checkGitHub) : checkGitHub;
     // the toggle is read on every round, so turning it off stops the next check
     const check = () => (getSettings().checkUpdates ? run() : undefined);
 
@@ -95,9 +107,7 @@ export const startUpdater = async () => {
 export const installUpdateNow = async () => {
   if (status.state !== 'downloaded') return;
 
-  const { autoUpdater } = await import('electron-updater');
-
-  autoUpdater.quitAndInstall();
+  (await loadAutoUpdater()).quitAndInstall();
 };
 
 export const openReleasePage = () => {

@@ -82,6 +82,11 @@
   </keywords>
 
   <releases>
+    <release version="0.3.9" date="2026-10-24">
+      <description>
+        <p>Windows: automatic updates work again. The updater of every installed copy since 0.3.1 failed to load ("update check failed | cannot set properties of undefined"), so those copies need this version installed by hand once; from here on they update themselves.</p>
+      </description>
+    </release>
     <release version="0.3.8" date="2026-10-24">
       <description>
         <p>Water theme: the voice channel you are in is a pill of water too, and Sharkord's buttons in the sidebars and the chat are glass bubbles that answer the pointer like the bar's buttons (the water rises and leans toward it, the glass lights up, a click sets it jiggling). Sharkord's top bar no longer runs off the right edge. Buttons that plugins add next to Sharkord's own, like Jollyvideo's, now look the same in the Water and Jollyboat themes.</p>
