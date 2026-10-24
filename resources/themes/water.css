@@ -262,6 +262,32 @@ html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([
 html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).hover\:bg-accent:not(.bg-primary):not(.border):hover,
 html [data-slot="icon-button"]:hover { background: rgba(var(--w-glow), 0.16); box-shadow: 0 0 10px rgba(var(--w-glow), 0.35); }
 
+/* sharkord's toggles while they are on: the camera and the screen share hold water like the main
+   buttons, muted and deafened red water ([class][class]: over the quiet icon buttons above) */
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))):is([class*="bg-green-500/"], [class*="bg-blue-500/"])[class][class] {
+  color: #fff;
+  border: 1px solid rgba(var(--w-edge), calc(var(--w-edge-a) + 0.2));
+  border-radius: 16px 10px 16px 10px;
+  background:
+    radial-gradient(130% 75% at 50% -18%, rgba(255, 255, 255, 0.8) 0 46%, rgba(255, 255, 255, 0.12) 62%, transparent 63%),
+    radial-gradient(90% 55% at 50% 118%, rgba(200, 240, 255, 0.55), transparent 70%),
+    linear-gradient(to top, rgb(var(--w-liq-b)), color-mix(in srgb, rgb(var(--w-liq-b)) 50%, rgb(var(--w-liq-a))) 55%, rgb(var(--w-liq-a)) 82%, rgba(255, 255, 255, 0.95) 85%, rgba(var(--w-liq-b), 0.25) 87%, rgba(var(--w-btn), var(--w-btn-a)) 88%);
+  box-shadow: 0 3.5px 7px -2px rgba(var(--w-shade), calc(var(--w-shade-a) * 1.1)), inset 0 0 0 1px rgba(255, 255, 255, 0.35), inset 0 -4px 7px -4px rgba(var(--w-light), var(--w-light-a));
+}
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))):is([class*="bg-red-500/"])[class][class] {
+  color: #fff;
+  border: 1px solid rgba(142, 31, 51, 0.6);
+  border-radius: 16px 10px 16px 10px;
+  background:
+    radial-gradient(130% 75% at 50% -18%, rgba(255, 255, 255, 0.75) 0 46%, rgba(255, 255, 255, 0.1) 62%, transparent 63%),
+    linear-gradient(to top, #8e1f33, #c9475d 55%, #d9576b 82%, rgba(255, 255, 255, 0.9) 85%, rgba(142, 31, 51, 0.25) 87%, rgba(var(--w-btn), var(--w-btn-a)) 88%);
+  box-shadow: 0 3.5px 7px -2px rgba(var(--w-shade), calc(var(--w-shade-a) * 1.1)), inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))):is([class*="bg-green-500/"], [class*="bg-blue-500/"], [class*="bg-red-500/"])[class][class],
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))):is([class*="bg-green-500/"], [class*="bg-blue-500/"], [class*="bg-red-500/"])[class][class] svg { color: #fff; }
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))):is([class*="bg-green-500/"], [class*="bg-blue-500/"])[class][class] svg { filter: drop-shadow(0 1px 1px rgba(var(--w-on-liq-shade), 0.9)); }
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))):is([class*="bg-red-500/"])[class][class] svg { filter: drop-shadow(0 1px 1px rgba(80, 10, 25, 0.8)); }
+
 /* ---- wells: inputs, the search box, the message box ------------------------------------- */
 
 html input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), html textarea, html [data-slot="input"], html [data-slot="textarea"], html [data-slot="select-trigger"] {

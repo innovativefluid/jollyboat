@@ -23,9 +23,14 @@ type TSlab = 'top' | 'left' | 'right' | 'main';
 // against the token's (the day's a little more: dark small print on bright, moving water)
 const FROST = 0.15;
 
-// the buttons the theme's css draws as glass bubbles (the ghost and icon ones stay quiet)
-const BUTTONS =
-  ':is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))):is(.bg-primary, .bg-secondary, .bg-background, .border):not(.bg-destructive)';
+// the buttons the theme's css draws as glass bubbles (the ghost and icon ones stay quiet), and
+// sharkord's toggles while they are on (camera, screen share: green and blue; muted, deafened: red)
+const ON = '[class*="bg-green-500/"], [class*="bg-blue-500/"]';
+const OFF = '[class*="bg-red-500/"]';
+const BUTTONS = `:is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))):is(.bg-primary, .bg-secondary, .bg-background, .border, ${ON}, ${OFF}):not(.bg-destructive)`;
+// a toggle that is on holds water; a muted one red water, like the warning buttons
+const WARM_A: [number, number, number] = [217, 87, 107];
+const WARM_B: [number, number, number] = [142, 31, 51];
 const tintOf = (tk: typeof DAY) => tk.glassA + (tk === DAY ? -0.08 : -0.12);
 
 // the parts of sharkord's layout, as the theme's css knows them too
@@ -99,7 +104,7 @@ export const startPageWater = (allowSoftware: boolean, focused: () => boolean): 
   // water rises and leans its way and the glass lights up; pressed it squashes, a click sets it
   // jiggling. the elements themselves turn transparent (data-jb-glass, the theme's css)
   type TKind = 'channel' | 'voice' | 'button';
-  type TCtl = { kind: TKind; major: boolean; radii: TRgba; hv: TSpring; pr: TSpring; lvl: TSpring; sl: TSpring; seed: number; jiggle: TRgba; clip: Element | null; wanted: boolean };
+  type TCtl = { kind: TKind; major: boolean; warm: boolean; radii: TRgba; hv: TSpring; pr: TSpring; lvl: TSpring; sl: TSpring; seed: number; jiggle: TRgba; clip: Element | null; wanted: boolean };
   const ctls = new Map<HTMLElement, TCtl>();
   let picked = false;
   let currentText: HTMLElement | null = null;
@@ -159,7 +164,7 @@ export const startPageWater = (allowSoftware: boolean, focused: () => boolean): 
     if (!c) {
       const z = () => ({ x: 0, v: 0 });
       const radii = kind === 'button' ? radiiOf(el) : ([14, 9, 14, 9] as TRgba);
-      c = { kind, major: false, radii, hv: z(), pr: z(), lvl: z(), sl: z(), seed: Math.random(), jiggle: [0, 0, -100, 0], clip: el.closest('.overflow-y-auto, .overflow-auto'), wanted: true };
+      c = { kind, major: false, warm: false, radii, hv: z(), pr: z(), lvl: z(), sl: z(), seed: Math.random(), jiggle: [0, 0, -100, 0], clip: el.closest('.overflow-y-auto, .overflow-auto'), wanted: true };
       ctls.set(el, c);
       el.setAttribute('data-jb-glass', '');
       // the page coming up: what is already there is simply full
@@ -191,7 +196,8 @@ export const startPageWater = (allowSoftware: boolean, focused: () => boolean): 
       for (const b of Array.from(part.querySelectorAll<HTMLElement>(BUTTONS))) {
         if (b === text || b === voice || !b.getClientRects().length) continue;
         const c = ctlOf(b, 'button', t);
-        c.major = b.classList.contains('bg-primary');
+        c.warm = b.matches(OFF);
+        c.major = b.classList.contains('bg-primary') || c.warm || b.matches(ON);
         c.radii = radiiOf(b);
       }
     }
@@ -256,6 +262,8 @@ export const startPageWater = (allowSoftware: boolean, focused: () => boolean): 
     const ptr = water?.pointer() ?? { x: -9999, y: -9999 };
     // water that white words sit on: a little deeper than the study's
     const deepA = rgba(tk.liqA.map((c, i) => c * 0.62 + tk.liqB[i] * 0.38) as [number, number, number]);
+    const warmA = rgba(WARM_A.map((c, i) => c * 0.75 + WARM_B[i] * 0.25) as [number, number, number]);
+    const warmB = rgba(WARM_B);
     for (const [el, c] of ctls) {
       const pill = c.kind !== 'button';
       if (!c.wanted && !pill) continue;
@@ -293,7 +301,8 @@ export const startPageWater = (allowSoftware: boolean, focused: () => boolean): 
         glow: rgba(tk.glow, tk.glowA),
         seed: c.seed,
         jiggle: c.jiggle,
-        liqA: deepA,
+        liqA: c.warm ? warmA : deepA,
+        liqB: c.warm ? warmB : g.liqB,
         liquid: [Math.max(0, lvl), pill || c.major ? 1 : 0, 1.1 + 1.6 * Math.abs(sl), 0],
         slosh: sl * 0.55,
         alpha: c.wanted ? 1 : Math.min(1, Math.max(0, lvl) / 0.35),
