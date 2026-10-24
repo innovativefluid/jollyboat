@@ -60,7 +60,7 @@
   "imported {n} servers": "zaimportowano serwerów: {n}",
   "in a call": "w rozmowie",
   "in voice": "na kanale głosowym",
-  "include password": "z hasłem",
+  "include proxy password": "z hasłem proxy",
   "language": "język",
   "lcd theme in custom.css": "motyw LCD w custom.css",
   "leave": "opuść",
