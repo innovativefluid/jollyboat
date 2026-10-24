@@ -1,9 +1,10 @@
 // particles. the lcd look: bursts of dots and 3-cell rings, snapped to the 5 px cell grid. the
 // water look: fizz as in the design study (Sparks.qml): glass bubble sprites that burst out,
-// float up, wander and shrink, with a third as many twinkles. the look of a burst is decided
+// float up, wander and shrink, with a third as many twinkles. the retro look: pixel hearts and
+// four-point stars that pop out and fall, in the theme's pinks. the look of a burst is decided
 // when it starts.
 
-import { lcdScheme } from './scheme';
+import { isDark, lcdScheme } from './scheme';
 import bubbleUrl from './water/img/bubble.png';
 import glintUrl from './water/img/glint.png';
 
@@ -25,9 +26,18 @@ type TParticle = {
   rot?: number;
   spin?: number;
   wander?: number;
+  /** retro: a pixel heart or star, in one of the theme's colours */
+  pixel?: 'heart' | 'star';
+  colour?: string;
 };
 
+// retro: a heart 7 × 6 and a star 5 × 5, one css pixel = 2 px
+const HEART = ['.##.##.', '#######', '#######', '.#####.', '..###..', '...#...'];
+const STAR = ['..#..', '..#..', '#####', '..#..', '..#..'];
+const RETRO = { light: ['#ff4fa3', '#ff8cc6', '#b38cff', '#ffffff'], dark: ['#ff3fa4', '#ff8fcf', '#9d7bff', '#ffe3f3'] };
+
 const water = () => document.documentElement.dataset.look === 'water';
+const retro = () => document.documentElement.dataset.look === 'retro';
 const image = (src: string) => {
   const img = new Image();
   img.src = src;
@@ -104,6 +114,18 @@ export const createSparks = (canvas: HTMLCanvasElement) => {
       p.x += p.vx * dt;
       p.y += p.vy * dt;
 
+      if (p.pixel) {
+        // retro: whole 2 px steps, popping in and blinking out
+        const map = p.pixel === 'heart' ? HEART : STAR;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.globalAlpha = k > 0.75 && Math.floor(p.age * 12) % 2 ? 0 : 1;
+        ctx.fillStyle = p.colour!;
+        const ox = Math.round(p.x / 2) * 2 - map[0].length;
+        const oy = Math.round(p.y / 2) * 2 - map.length;
+        map.forEach((row, y) => [...row].forEach((c, x) => c === '#' && ctx.fillRect(ox + x * 2, oy + y * 2, 2, 2)));
+        continue;
+      }
+
       const alpha = k < 0.15 ? k / 0.15 : k > 0.7 ? (1 - k) / 0.3 : 1;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.globalAlpha = alpha;
@@ -146,6 +168,16 @@ export const createSparks = (canvas: HTMLCanvasElement) => {
   };
 
   const burst = (x: number, y: number, n: number) => {
+    if (retro()) {
+      const palette = isDark() ? RETRO.dark : RETRO.light;
+      for (let i = 0; i < n + 2; i++) {
+        const angle = -Math.PI / 2 + (Math.random() * 2 - 1) * 1.3;
+        const speed = 110 + Math.random() * 170;
+        particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 0.8 + Math.random() * 0.6, age: 0, ring: false, spark: false, pixel: i % 3 === 2 ? 'star' : 'heart', colour: palette[i % palette.length] });
+      }
+      kick();
+      return;
+    }
     if (water()) {
       for (let i = 0; i < n; i++) fizz(x, y);
       for (let i = 0; i < Math.max(1, Math.round(n / 3)); i++) glint(x, y);

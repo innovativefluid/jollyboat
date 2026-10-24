@@ -6,6 +6,7 @@
     <title>Jollyboat voice</title>
     <link rel="stylesheet" href="../theme/theme.css" />
     <link rel="stylesheet" href="../theme/water.css" />
+    <link rel="stylesheet" href="../theme/retro.css" />
     <style>
       /* the voice overlay: the lcd look on a see-through window. the background takes the opacity
          from the settings; text and the talking fill stay solid, with an outline in the
@@ -15,7 +16,8 @@
         --bg: #18201c; --panel: #202a24; --fg: #c4d6a6; --dim: #869672; --mute: #5e6c52; --faint: #384438;
         --fg-rgb: 196, 214, 166; --bg-rgb: 32, 42, 36;
       }
-      html, body { background: transparent; height: auto; overflow: hidden; }
+      /* (more specific than the looks' page backgrounds, which load after this) */
+      html:root, html:root body { background: transparent; height: auto; overflow: hidden; }
       body { padding: 4px; }
       .card {
         background: rgba(var(--bg-rgb), var(--alpha));
@@ -80,6 +82,25 @@
       [data-look='water'] .icons svg { shape-rendering: auto; }
       [data-look='water'] .empty { font: 600 13px/1.2 var(--w-font); color: rgb(var(--w-dim)); }
       [data-look='water'] .place { font: 600 12px/1.2 var(--w-font); color: rgb(var(--w-dim)); }
+      /* the retro look: a small window, a pink title bar on top, whoever talks picked out in hot
+         pink like a selected file */
+      [data-look='retro'] .card {
+        background: rgba(var(--r-face-rgb, 255, 233, 244), max(var(--alpha), 0.0));
+        border: 0; border-radius: 0; padding: 0 3px 4px;
+        box-shadow: inset -1px -1px var(--r-dark), inset 1px 1px var(--r-light);
+        --outline: rgba(var(--r-face-rgb, 255, 233, 244), calc(1 - var(--alpha) * 0.5));
+      }
+      [data-look='retro'][data-theme='dark'] .card { --r-face-rgb: 45, 27, 61; }
+      [data-look='retro'] .head { margin: 0 -3px 4px; padding: 4px 6px; font: 700 12px/1 var(--r-title-font); color: var(--r-title-ink); background: linear-gradient(90deg, var(--r-title-a), var(--r-title-b)); text-shadow: none; }
+      [data-look='retro'] .head::before { content: '♥'; margin-right: 2px; }
+      [data-look='retro'] .row { font: 400 14px/1.15 var(--r-font); color: var(--r-ink); border-radius: 0; }
+      [data-look='retro'] .row .self, [data-look='retro'] .row.quiet .who { color: var(--r-dim); }
+      [data-look='retro'] .dot { width: 9px; height: 9px; border: 0; border-radius: 0; background: var(--r-field); box-shadow: inset 1px 1px var(--r-shadow), inset -1px -1px var(--r-light); }
+      [data-look='retro'] .row.talking { background: var(--r-sel); color: var(--r-sel-ink); text-shadow: none; }
+      [data-look='retro'] .row.talking .dot { background: #fff; box-shadow: none; }
+      [data-look='retro'] .row.talking .self { color: var(--r-sel-ink); }
+      [data-look='retro'] .empty, [data-look='retro'] .place { font: 400 13px/1.2 var(--r-font); color: var(--r-dim); }
+      [data-look='retro'] .place button { font: 400 12px/1 var(--r-font); color: #fff; border: 0; border-radius: 0; padding: 4px 10px; background: var(--r-accent); box-shadow: inset -1px -1px var(--r-dark), inset 1px 1px var(--r-accent-hi); }
       [data-look='water'] .place button {
         font: 800 12px/1 var(--w-font); color: #fff; border: 1px solid rgba(var(--w-edge), 0.8); border-radius: 12px 7px 12px 7px; padding: 4px 11px;
         background: linear-gradient(to top, rgb(var(--w-liq-b)), rgb(var(--w-liq-a)));

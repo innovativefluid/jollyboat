@@ -242,6 +242,37 @@ canvas.water { position: fixed; left: 0; top: 0; z-index: 0; }
 [data-look='water'] .field > label { font: 700 12px/38px var(--w-font); color: rgb(var(--w-dim)); }
 [data-look='water'] .field > .control .note { font: 500 13px/1.25 var(--w-font); color: rgb(var(--w-dim)); }
 
+/* ---- the menu (the theme): a glass well; its list a frosted glass panel ----------------- */
+
+[data-look='water'] select {
+  height: 32px; padding: 0 14px; min-width: 160px;
+  border-radius: 12px 17px 12px 17px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.05) 50%, transparent 52%), rgba(var(--w-btn), calc(var(--w-btn-a) + 0.2));
+  color: rgb(var(--w-fg));
+  border: 1px solid rgba(var(--w-edge), calc(var(--w-edge-a) + 0.12));
+  box-shadow: 0 3px 6px -2px rgba(var(--w-shade), var(--w-shade-a)), inset 0 -4px 7px -4px rgba(var(--w-light), var(--w-light-a));
+  font: 700 14px/1 var(--w-font);
+  text-shadow: 0 1px 0 rgba(var(--w-text-glow), var(--w-text-glow-a));
+}
+[data-look='water'] select:hover { box-shadow: 0 3px 6px -2px rgba(var(--w-shade), var(--w-shade-a)), 0 0 0 3px rgba(var(--w-glow), 0.16), 0 0 12px rgba(var(--w-glow), 0.45); }
+[data-look='water'] select:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--w-glow), 0.55); }
+[data-look='water'] select::picker-icon { color: rgb(var(--w-dim)); }
+[data-look='water'] select::picker(select) {
+  border: 1px solid rgba(var(--w-edge), calc(var(--w-edge-a) + 0.15));
+  border-radius: 18px 10px 18px 10px;
+  padding: 5px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0) 40px), rgba(var(--w-glass), 0.9);
+  color: rgb(var(--w-fg));
+  box-shadow: 0 10px 24px -8px rgba(var(--w-shade), calc(var(--w-shade-a) + 0.15)), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(16px);
+}
+[data-look='water'] select option { font: 700 14px/1 var(--w-font); padding: 7px 12px; border-radius: 12px 7px 12px 7px; }
+[data-look='water'] select option::checkmark { content: '•'; color: rgb(var(--w-liq-b)); }
+[data-look='water'] select option:hover, [data-look='water'] select option:focus-visible {
+  color: #fff; outline: none; text-shadow: 0 1px 1px rgba(var(--w-on-liq-shade), 0.9);
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0) 50%), linear-gradient(to top, rgb(var(--w-liq-b)), rgb(var(--w-liq-a)));
+}
+
 /* ---- checks: a small glass bubble, filled with water and a white tick when on ----------- */
 
 [data-look='water'] .check { font: 600 14px/1.2 var(--w-font); color: rgb(var(--w-fg)); }

@@ -1,5 +1,9 @@
 // Types shared by main, preload and renderer. Keep this file free of imports.
 
+/** the look of the app's own windows */
+export type TLook = 'lcd' | 'water' | 'retro';
+export const LOOKS: readonly TLook[] = ['lcd', 'water', 'retro'];
+
 export type TServerEntry = {
   id: string;
   name: string;
@@ -49,9 +53,10 @@ export type TSettings = {
   /** light or dark for every window: the server page, its bar, the overlay and the app's own
    *  windows; auto follows the system */
   colorMode: 'auto' | 'dark' | 'light';
-  /** a theme on the server page: none, the app's own lcd look, the water look, or custom.css next
-   *  to the settings. the app's own windows take the water look with 'water', else the lcd one */
-  theme: 'none' | 'jollyboat' | 'water' | 'custom';
+  /** a theme on the server page: none, the app's own lcd look, the water look, the retro look,
+   *  or custom.css next to the settings. the app's own windows take the water look with 'water',
+   *  the retro look with 'retro', else the lcd one */
+  theme: 'none' | 'jollyboat' | 'water' | 'retro' | 'custom';
   /** where the overlay was left (top-left corner), null = top left of the main display */
   overlayPosition: { x: number; y: number } | null;
   /** flatpak: what the background portal last granted for starting at login (the portal's

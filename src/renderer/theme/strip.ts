@@ -1,6 +1,7 @@
 // the strip under the title. lcd: the plasma, 3 px cells, 3 rows, bg → fg by 0.55 + (v − .5)·1.1
 // plus dither. water: the glass renderer draws it (a tube of water streaming along); only
-// without webgl2 (html.no-gl) is it drawn here, as a flat tube.
+// without webgl2 (html.no-gl) is it drawn here, as a flat tube. retro: an old progress bar whose
+// blocks march along, eight steps a second.
 
 import { lcdScheme } from './scheme';
 import { css, waterTokens } from './water/tokens';
@@ -20,9 +21,13 @@ export const createStrip = (canvas: HTMLCanvasElement) => {
   const start = performance.now();
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
 
+  const lookNow = () => {
+    const l = document.documentElement.dataset.look;
+    return l === 'water' || l === 'retro' ? l : 'lcd';
+  };
   const resize = () => {
-    look = document.documentElement.dataset.look === 'water' ? 'water' : 'lcd';
-    if (look === 'water') {
+    look = lookNow();
+    if (look === 'water' || look === 'retro') {
       dpr = window.devicePixelRatio || 1;
       canvas.width = Math.round((canvas.clientWidth || 300) * dpr);
       canvas.height = Math.round((canvas.clientHeight || 9) * dpr);
@@ -88,10 +93,39 @@ export const createStrip = (canvas: HTMLCanvasElement) => {
     ctx.stroke();
   };
 
+  // retro: blocks 6 px wide with 2 px between, a run of ten marching through a sunken field
+  const blocks = (t: number) => {
+    const css = getComputedStyle(document.documentElement);
+    const w = canvas.width / dpr;
+    const h = canvas.height / dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = css.getPropertyValue('--r-field').trim() || '#fff';
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = css.getPropertyValue('--r-sel').trim() || '#ff4fa3';
+    const step = 8;
+    const count = Math.ceil(w / step);
+    const head = Math.floor(t * 8) % (count + 10);
+    for (let i = Math.max(0, head - 10); i < Math.min(count, head); i++) ctx.fillRect(2 + i * step, 2, 6, h - 4);
+    // the field is sunken: dark top left, light bottom right
+    ctx.fillStyle = css.getPropertyValue('--r-shadow').trim() || '#c77aa6';
+    ctx.fillRect(0, 0, w, 1);
+    ctx.fillRect(0, 0, 1, h);
+    ctx.fillStyle = css.getPropertyValue('--r-light').trim() || '#fff';
+    ctx.fillRect(0, h - 1, w, 1);
+    ctx.fillRect(w - 1, 0, 1, h);
+  };
+
   const frame = () => {
-    const now = document.documentElement.dataset.look === 'water' ? 'water' : 'lcd';
+    const now = lookNow();
     if (now !== look) resize();
     const t = ((performance.now() - start) / 1000) * (reduce.matches ? 0 : 1);
+
+    if (look === 'retro') {
+      blocks(t);
+      window.setTimeout(() => requestAnimationFrame(frame), 125);
+      return;
+    }
 
     if (look === 'water') {
       if (document.documentElement.classList.contains('gl')) {

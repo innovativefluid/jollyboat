@@ -5,15 +5,23 @@
 
 import { nativeTheme, webContents } from 'electron';
 import { isOwnPageUrl } from './paths';
+import type { TLook } from '../shared/types';
 import { findServerByUrl, getSettings } from './settings';
 
-export type TLook = 'lcd' | 'water';
+export type { TLook };
 
-export const currentLook = (): TLook => (getSettings().theme === 'water' ? 'water' : 'lcd');
+export const currentLook = (): TLook => {
+  const { theme } = getSettings();
+  return theme === 'water' ? 'water' : theme === 'retro' ? 'retro' : 'lcd';
+};
 
 /** what a window shows before its page has painted: the page's own background colour */
-export const windowBackground = (dark = nativeTheme.shouldUseDarkColors) =>
-  currentLook() === 'water' ? (dark ? '#06203c' : '#9fd8f6') : dark ? '#18201c' : '#a6b08a';
+export const windowBackground = (dark = nativeTheme.shouldUseDarkColors) => {
+  const look = currentLook();
+  if (look === 'water') return dark ? '#06203c' : '#9fd8f6';
+  if (look === 'retro') return dark ? '#1c1029' : '#f9c9e4';
+  return dark ? '#18201c' : '#a6b08a';
+};
 
 /** tells every open page of ours, and saved server pages whether the water runs behind them */
 export const broadcastLook = () => {

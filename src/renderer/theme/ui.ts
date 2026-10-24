@@ -5,13 +5,14 @@
 // webgl2 the water look keeps its css gradient and css glass (html.no-gl).
 
 import { createPaper } from './paper';
+import { createDesk } from './retro';
 import { createSparks } from './sparks';
 import { createStrip } from './strip';
 import { createWater, type TWater } from './water/engine';
 import { createGlassDom, type TGlassDom } from './water/glass-dom';
 import { waterTokens } from './water/tokens';
 
-type TLook = 'lcd' | 'water';
+type TLook = 'lcd' | 'water' | 'retro';
 type TBackdrop = { stop: () => void; water?: TWater; dom?: TGlassDom };
 
 // the hook a toast uses to make its bubble jiggle when it pops in
@@ -24,7 +25,10 @@ const allowSoftGl = () => {
   }
 };
 
-const lookNow = (): TLook => (document.documentElement.dataset.look === 'water' ? 'water' : 'lcd');
+const lookNow = (): TLook => {
+  const look = document.documentElement.dataset.look;
+  return look === 'water' || look === 'retro' ? look : 'lcd';
+};
 
 export const bootTheme = ({ boat = false, fps, pool }: { boat?: boolean; fps?: { focused: number; blurred: number }; pool?: () => { view: [number, number]; offset: [number, number] } } = {}) => {
   const sparksCanvas = document.createElement('canvas');
@@ -68,6 +72,12 @@ export const bootTheme = ({ boat = false, fps, pool }: { boat?: boolean; fps?: {
         const r = el.getBoundingClientRect();
         dom.poke(el, r.width / 2, r.height / 2, 1);
       };
+    } else if (look === 'retro') {
+      // the retro desktop: a pattern, scattered pixel hearts and stars, the boat as an icon
+      onToast = null;
+      canvas.className = 'desk';
+      const desk = createDesk(canvas, { boat });
+      backdrop = { stop: desk.stop };
     } else {
       onToast = null;
       canvas.className = 'paper';

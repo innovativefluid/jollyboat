@@ -6,6 +6,7 @@
     <title>Jollyboat</title>
     <link rel="stylesheet" href="../theme/theme.css" />
     <link rel="stylesheet" href="../theme/water.css" />
+    <link rel="stylesheet" href="../theme/retro.css" />
     <style>
       .dot { width: 12px; height: 12px; border-radius: 2px; flex: none; border: 2px solid var(--dim); }
       .dot.ok { background: var(--fg); border-color: var(--fg); }
@@ -120,7 +121,7 @@
             <div class="row" style="margin-top: 8px"><span class="meta" data-i18n>language</span><div id="language"></div></div>
             <label class="check" id="autostart-row" style="margin-top: 6px"><input type="checkbox" id="autostart" /> <span data-i18n>start with the system</span></label>
             <label class="check" style="margin-top: 6px"><input type="checkbox" id="notify-tray" /> <span data-i18n>mark new messages</span></label>
-            <div class="row" style="margin-top: 8px"><span class="meta" data-i18n>theme</span><div id="theme-kind"></div></div>
+            <div class="row" style="margin-top: 8px"><label class="meta" for="theme-kind" data-i18n>theme</label><select id="theme-kind"></select></div>
             <div class="row" style="margin-top: 8px"><span class="meta" data-i18n>mode</span><div id="color-mode"></div></div>
             <div class="row" id="css-row" style="margin-top: 6px" hidden>
               <button class="pill minor small" id="css-edit" data-i18n>edit custom.css</button>

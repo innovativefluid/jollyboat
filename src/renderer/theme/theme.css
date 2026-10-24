@@ -137,6 +137,24 @@ input:focus { border-color: var(--fg); }
 input::placeholder { color: var(--mute); }
 input:-webkit-autofill { -webkit-text-fill-color: var(--fg); box-shadow: 0 0 0 100px var(--panel) inset; }
 
+/* a menu (the theme): a field like the inputs with a pixel arrow; its list a panel. the
+   customizable select (appearance: base-select) styles the list too */
+select, ::picker(select) { appearance: base-select; }
+select {
+  height: 30px; min-width: 150px; padding: 0 10px; display: inline-flex; align-items: center; gap: 8px;
+  background: var(--panel); color: var(--fg); border: 2px solid var(--dim); border-radius: 10px 16px 10px 16px;
+  font: 600 15px/1 var(--px); cursor: pointer; box-shadow: 3px 3px 0 var(--shadow-dim);
+}
+select:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+select::picker-icon { content: '▾'; color: var(--fg); margin-left: auto; }
+select::picker(select) {
+  border: 2px solid var(--fg); border-radius: 12px 6px 12px 6px; padding: 4px; margin-top: 4px;
+  background: var(--panel); color: var(--fg); box-shadow: 4px 4px 0 var(--shadow);
+}
+select option { font: 600 15px/1 var(--px); padding: 6px 10px; border-radius: 8px 4px 8px 4px; }
+select option::checkmark { content: '>'; color: var(--dim); }
+select option:hover, select option:focus-visible { background: var(--fg); color: var(--panel); outline: none; }
+
 /* check */
 .check { display: inline-flex; align-items: center; gap: 9px; cursor: pointer; font: 500 15px/1.15 var(--body); color: var(--fg); }
 .check input { appearance: none; width: 18px; height: 18px; margin: 0; border: 2px solid var(--dim); border-radius: 3px; background: transparent; cursor: pointer; flex: none; }

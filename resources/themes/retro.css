@@ -1,0 +1,333 @@
+/* Jollyboat's retro look for the Sharkord page: an old desktop in pink, like the app's own
+   windows in this theme. The sidebars, the chat and the member list are windows floating on a
+   pink (night: deep purple) desktop, their headers pink-to-lilac title bars; buttons, fields,
+   scrollbars and menus are bevelled the way nineties desktops did it; the type is pixel type.
+   Light in :root, night in .dark.
+
+   Bevels are four inset lines: light and mid on the top left, dark and shadow on the bottom
+   right for a raised part, the other way round for a sunken one.
+
+   As custom.css you can edit all of it; the file is read again whenever it changes.
+   url("jollyboat-font:Name") loads one of the app's own fonts: DotGothic16, PixelifySans.
+   (Sharkord puts .dark / .light on <html> and on its main view; the html-prefixed selectors are
+   a notch more specific than Sharkord's own, so these win whatever order the stylesheets load.)
+   (Plugins' buttons that copy Sharkord's button classes without its data-slot, like Jollyvideo's
+   popcorn button, are styled as buttons too.) */
+
+@font-face { font-family: 'Jollyboat Dot'; src: url("jollyboat-font:DotGothic16") format('truetype'); }
+@font-face { font-family: 'Jollyboat Pixel'; src: url("jollyboat-font:PixelifySans") format('truetype'); font-weight: 400 700; }
+
+html:root,
+html .light {
+  --radius: 0px;
+  --background: #ffe9f4;
+  --foreground: #3a1530;
+  --card: #ffe9f4;
+  --card-foreground: #3a1530;
+  --popover: #ffe9f4;
+  --popover-foreground: #3a1530;
+  --primary: #d6337f;
+  --primary-foreground: #ffffff;
+  --secondary: #ffd3e9;
+  --secondary-foreground: #3a1530;
+  --muted: #ffd3e9;
+  --muted-foreground: #7a4568;
+  --accent: #ffd3e9;
+  --accent-foreground: #3a1530;
+  --destructive: #c4223d;
+  --border: #d58fb6;
+  --input: #d58fb6;
+  --ring: #e8338d;
+  --sidebar: #ffe9f4;
+  --sidebar-foreground: #3a1530;
+  --sidebar-primary: #d6337f;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ffd3e9;
+  --sidebar-accent-foreground: #3a1530;
+  --sidebar-border: #d58fb6;
+  --sidebar-ring: #e8338d;
+  /* the retro tokens (the app's own windows have the same) */
+  --r-desk: #f9c9e4; --r-desk2: #dcc4ff; --r-check: rgba(255, 255, 255, 0.2);
+  --r-face: #ffe9f4; --r-light: #ffffff; --r-mid: #ffd3e9; --r-shadow: #d58fb6; --r-dark: #6e2d5c;
+  --r-ink: #3a1530; --r-dim: #7a4568;
+  --r-title-a: #ff5fae; --r-title-b: #a77bff; --r-title-ink: #ffffff;
+  --r-sel: #e8338d; --r-sel-ink: #ffffff; --r-field: #ffffff; --r-accent: #d6337f; --r-accent-hi: #ff8cc6; --r-warn: #c4223d;
+  --r-tip: #fff6c9;
+  --r-drop: rgba(110, 45, 92, 0.3);
+}
+
+html.dark,
+html .dark {
+  --background: #2d1b3d;
+  --foreground: #ffe3f3;
+  --card: #2d1b3d;
+  --card-foreground: #ffe3f3;
+  --popover: #2d1b3d;
+  --popover-foreground: #ffe3f3;
+  --primary: #ff3fa4;
+  --primary-foreground: #ffffff;
+  --secondary: #43295a;
+  --secondary-foreground: #ffe3f3;
+  --muted: #43295a;
+  --muted-foreground: #d9aacb;
+  --accent: #43295a;
+  --accent-foreground: #ffe3f3;
+  --destructive: #ff6f8a;
+  --border: #170c22;
+  --input: #170c22;
+  --ring: #ff3fa4;
+  --sidebar: #2d1b3d;
+  --sidebar-foreground: #ffe3f3;
+  --sidebar-primary: #ff3fa4;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #43295a;
+  --sidebar-accent-foreground: #ffe3f3;
+  --sidebar-border: #170c22;
+  --sidebar-ring: #ff3fa4;
+  --r-desk: #1c1029; --r-desk2: #2e1247; --r-check: rgba(255, 143, 207, 0.05);
+  --r-face: #2d1b3d; --r-light: #6a4688; --r-mid: #43295a; --r-shadow: #170c22; --r-dark: #07030b;
+  --r-ink: #ffe3f3; --r-dim: #d9aacb;
+  --r-title-a: #ff3fa4; --r-title-b: #6f45f0; --r-title-ink: #ffffff;
+  --r-sel: #ff3fa4; --r-sel-ink: #ffffff; --r-field: #1a0f24; --r-accent: #d42a83; --r-accent-hi: #ff8fcf; --r-warn: #ff6f8a;
+  --r-tip: #43295a;
+  --r-drop: rgba(0, 0, 0, 0.45);
+}
+html:root, html .light, html.dark, html .dark {
+  --r-raised: inset -1px -1px var(--r-dark), inset 1px 1px var(--r-light), inset -2px -2px var(--r-shadow), inset 2px 2px var(--r-mid);
+  --r-sunken: inset 1px 1px var(--r-shadow), inset -1px -1px var(--r-light), inset 2px 2px var(--r-dark), inset -2px -2px var(--r-mid);
+  --r-pressed: inset 1px 1px var(--r-dark), inset -1px -1px var(--r-light), inset 2px 2px var(--r-shadow), inset -2px -2px var(--r-mid);
+}
+
+/* ---- the desktop and its windows ------------------------------------------------------- */
+
+/* the desktop: pink into lilac with a faint check, the windows float on it a little apart */
+html {
+  background:
+    repeating-conic-gradient(var(--r-check) 0 25%, transparent 0 50%) 0 0 / 32px 32px,
+    linear-gradient(135deg, var(--r-desk), var(--r-desk2));
+  background-attachment: fixed;
+}
+html body { background: transparent; font-family: 'Jollyboat Dot', 'Jollyboat Pixel', ui-monospace, monospace; }
+html .relative > .h-dvh.bg-background { background: transparent; }
+/* the settings pages lie over it as a desktop of their own */
+html div:not(.relative) > .h-dvh.bg-background {
+  background:
+    repeating-conic-gradient(var(--r-check) 0 25%, transparent 0 50%) 0 0 / 32px 32px,
+    linear-gradient(135deg, var(--r-desk), var(--r-desk2));
+  background-attachment: fixed;
+}
+html .h-dvh > .bg-card.border-b,
+html .h-dvh .bg-card.border-r:not(.w-0),
+html .h-dvh .bg-card.border-l:not(.w-0),
+html main.bg-background {
+  background: var(--r-face);
+  border: 0 !important;
+  border-radius: 0;
+  box-shadow: var(--r-raised), 4px 4px 0 var(--r-drop);
+}
+/* (sharkord makes them full width and height: with the margins they shrink instead) */
+html .h-dvh > .bg-card.border-b { margin: 8px 8px 0; width: calc(100% - 16px); box-sizing: border-box; }
+html .h-dvh .bg-card.border-r:not(.w-0) { margin: 8px 0 8px 8px; height: auto; overflow: hidden; }
+html .h-dvh .bg-card.border-l:not(.w-0) { margin: 8px 8px 8px 0; height: auto; overflow: hidden; }
+html main.bg-background { margin: 8px; overflow: hidden; }
+html div:not(.relative) > .h-dvh.bg-background > .h-14.border-b {
+  border: 0 !important;
+  background: linear-gradient(90deg, var(--r-title-a), var(--r-title-b));
+  color: var(--r-title-ink);
+  box-shadow: inset 0 -2px var(--r-dark);
+}
+html div:not(.relative) > .h-dvh.bg-background > .h-14.border-b * { color: var(--r-title-ink); }
+/* each window's head is a title bar */
+html .h-dvh .bg-card.border-r > .h-12.border-b,
+html .h-dvh .bg-card.border-l > .h-12.border-b,
+html main.bg-background > .h-12.border-b {
+  margin: 3px 3px 0;
+  height: 32px;
+  border: 0 !important;
+  background: linear-gradient(90deg, var(--r-title-a), var(--r-title-b));
+  color: var(--r-title-ink);
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.25);
+}
+html .h-dvh .bg-card.border-r > .h-12.border-b *,
+html .h-dvh .bg-card.border-l > .h-12.border-b *,
+html main.bg-background > .h-12.border-b * { color: var(--r-title-ink) !important; }
+html main.bg-background > .h-12.border-b [class*="text-muted"] { opacity: 0.85; }
+/* the lines inside a window: an etched groove */
+html .border-r, html .border-l, html .border-b, html .border-t, html .border { border-color: var(--r-shadow); }
+
+/* ---- type ------------------------------------------------------------------------------ */
+
+html h1, html h2, html h3, html h4,
+html .font-semibold, html .font-bold,
+html [data-slot="badge"],
+html .h-12.border-b { font-family: 'Jollyboat Pixel', 'Jollyboat Dot', ui-monospace, monospace; letter-spacing: 0.2px; }
+html .font-semibold { font-weight: 600; }
+html a { color: var(--r-accent); text-decoration: underline; text-underline-offset: 2px; }
+html.dark a, html .dark a { color: var(--r-accent-hi); }
+html ::selection { background: var(--r-sel); color: var(--r-sel-ink); }
+
+/* ---- floating windows: popovers, menus, dialogs; tooltips like old ones ------------------- */
+
+html [data-slot="popover-content"], html [data-slot="dropdown-menu-content"], html [data-slot="context-menu-content"],
+html [data-slot="dialog-content"], html [data-slot="select-content"], html [data-slot="sheet-content"], html [data-slot="alert-dialog-content"] {
+  border: 0;
+  border-radius: 0;
+  background: var(--r-face);
+  box-shadow: var(--r-raised), 4px 4px 0 var(--r-drop);
+}
+/* a dialog wears a title bar along its top */
+html [data-slot="dialog-content"], html [data-slot="alert-dialog-content"] { border-top: 26px solid var(--r-title-a); border-image: linear-gradient(90deg, var(--r-title-a), var(--r-title-b)) 26 0 0 0 / 26px 0 0 0; }
+html [data-slot="tooltip-content"] {
+  border-radius: 0;
+  background: var(--r-tip);
+  color: var(--r-ink);
+  border: 1px solid var(--r-dark);
+  box-shadow: 2px 2px 0 var(--r-drop);
+  font-family: 'Jollyboat Dot', monospace;
+}
+html [data-slot="tooltip-content"] svg { fill: var(--r-tip); background: transparent; }
+
+/* ---- buttons: raised, square; the main ones hot pink; toolbar ones flat until hovered --- */
+
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))) {
+  border: 0;
+  border-radius: 0;
+  background: var(--r-face);
+  color: var(--r-ink);
+  box-shadow: var(--r-raised);
+  font-family: 'Jollyboat Dot', 'Jollyboat Pixel', monospace;
+  font-weight: 400;
+  transition: none;
+}
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).bg-primary {
+  background: var(--r-accent);
+  color: #fff;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+  box-shadow: inset -1px -1px var(--r-dark), inset 1px 1px var(--r-accent-hi), inset -2px -2px rgba(0, 0, 0, 0.25), inset 2px 2px rgba(255, 255, 255, 0.25), 0 0 0 1px var(--r-dark);
+}
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).bg-primary svg { color: #fff; }
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))):active:not(:disabled) { box-shadow: var(--r-pressed); translate: 1px 1px; }
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))):disabled { color: var(--muted-foreground); box-shadow: var(--r-raised); }
+/* sharkord's ghost and icon buttons: flat, raised while hovered, pressed while held */
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).hover\:bg-accent:not(.bg-primary):not(.border):not(.bg-secondary),
+html [data-slot="icon-button"] { background: transparent; box-shadow: none; }
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).hover\:bg-accent:not(.bg-primary):not(.border):not(.bg-secondary):hover,
+html [data-slot="icon-button"]:hover { background: var(--r-face); box-shadow: inset -1px -1px var(--r-shadow), inset 1px 1px var(--r-light); }
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).bg-destructive,
+html [class*="bg-[#ec4245]"] {
+  background: var(--r-warn); color: #fff; border: 0;
+  box-shadow: inset -1px -1px var(--r-dark), inset 1px 1px rgba(255, 255, 255, 0.45), inset -2px -2px rgba(0, 0, 0, 0.25);
+}
+
+/* ---- fields: sunken ------------------------------------------------------------------- */
+
+html input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), html textarea, html [data-slot="input"], html [data-slot="textarea"], html [data-slot="select-trigger"] {
+  border: 0;
+  border-radius: 0;
+  background: var(--r-field);
+  color: var(--r-ink);
+  box-shadow: var(--r-sunken);
+}
+html input:focus-visible, html textarea:focus-visible, html [data-slot="input"]:focus-visible, html [data-slot="select-trigger"]:focus-visible { outline: 1px dotted var(--r-ink); outline-offset: -4px; box-shadow: var(--r-sunken); }
+/* the message box */
+html .tiptap.ProseMirror { font-family: 'Jollyboat Dot', 'Jollyboat Pixel', monospace; }
+html div:has(> [class*="tiptap"][class*="relative"]) { border: 0; border-radius: 0; background: var(--r-field); box-shadow: var(--r-sunken); margin: 0 8px 8px; }
+
+/* switches and checkboxes: square, sunken, pink when on */
+html [data-slot="switch"] { border: 0; border-radius: 0; background: var(--r-field); box-shadow: var(--r-sunken); }
+html [data-slot="switch"][data-state="checked"] { background: var(--r-sel); }
+html [data-slot="switch-thumb"] { border-radius: 0; background: var(--r-face); box-shadow: var(--r-raised); transition: transform 120ms steps(2, jump-none); }
+html [data-slot="checkbox"] { border: 0; border-radius: 0; background: var(--r-field); box-shadow: var(--r-sunken); }
+html [data-slot="checkbox"][data-state="checked"] { background: var(--r-field); color: var(--r-sel); }
+
+/* ---- channels, members, messages -------------------------------------------------------- */
+
+/* the channel you are on: picked out like a selected file */
+html [data-testid="channel-item"] { border-radius: 0; }
+html [data-testid="channel-item"].bg-accent { background: var(--r-sel); color: var(--r-sel-ink); }
+html [data-testid="channel-item"].bg-accent svg { color: var(--r-sel-ink); }
+html [data-testid="channel-item"]:not(.bg-accent):hover,
+html [data-testid="member-item"]:hover { background: transparent; outline: 1px dotted var(--r-ink); outline-offset: -2px; }
+html [data-testid="member-item"] { border-radius: 0; }
+/* a message that mentions you: a pink wash and a pink edge */
+html .bg-primary\/5 { background: color-mix(in srgb, var(--r-sel) 14%, transparent); }
+html [data-slot="badge"] { border-radius: 0; }
+
+/* avatars: square, set into the window */
+html [data-slot="avatar"], html [data-slot="avatar-fallback"], html [data-slot="avatar-image"] { border-radius: 0; }
+html [data-slot="avatar"] { box-shadow: var(--r-sunken); padding: 2px; box-sizing: border-box; background: var(--r-field); }
+html [data-slot="avatar-fallback"] { background: var(--r-mid); color: var(--r-ink); font-family: 'Jollyboat Pixel', monospace; }
+html [data-slot="avatar-image"] { object-fit: cover; }
+html [data-slot="avatar-fallback"].text-xs { font-size: 13px; }
+
+/* ---- presence: three lamps -------------------------------------------------------------- */
+
+/* online a lit pink lamp, idle half lit, offline an empty one; a little bigger than sharkord's,
+   with a ring of the window round it so it reads at a glance */
+html [data-testid="user-status"] { width: 14px; height: 14px; box-sizing: border-box; border-radius: 50%; border: 2px solid var(--r-face); }
+html .absolute[data-testid="user-status"] { translate: 3px 3px; }
+html [data-testid="user-status"][data-status="online"] { background: radial-gradient(circle at 35% 35%, #fff 0 1px, transparent 2px), var(--r-sel); box-shadow: inset 0 0 0 1px var(--r-dark); }
+html [data-testid="user-status"][data-status="idle"] { background: linear-gradient(to right, var(--r-sel) 50%, var(--r-field) 50%); box-shadow: inset 0 0 0 1px var(--r-dark); }
+html [data-testid="user-status"][data-status="offline"] { background: var(--r-field); box-shadow: inset 0 0 0 1px var(--r-dim); }
+html [data-testid="member-item"]:has([data-status="offline"]) > span { color: color-mix(in srgb, var(--r-ink) 68%, var(--r-face)); }
+html [data-testid="member-item"]:has([data-status="offline"]) [data-slot="avatar"] { opacity: 0.55; filter: grayscale(0.6); }
+
+/* ---- voice ------------------------------------------------------------------------------ */
+
+/* who is talking: a pink frame that blinks, quicker when louder; it never changes its size */
+html .speaking-effect-low, html .speaking-effect-medium, html .speaking-effect-high { box-shadow: none; outline: 2px solid var(--r-sel); outline-offset: 2px; animation: none; }
+html .speaking-effect-medium { animation: jb-talk 0.8s steps(2, jump-none) infinite; }
+html .speaking-effect-high { animation: jb-talk 0.5s steps(2, jump-none) infinite; }
+@keyframes jb-talk { from { outline-color: var(--r-sel); } to { outline-color: var(--r-accent-hi); } }
+
+/* the places sharkord colours directly: greens and blues become pink, reds the warning red,
+   yellows and greys the dim ink; tints a wash of the same */
+html [class*="text-green-"], html [class*="text-emerald-"], html [class*="text-blue-"], html [class*="text-sky-"],
+html [class*="text-cyan-"], html [class*="text-purple-"] { color: var(--r-accent); }
+html.dark [class*="text-green-"], html.dark [class*="text-emerald-"], html.dark [class*="text-blue-"], html.dark [class*="text-sky-"],
+html.dark [class*="text-cyan-"], html.dark [class*="text-purple-"] { color: var(--r-accent-hi); }
+html [class*="text-red-"], html [class*="text-orange-"], html [class*="text-rose-"] { color: var(--r-warn); }
+html [class*="text-yellow-"], html [class*="text-amber-"], html [class*="text-gray-"] { color: var(--r-dim); }
+html [class*="bg-green-"], html [class*="bg-blue-"], html [class*="bg-yellow-"], html [class*="bg-amber-"] { background-color: color-mix(in srgb, var(--r-sel) 16%, transparent); }
+html [class*="bg-red-"] { background-color: color-mix(in srgb, var(--r-warn) 16%, transparent); }
+html [class*="border-green-"], html [class*="border-blue-"] { border-color: var(--r-sel); }
+html [class*="border-red-"] { border-color: var(--r-warn); }
+html .bg-green-500, html .bg-green-600 { background: var(--r-sel); }
+html .bg-gray-500, html .bg-gray-600, html .bg-yellow-500 { background: var(--r-dim); }
+html .bg-red-500 { background: var(--r-warn); color: #fff; }
+html .border-card { border-color: var(--card); }
+html [class*="bg-black/"] [class*="text-red-"] { color: #ff9aa6; }
+
+/* ---- menus and the keyboard ------------------------------------------------------------- */
+
+html [data-slot="dropdown-menu-item"], html [data-slot="context-menu-item"], html [data-slot="select-item"] { border-radius: 0; }
+html [data-slot="dropdown-menu-item"][data-highlighted], html [data-slot="context-menu-item"][data-highlighted],
+html [data-slot="select-item"][data-highlighted], html [data-slot="command-item"][data-selected="true"] { background: var(--r-sel); color: var(--r-sel-ink); }
+html [data-slot="dropdown-menu-item"][data-highlighted] svg, html [data-slot="context-menu-item"][data-highlighted] svg,
+html [data-slot="select-item"][data-highlighted] svg, html [data-slot="command-item"][data-selected="true"] svg { color: var(--r-sel-ink); }
+html [data-slot$="menu-item"][data-variant="destructive"][data-highlighted] { background: var(--r-warn); color: #fff; }
+/* where the keyboard is: the old dotted line */
+html :focus-visible:not(input):not(textarea):not(.ProseMirror):not([data-slot="input"]):not([data-slot$="-item"]) { outline: 1px dotted var(--r-ink); outline-offset: 1px; }
+
+/* cards (settings, profiles): windows too */
+html [data-slot="card"] { border: 0; border-radius: 0; background: var(--r-face); box-shadow: var(--r-raised), 3px 3px 0 var(--r-drop); }
+
+/* menus, popovers and dialogs open in a few steps, like an old desktop drawing them */
+html [data-slot="popover-content"][data-state="open"], html [data-slot="dropdown-menu-content"][data-state="open"],
+html [data-slot="context-menu-content"][data-state="open"], html [data-slot="select-content"][data-state="open"],
+html [data-slot="dialog-content"][data-state="open"], html [data-slot="alert-dialog-content"][data-state="open"] {
+  animation: jb-open 160ms steps(3, jump-none) both;
+}
+@keyframes jb-open { from { opacity: 0; clip-path: inset(0 100% 100% 0); } to { opacity: 1; clip-path: inset(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  html .speaking-effect-medium, html .speaking-effect-high, html [data-state="open"] { animation: none; }
+}
+
+/* ---- scrollbars: the old kind, a pink check for the track ------------------------------- */
+
+html ::-webkit-scrollbar { width: 16px; height: 16px; }
+html ::-webkit-scrollbar-track { background: repeating-conic-gradient(var(--r-face) 0 25%, var(--r-mid) 0 50%) 0 0 / 2px 2px; }
+html ::-webkit-scrollbar-thumb { background: var(--r-face); border-radius: 0; box-shadow: var(--r-raised); }
+html ::-webkit-scrollbar-corner { background: var(--r-face); }
+html body { scrollbar-color: auto; }

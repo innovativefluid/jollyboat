@@ -19,8 +19,8 @@ declare global {
       wayland: boolean;
       lang: 'en' | 'de' | 'pl';
       /** the lcd look or the water look, as the page started; onLook for changes */
-      look: 'lcd' | 'water';
-      onLook: (cb: (look: 'lcd' | 'water') => void) => void;
+      look: 'lcd' | 'water' | 'retro';
+      onLook: (cb: (look: 'lcd' | 'water' | 'retro') => void) => void;
       getSettings: () => Promise<TSettings & { secureStorage: boolean; spellcheckAtStart: boolean }>;
       saveSettings: (patch: Partial<TSettings>) => Promise<TSettings>;
       listServers: () => Promise<TServerEntry[]>;

@@ -12,6 +12,7 @@ The tray has one set per theme, each from the theme's dark scheme (resources/tra
 - lcd       the Jollyboat theme: the pixel boat in the lcd's dark colours
 - sharkord  Sharkord itself (and custom css): the same pixel boat in Sharkord's dark greys, its
             green for talking and its red for a muted mic
+- retro     the Retro theme: the pixel boat in a dark purple window with a hot pink frame
 - water     the Water theme: a smooth glass tile of deep water with a glass boat on two waves,
             drawn at 8x and scaled down for every size (not pixel art)
 States: normal, voice (in a call: the sail hollow), talking (the sail lit / full of water),
@@ -97,6 +98,10 @@ PIXEL_SETS = {
                 cut=hexc('#ecf8ce'), dot=hexc('#ecf8ce'), ring=hexc('#18201c')),
     # sharkord's dark theme (neutral greys: card #171717, foreground #fafafa, muted #a1a1a1), the
     # green of its speaking glow and the red of its muted mic
+    # the retro look's dark scheme: a dark purple window with a hot pink frame, the sail pale pink
+    # at rest and hot pink while you talk, square corners like an old window
+    'retro': dict(bg=hexc('#2a1838'), ink=hexc('#ff8fcf'), hull=hexc('#8a3f86'), sail=hexc('#ffd6ee'), talk=hexc('#ff3fa4'),
+                  cut=hexc('#ffe066'), dot=hexc('#ffe066'), ring=hexc('#1c1029'), radius=2),
     'sharkord': dict(bg=hexc('#171717'), ink=hexc('#e5e5e5'), hull=hexc('#525252'), sail=hexc('#fafafa'), talk=hexc('#86efac'),
                      cut=hexc('#ef4444'), dot=hexc('#fafafa'), ring=hexc('#0a0a0a')),
 }
@@ -108,8 +113,9 @@ def tray_pixel(out, c):
     def fin():
         img = Image.new('RGBA', (32, 32), CLEAR)
         px = img.load()
-        rrect(px, 0, 0, 31, 31, 6, c['ink'])
-        rrect(px, 1, 1, 30, 30, 5, c['bg'])
+        r = c.get('radius', 6)
+        rrect(px, 0, 0, 31, 31, r, c['ink'])
+        rrect(px, 1, 1, 30, 30, max(0, r - 1), c['bg'])
         ink = {'#': c['ink'], 'g': c['hull'], 'w': c['sail']}
         rows = [r for r in (ROOT / 'build' / 'pixel' / 'tray-32.txt').read_text().split('\n') if r]
         for y, row in enumerate(rows):

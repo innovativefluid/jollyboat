@@ -1,4 +1,4 @@
-import type { TServerEntry, TServerInput, TUpdateStatus } from '../../shared/types';
+import type { TServerEntry, TServerInput, TSettings, TUpdateStatus } from '../../shared/types';
 import { bootTheme, hint, segment, toast } from '../theme/ui';
 import { t, translatePage } from '../i18n';
 
@@ -366,16 +366,22 @@ const renderSettings = async () => {
   // the server page's theme: Sharkord's own, the app's lcd look, the water look, or custom.css next
   // to the settings. the water theme also takes the app's own windows under water
   $('css-row').hidden = settings.theme !== 'custom';
-  segment(
-    $('theme-kind'),
-    [{ value: 'none' as const, label: 'Sharkord' }, { value: 'jollyboat' as const, label: 'Jollyboat' }, { value: 'water' as const, label: t('Water') }, { value: 'custom' as const, label: t('custom') }],
-    settings.theme,
-    (v) => {
-      $('css-row').hidden = v !== 'custom';
-      window.shell.saveSettings({ theme: v });
-      toast(t('saved'));
-    }
-  );
+  // a menu: the list grew past what a row of segments holds
+  const themeSelect = $<HTMLSelectElement>('theme-kind');
+  const themes: { value: TSettings['theme']; label: string }[] = [
+    { value: 'none', label: 'Sharkord' },
+    { value: 'jollyboat', label: 'Jollyboat' },
+    { value: 'water', label: t('Water') },
+    { value: 'retro', label: t('Retro') },
+    { value: 'custom', label: t('custom') }
+  ];
+  themeSelect.replaceChildren(...themes.map((o) => new Option(o.label, o.value, false, o.value === settings.theme)));
+  themeSelect.onchange = () => {
+    const v = themeSelect.value as TSettings['theme'];
+    $('css-row').hidden = v !== 'custom';
+    window.shell.saveSettings({ theme: v });
+    toast(t('saved'));
+  };
   $('css-edit').onclick = async () => { await window.shell.editCustomCss(); toast(t('opened in your editor')); };
   $('css-example').onclick = async () => { await window.shell.useCssExample(); toast(t('lcd theme in custom.css')); };
 

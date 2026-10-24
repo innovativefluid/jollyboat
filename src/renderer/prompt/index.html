@@ -6,12 +6,19 @@
     <title>Jollyboat</title>
     <link rel="stylesheet" href="../theme/theme.css" />
     <link rel="stylesheet" href="../theme/water.css" />
+    <link rel="stylesheet" href="../theme/retro.css" />
     <style>
       .page { padding: 14px 16px; justify-content: center; }
       .panel { gap: 8px; }
       .question { font: 600 20px/1.2 var(--px); }
       .detail { font: 500 15px/1.2 var(--body); color: var(--dim); }
       .buttons { display: flex; gap: 10px; margin-top: 6px; }
+      /* the retro look: an old message box, the app's name in its title bar */
+      [data-look='retro'] .panel::before {
+        content: '♥ Jollyboat'; display: flex; align-items: center; min-height: 24px; padding: 3px 6px; margin-bottom: -2px;
+        background: linear-gradient(90deg, var(--r-title-a), var(--r-title-b)); color: var(--r-title-ink);
+        font: 700 15px/1.2 var(--r-title-font); text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.25);
+      }
     </style>
   </head>
   <body>

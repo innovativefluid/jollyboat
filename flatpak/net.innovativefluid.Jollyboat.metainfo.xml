@@ -82,6 +82,11 @@
   </keywords>
 
   <releases>
+    <release version="0.3.11" date="2026-10-25">
+      <description>
+        <p>A new theme, Retro: a pink nineties desktop. The sidebars, the chat and the member list are windows with pink title bars on a pastel desktop (a deep purple one at night), with bevelled buttons, sunken fields, old scrollbars and pixel type; the app's own windows, the overlay and the tray icon match. The theme is now picked from a drop-down menu. The voice overlay is see-through around its card again.</p>
+      </description>
+    </release>
     <release version="0.3.10" date="2026-10-24">
       <description>
         <p>Sharing a server behind a proxy login: a share code without the proxy password now leads straight to the field for it (on import, on open, and when the proxy refuses the login) instead of only failing, and sharing says whether the proxy password went along ("include proxy password").</p>

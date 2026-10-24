@@ -23,7 +23,7 @@ document.addEventListener('click', (e) => {
   const r = chip.getBoundingClientRect();
   glassDom.poke(chip, e.clientX - r.left, e.clientY - r.top, 1);
 });
-const startWater = (look: 'lcd' | 'water') => {
+const startWater = (look: 'lcd' | 'water' | 'retro') => {
   water?.stop();
   waterCanvas?.remove();
   water = null;

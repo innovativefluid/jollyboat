@@ -4,6 +4,7 @@
 // process decides which kind of page this is from the frame URL.
 
 import { contextBridge, ipcRenderer, webFrame } from 'electron';
+import { LOOKS, type TLook } from '../shared/types';
 import type { TOverlayState, TPickerResult, TServerInput, TSettings, TUpdateStatus, TVoiceMember, TVoiceReport } from '../shared/types';
 import { startPageWater } from './water';
 
@@ -20,7 +21,7 @@ type TBootstrap = {
   login: { token: string | null } | null;
   colorMode: 'auto' | 'dark' | 'light';
   /** the app's own windows: the lcd look or the water look */
-  look: 'lcd' | 'water';
+  look: TLook;
   /** a saved server page with the water theme: the water runs behind it */
   water: boolean;
   /** tests: the water even on a software renderer */
@@ -50,9 +51,9 @@ if (boot.ownPage) {
     const watcher = new MutationObserver(() => markLook(boot.look) && watcher.disconnect());
     watcher.observe(document, { childList: true });
   }
-  const lookListeners: ((look: 'lcd' | 'water') => void)[] = [];
-  ipcRenderer.on('shell:look', (_e, look: 'lcd' | 'water') => {
-    if (look !== 'lcd' && look !== 'water') return;
+  const lookListeners: ((look: TLook) => void)[] = [];
+  ipcRenderer.on('shell:look', (_e, look: TLook) => {
+    if (!LOOKS.includes(look)) return;
     markLook(look);
     for (const cb of lookListeners) cb(look);
   });
@@ -66,7 +67,7 @@ if (boot.ownPage) {
     wayland: boot.wayland,
     lang: boot.lang,
     look: boot.look,
-    onLook: (cb: (look: 'lcd' | 'water') => void) => {
+    onLook: (cb: (look: TLook) => void) => {
       lookListeners.push(cb);
     }
   };

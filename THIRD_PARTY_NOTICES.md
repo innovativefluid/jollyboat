@@ -16,6 +16,7 @@ Jollyboat is MIT licensed (`LICENSE`). It ships with the following third-party w
 | [Jersey 10](https://github.com/scfried/soft-type-jersey) | SIL OFL 1.1 (`src/renderer/fonts/OFL-Jersey10.txt`) | counter typeface |
 | [Fredoka](https://github.com/hafontia-zz/Fredoka) | SIL OFL 1.1 (`src/renderer/fonts/OFL-Fredoka.txt`) | body typeface |
 | [Nunito](https://github.com/googlefonts/nunito) | SIL OFL 1.1 (`src/renderer/fonts/OFL-Nunito.txt`) | typeface of the Water theme (Latin and Latin Extended subset) |
+| [DotGothic16](https://github.com/fontworks-fonts/DotGothic16) | SIL OFL 1.1 (`src/renderer/fonts/OFL-DotGothic16.txt`) | typeface of the Retro theme (Latin subset) |
 
 ## Protocols and services
 

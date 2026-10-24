@@ -6,6 +6,7 @@
     <title>Jollyboat</title>
     <link rel="stylesheet" href="../theme/theme.css" />
     <link rel="stylesheet" href="../theme/water.css" />
+    <link rel="stylesheet" href="../theme/retro.css" />
     <style>
       /* the bar above a server: the lcd look (dark tokens in theme.css), dark when the sharkord
          page below is (data-theme), else with the colour mode */
@@ -86,6 +87,28 @@
       [data-look='water'] .controls button:hover { background: rgba(var(--w-glow), 0.18); color: rgb(var(--w-fg)); }
       [data-look='water'] .controls button#close:hover { background: rgb(var(--w-warm)); color: #fff; }
       [data-look='water'] .controls svg { shape-rendering: auto; }
+
+      /* the retro look: the bar is an old window's title bar, pink into lilac; the chips small
+         raised buttons (the way to the settings hot pink), the window buttons square ones */
+      :root[data-look='retro'] body { background: linear-gradient(90deg, var(--r-title-a), var(--r-title-b)); border-bottom: 2px solid var(--r-dark); }
+      [data-look='retro'] .bar { padding-left: 8px; }
+      [data-look='retro'] .name { font: 700 15px/1 var(--r-title-font); color: var(--r-title-ink); text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3); }
+      [data-look='retro'] .name .app { color: var(--r-title-ink); opacity: 0.85; font-weight: 400; }
+      [data-look='retro'] .chip {
+        height: 22px; padding: 0 9px; border: 0; border-radius: 0; font: 400 13px/1 var(--r-font);
+        background: var(--r-face); color: var(--r-ink); box-shadow: var(--r-raised);
+      }
+      [data-look='retro'] .chip:hover { border-color: transparent; filter: brightness(1.04); }
+      [data-look='retro'] .chip:active { transform: none; box-shadow: var(--r-pressed); padding: 2px 8px 0 10px; }
+      [data-look='retro'] .chip.fill { background: var(--r-accent); color: #fff; text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3); box-shadow: inset -1px -1px var(--r-dark), inset 1px 1px var(--r-accent-hi), inset -2px -2px rgba(0, 0, 0, 0.25), inset 2px 2px rgba(255, 255, 255, 0.25); }
+      [data-look='retro'] .zoom span { font: 400 13px/1 var(--r-font); color: var(--r-title-ink); }
+      [data-look='retro'] .controls { border-left: 0; gap: 2px; align-items: center; padding: 0 6px; }
+      [data-look='retro'] .controls button { width: 22px; height: 20px; background: var(--r-face); color: var(--r-ink); box-shadow: var(--r-raised); }
+      [data-look='retro'] .controls button:hover { background: var(--r-face); color: var(--r-ink); filter: brightness(1.05); }
+      [data-look='retro'] .controls button:active { box-shadow: var(--r-pressed); }
+      [data-look='retro'] .controls button#close { margin-left: 2px; }
+      [data-look='retro'] .controls button#close:hover { background: var(--r-face); color: var(--r-accent); }
+      [data-look='retro'] .controls svg { width: 10px; height: 10px; }
     </style>
   </head>
   <body>

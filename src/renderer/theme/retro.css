@@ -1,0 +1,277 @@
+/* the retro look of the app's own pages: an old desktop in pink. every panel is a window with a
+   pink title bar and three little window buttons, controls are bevelled like a nineties
+   desktop, fields are sunken, the type is pixel type. on while <html data-look="retro">; pastel
+   pink (light) or night purple (dark) with the colour mode, or with the server page's
+   data-theme in the bar and the overlay. the desktop behind is drawn by retro.ts.
+
+   bevels are four inset lines (the classic way): light and mid on the top left, dark and shadow
+   on the bottom right for a raised part, the other way round for a sunken one. */
+
+@font-face { font-family: 'DotGothic16'; src: url('../fonts/DotGothic16.ttf') format('truetype'); }
+
+:root[data-look='retro'] {
+  --r-font: 'DotGothic16', 'Pixelify Sans', ui-monospace, monospace;
+  --r-title-font: 'Pixelify Sans', 'DotGothic16', ui-monospace, monospace;
+  /* pastel: a pink desktop, pale pink windows, pink to lilac title bars */
+  --r-desk: #f9c9e4; --r-desk2: #dcc4ff; --r-check: rgba(255, 255, 255, 0.2);
+  --r-dot-a: #ffffff; --r-dot-b: #ff8cc6; --r-dot-c: #a98bff;
+  --r-face: #ffe9f4; --r-light: #ffffff; --r-mid: #ffd3e9; --r-shadow: #d58fb6; --r-dark: #6e2d5c;
+  --r-ink: #3a1530; --r-dim: #7a4568; --r-mute: #a87a96;
+  --r-title-a: #ff5fae; --r-title-b: #a77bff; --r-title-ink: #ffffff; --r-title-off: #cfa6c2;
+  --r-sel: #e8338d; --r-sel-ink: #ffffff; --r-field: #ffffff; --r-accent: #d6337f; --r-accent-hi: #ff8cc6; --r-warn: #c4223d;
+  --r-drop: rgba(110, 45, 92, 0.32);
+  /* the lcd tokens and fonts, for the bits of the pages that use them directly */
+  --px: var(--r-title-font); --body: var(--r-font); --cnt: var(--r-font);
+  --bg: var(--r-face); --panel: var(--r-face); --fg: var(--r-ink); --dim: var(--r-dim); --mute: var(--r-mute);
+  --faint: var(--r-mid); --line: var(--r-shadow); --spark: #ffffff;
+  --fg-rgb: 58, 21, 48; --dim-rgb: 122, 69, 104; --shadow: var(--r-drop); --shadow-dim: var(--r-drop);
+  color-scheme: light;
+}
+/* night: a deep purple desktop, plum windows, hot pink to violet title bars */
+:root[data-look='retro'][data-theme='dark'] {
+  --r-desk: #1c1029; --r-desk2: #2e1247; --r-check: rgba(255, 143, 207, 0.05);
+  --r-dot-a: #ffd6ee; --r-dot-b: #ff4fa3; --r-dot-c: #8f6bff;
+  --r-face: #2d1b3d; --r-light: #6a4688; --r-mid: #43295a; --r-shadow: #170c22; --r-dark: #07030b;
+  --r-ink: #ffe3f3; --r-dim: #d9aacb; --r-mute: #a77f9c;
+  --r-title-a: #ff3fa4; --r-title-b: #6f45f0; --r-title-ink: #ffffff; --r-title-off: #5a4068;
+  --r-sel: #ff3fa4; --r-sel-ink: #ffffff; --r-field: #1a0f24; --r-accent: #d42a83; --r-accent-hi: #ff8fcf; --r-warn: #ff6f8a;
+  --r-drop: rgba(0, 0, 0, 0.45);
+  --spark: #ffe3f3; --fg-rgb: 255, 227, 243; --dim-rgb: 217, 170, 203;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='retro']:not([data-theme]) {
+    --r-desk: #1c1029; --r-desk2: #2e1247; --r-check: rgba(255, 143, 207, 0.05);
+    --r-dot-a: #ffd6ee; --r-dot-b: #ff4fa3; --r-dot-c: #8f6bff;
+    --r-face: #2d1b3d; --r-light: #6a4688; --r-mid: #43295a; --r-shadow: #170c22; --r-dark: #07030b;
+    --r-ink: #ffe3f3; --r-dim: #d9aacb; --r-mute: #a77f9c;
+    --r-title-a: #ff3fa4; --r-title-b: #6f45f0; --r-title-ink: #ffffff; --r-title-off: #5a4068;
+    --r-sel: #ff3fa4; --r-sel-ink: #ffffff; --r-field: #1a0f24; --r-accent: #d42a83; --r-accent-hi: #ff8fcf; --r-warn: #ff6f8a;
+    --r-drop: rgba(0, 0, 0, 0.45);
+    --spark: #ffe3f3; --fg-rgb: 255, 227, 243; --dim-rgb: 217, 170, 203;
+    color-scheme: dark;
+  }
+}
+:root[data-look='retro'] {
+  --r-raised: inset -1px -1px var(--r-dark), inset 1px 1px var(--r-light), inset -2px -2px var(--r-shadow), inset 2px 2px var(--r-mid);
+  --r-sunken: inset 1px 1px var(--r-shadow), inset -1px -1px var(--r-light), inset 2px 2px var(--r-dark), inset -2px -2px var(--r-mid);
+  --r-pressed: inset 1px 1px var(--r-dark), inset -1px -1px var(--r-light), inset 2px 2px var(--r-shadow), inset -2px -2px var(--r-mid);
+  /* the three window buttons in a title bar, drawn once (14 × 12 each, 2 apart) */
+  --r-winbtns: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='12' shape-rendering='crispEdges'%3E%3Cg%3E%3Crect width='14' height='12' fill='%23ffe9f4'/%3E%3Cpath d='M0 0h14v1H1v11H0z' fill='%23fff'/%3E%3Cpath d='M13 1h1v11H0v-1h13z' fill='%236e2d5c'/%3E%3Crect x='4' y='8' width='6' height='2' fill='%233a1530'/%3E%3C/g%3E%3Cg transform='translate(16)'%3E%3Crect width='14' height='12' fill='%23ffe9f4'/%3E%3Cpath d='M0 0h14v1H1v11H0z' fill='%23fff'/%3E%3Cpath d='M13 1h1v11H0v-1h13z' fill='%236e2d5c'/%3E%3Cpath d='M3 2h8v8H3z M4 4v5h6V4z' fill='%233a1530' fill-rule='evenodd'/%3E%3C/g%3E%3Cg transform='translate(32)'%3E%3Crect width='14' height='12' fill='%23ffe9f4'/%3E%3Cpath d='M0 0h14v1H1v11H0z' fill='%23fff'/%3E%3Cpath d='M13 1h1v11H0v-1h13z' fill='%236e2d5c'/%3E%3Cpath d='M4 3h2v1h1v1h-1v-1H4z M8 3h2v1H9v1H8V4h0z M6 5h2v2H6z M5 7h1v1H5z M8 7h1v1H8z M4 8h2v1H4z M8 8h2v1H8z' fill='%233a1530'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ---- the page ---------------------------------------------------------------------------- */
+
+[data-look='retro'] body { background: var(--r-desk); color: var(--r-ink); font: 400 15px/1.25 var(--r-font); }
+[data-look='retro'] ::selection { background: var(--r-sel); color: var(--r-sel-ink); }
+canvas.desk { position: fixed; left: 0; top: 0; z-index: 0; image-rendering: pixelated; }
+[data-look='retro'] .page { padding: 12px 22px 10px; }
+[data-look='retro'] .page.enter { animation: r-page-in 300ms steps(3, end) both; }
+@keyframes r-page-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* the title: big pixel letters in hot pink, outlined in white, a lilac shadow under them */
+[data-look='retro'] .title {
+  font: 700 38px/1 var(--r-title-font);
+  color: var(--r-accent-hi);
+  letter-spacing: 1px;
+  text-shadow: 2px 0 var(--r-light), -2px 0 var(--r-light), 0 2px var(--r-light), 0 -2px var(--r-light), 2px 2px var(--r-light), -2px -2px var(--r-light), 2px -2px var(--r-light), -2px 2px var(--r-light), 5px 5px 0 var(--r-title-b);
+}
+[data-look='retro'][data-theme='dark'] .title { color: var(--r-title-a); text-shadow: 2px 0 var(--r-ink), -2px 0 var(--r-ink), 0 2px var(--r-ink), 0 -2px var(--r-ink), 2px 2px var(--r-ink), -2px -2px var(--r-ink), 2px -2px var(--r-ink), -2px 2px var(--r-ink), 5px 5px 0 var(--r-title-b); }
+@media (prefers-color-scheme: dark) { [data-look='retro']:not([data-theme]) .title { color: var(--r-title-a); text-shadow: 2px 0 var(--r-ink), -2px 0 var(--r-ink), 0 2px var(--r-ink), 0 -2px var(--r-ink), 2px 2px var(--r-ink), -2px -2px var(--r-ink), 2px -2px var(--r-ink), -2px 2px var(--r-ink), 5px 5px 0 var(--r-title-b); } }
+[data-look='retro'] .title::before { content: none; }
+[data-look='retro'] .title-block { gap: 8px; }
+[data-look='retro'] canvas.strip { height: 12px; image-rendering: pixelated; }
+
+/* ---- windows: every panel, its first title a title bar -------------------------------------- */
+
+[data-look='retro'] .panel {
+  background: var(--r-face);
+  border: 0;
+  border-radius: 0;
+  padding: 3px 3px 12px;
+  gap: 5px;
+  box-shadow: var(--r-raised), 5px 5px 0 var(--r-drop);
+  animation: none;
+}
+[data-look='retro'] .panel.enter, [data-look='retro'] .panel.enter.alt { animation: r-window-in 240ms steps(4, end) both; }
+@keyframes r-window-in { from { opacity: 0; transform: translate(-6px, 6px); } to { opacity: 1; transform: none; } }
+/* the panel's words sit inside its frame */
+[data-look='retro'] .panel > * { margin-left: 12px; margin-right: 12px; }
+/* a title bar: the panel's own title, or the row it shares with a button (the editor, the picker) */
+[data-look='retro'] .panel > .panel-title:first-child,
+[data-look='retro'] .panel > .row:first-child:has(> .panel-title) {
+  margin: 0 0 6px;
+  min-height: 24px;
+  padding: 3px 4px 3px 6px;
+  background: linear-gradient(90deg, var(--r-title-a), var(--r-title-b));
+  color: var(--r-title-ink);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+[data-look='retro'] .panel-title { font: 700 15px/1.2 var(--r-title-font); letter-spacing: 0.3px; }
+[data-look='retro'] .panel > .panel-title:first-child::before,
+[data-look='retro'] .panel > .row:first-child > .panel-title::before { content: '♥'; color: var(--r-title-ink); font-family: var(--r-font); margin-right: 6px; }
+[data-look='retro'] .panel > .panel-title:first-child { text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.25); }
+[data-look='retro'] .panel > .row:first-child > .panel-title { color: var(--r-title-ink); text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.25); }
+/* the three window buttons, for show, at the end of a plain title bar */
+[data-look='retro'] .panel > .panel-title:first-child::after { content: ''; margin-left: auto; width: 46px; height: 12px; flex: none; background: var(--r-winbtns); }
+/* a title further down: a group label with a line, the old way */
+[data-look='retro'] .panel-title:not(:first-child) { display: flex; align-items: center; gap: 8px; color: var(--r-ink); }
+[data-look='retro'] .panel-title:not(:first-child)::before { content: '★'; color: var(--r-accent); }
+[data-look='retro'] .panel-title:not(:first-child)::after { content: ''; flex: 1; height: 0; border-top: 1px solid var(--r-shadow); border-bottom: 1px solid var(--r-light); }
+
+/* ---- buttons: raised, square, pixel type; the main ones hot pink -------------------------- */
+
+[data-look='retro'] :is(.pill, .seg button) {
+  height: 30px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 0;
+  background: var(--r-face);
+  color: var(--r-ink);
+  font: 400 15px/1 var(--r-font);
+  box-shadow: var(--r-raised);
+  transition: none;
+}
+[data-look='retro'] .pill:not(.minor) {
+  background: var(--r-accent);
+  color: #fff;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+  box-shadow: inset -1px -1px var(--r-dark), inset 1px 1px var(--r-accent-hi), inset -2px -2px rgba(0, 0, 0, 0.25), inset 2px 2px rgba(255, 255, 255, 0.25), 0 0 0 1px var(--r-dark);
+}
+[data-look='retro'] .pill.small { height: 26px; padding: 0 11px; font-size: 14px; }
+[data-look='retro'] :is(.pill, .seg button):hover:not(:disabled) { filter: brightness(1.04); }
+[data-look='retro'] :is(.pill, .seg button):active:not(:disabled) { box-shadow: var(--r-pressed); transform: none; padding-top: 2px; padding-left: 16px; padding-right: 12px; }
+[data-look='retro'] .pill:not(.minor):active:not(:disabled) { box-shadow: inset 1px 1px var(--r-dark), inset 2px 2px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--r-dark); }
+[data-look='retro'] :is(.pill, .seg button):disabled { color: var(--r-mute); text-shadow: 1px 1px 0 var(--r-light); opacity: 1; }
+[data-look='retro'] :is(.pill, .seg button):focus-visible { outline: 1px dotted var(--r-ink); outline-offset: -5px; }
+/* a row of toggles: the chosen one stays pressed in, on a pink check like an old toolbar */
+[data-look='retro'] .seg { gap: 0; flex-wrap: wrap; }
+[data-look='retro'] .seg button { height: 26px; padding: 0 12px; font-size: 14px; color: var(--r-ink); }
+[data-look='retro'] .seg button.on {
+  box-shadow: var(--r-pressed);
+  background: repeating-conic-gradient(var(--r-face) 0 25%, var(--r-mid) 0 50%) 0 0 / 2px 2px;
+  padding-top: 2px;
+  color: var(--r-accent);
+  font-weight: 700;
+}
+[data-look='retro'][data-theme='dark'] .seg button.on { color: var(--r-accent-hi); }
+@media (prefers-color-scheme: dark) { [data-look='retro']:not([data-theme]) .seg button.on { color: var(--r-accent-hi); } }
+
+/* ---- fields: sunken and white ----------------------------------------------------------- */
+
+[data-look='retro'] :is(input[type='text'], input[type='password'], input[type='url'], select) {
+  height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 0;
+  background: var(--r-field);
+  color: var(--r-ink);
+  box-shadow: var(--r-sunken);
+  font: 400 15px/1 var(--r-font);
+}
+[data-look='retro'] input:focus { box-shadow: var(--r-sunken), 0 0 0 1px var(--r-sel); }
+[data-look='retro'] input::placeholder { color: var(--r-mute); }
+[data-look='retro'] input:-webkit-autofill { -webkit-text-fill-color: var(--r-ink); box-shadow: var(--r-sunken), 0 0 0 100px var(--r-field) inset; }
+[data-look='retro'] .field > label { font: 400 13px/30px var(--r-font); color: var(--r-dim); }
+[data-look='retro'] .field > .control .note { font: 400 13px/1.25 var(--r-font); color: var(--r-dim); }
+
+/* ---- checks: a sunken white box, a pixel tick ------------------------------------------- */
+
+[data-look='retro'] .check { font: 400 15px/1.25 var(--r-font); color: var(--r-ink); }
+[data-look='retro'] .check input { width: 16px; height: 16px; border: 0; border-radius: 0; background: var(--r-field); box-shadow: var(--r-sunken); }
+[data-look='retro'] .check input:checked {
+  background: var(--r-field) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' shape-rendering='crispEdges'%3E%3Cpath d='M11 4h1v1h-1zM12 4h1v1h-1zM10 5h1v1h-1zM11 5h1v1h-1zM12 5h1v1h-1zM9 6h1v1h-1zM10 6h1v1h-1zM11 6h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM8 7h1v1h-1zM9 7h1v1h-1zM10 7h1v1h-1zM3 8h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM9 8h1v1h-1zM4 9h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM7 10h1v1h-1zM6 11h1v1h-1z' fill='%23e8338d'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
+  box-shadow: var(--r-sunken);
+}
+[data-look='retro'] .check input:focus-visible { outline: 1px dotted var(--r-ink); outline-offset: 2px; }
+
+/* ---- the slider: a sunken groove and a raised block ------------------------------------ */
+
+[data-look='retro'] .slider { height: 22px; }
+[data-look='retro'] .slider::-webkit-slider-runnable-track {
+  height: 6px; border: 0; border-radius: 0; box-shadow: var(--r-sunken);
+  background: linear-gradient(to right, var(--r-sel) var(--fill, 50%), var(--r-field) var(--fill, 50%));
+}
+[data-look='retro'] .slider::-webkit-slider-thumb {
+  appearance: none; width: 12px; height: 22px; margin-top: -8px; border: 0; border-radius: 0;
+  background: var(--r-face); box-shadow: var(--r-raised);
+}
+[data-look='retro'] .slider:focus-visible { outline: 1px dotted var(--r-ink); outline-offset: 2px; }
+
+/* ---- words ------------------------------------------------------------------------------- */
+
+[data-look='retro'] .hint { font: 400 14px/1.25 var(--r-font); color: var(--r-dim); }
+[data-look='retro'] .hint.good, [data-look='retro'] .hint.bad { color: var(--r-ink); }
+[data-look='retro'] .hint.good::before { content: '♥ '; color: var(--r-accent); }
+[data-look='retro'] .hint.bad::before { content: '! '; color: var(--r-warn); }
+[data-look='retro'] .meta { font: 400 14px/1.25 var(--r-font); color: var(--r-dim); }
+[data-look='retro'] button.link { color: var(--r-accent); font: inherit; }
+[data-look='retro'][data-theme='dark'] button.link { color: var(--r-accent-hi); }
+@media (prefers-color-scheme: dark) { [data-look='retro']:not([data-theme]) button.link { color: var(--r-accent-hi); } }
+/* list rows: a dotted line between; the open one picked out like a selected file */
+[data-look='retro'] .item { border-bottom: 1px dotted var(--r-shadow); padding: 7px 6px; gap: 10px; }
+[data-look='retro'] .item:last-child { border-bottom: 0; }
+[data-look='retro'] .item .name { font: 700 16px/1.2 var(--r-title-font); }
+[data-look='retro'] .item.on { background: var(--r-sel); color: var(--r-sel-ink); }
+[data-look='retro'] .item.on .meta, [data-look='retro'] .item.on .name::before { color: var(--r-sel-ink); }
+[data-look='retro'] .item.on .name::before { content: '▸ '; }
+/* scrollbars: the old kind, with a pink check for the track */
+[data-look='retro'] .col::-webkit-scrollbar, [data-look='retro'] .grid::-webkit-scrollbar { width: 16px; }
+[data-look='retro'] .col::-webkit-scrollbar-track { background: repeating-conic-gradient(var(--r-face) 0 25%, var(--r-mid) 0 50%) 0 0 / 2px 2px; }
+[data-look='retro'] .col::-webkit-scrollbar-thumb { background: var(--r-face); border-radius: 0; box-shadow: var(--r-raised); }
+
+/* the footer: a status bar */
+[data-look='retro'] .footer {
+  align-self: stretch;
+  padding: 3px 8px;
+  background: var(--r-face);
+  box-shadow: var(--r-raised);
+  font: 400 13px/1.3 var(--r-font);
+}
+[data-look='retro'] .footer > span:first-child { box-shadow: var(--r-sunken); padding: 1px 6px; }
+
+/* the toast: a little notification window that pops in at the top */
+[data-look='retro'] .toast {
+  height: auto;
+  padding: 0 12px 0 0;
+  border-radius: 0;
+  background: var(--r-face);
+  color: var(--r-ink);
+  font: 400 15px/30px var(--r-font);
+  box-shadow: var(--r-raised), 4px 4px 0 var(--r-drop);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: opacity 120ms steps(2, end);
+}
+[data-look='retro'] .toast::before { content: '♥'; display: block; width: 30px; text-align: center; color: var(--r-title-ink); background: linear-gradient(var(--r-title-a), var(--r-title-b)); align-self: stretch; }
+
+/* the setup window's server dots: little lamps */
+[data-look='retro'] .dot { width: 12px; height: 12px; border: 0; border-radius: 0; box-shadow: var(--r-sunken); background: var(--r-field); }
+[data-look='retro'] .dot.ok { background: var(--r-sel); box-shadow: inset 1px 1px rgba(255, 255, 255, 0.6), inset -1px -1px var(--r-dark); }
+[data-look='retro'] .dot.bad::after { background: var(--r-warn); left: 1px; top: 5px; }
+
+/* the screen picker's sources: raised tiles, the chosen one pressed with a pink frame */
+[data-look='retro'] .source { background: var(--r-face); border: 0; border-radius: 0; box-shadow: var(--r-raised); color: var(--r-ink); }
+[data-look='retro'] .source.on { box-shadow: var(--r-pressed), 0 0 0 2px var(--r-sel); }
+[data-look='retro'] .source img.thumb { border-radius: 0; background: var(--r-field); box-shadow: var(--r-sunken); }
+[data-look='retro'] .source .label { font: 400 13px/1.2 var(--r-font); }
+
+/* the theme menu: a sunken box with a raised arrow button; its list a plain window */
+[data-look='retro'] select { padding-right: 28px; }
+[data-look='retro'] select::picker-icon {
+  content: '▼'; display: grid; place-items: center; width: 18px; height: 24px; margin-right: -25px; margin-left: auto;
+  font: 400 8px/1 var(--r-font); color: var(--r-ink); background: var(--r-face); box-shadow: var(--r-raised);
+}
+[data-look='retro'] select::picker(select) { border: 0; border-radius: 0; padding: 2px; background: var(--r-field); box-shadow: inset -1px -1px var(--r-dark), inset 1px 1px var(--r-light), 3px 3px 0 var(--r-drop); }
+[data-look='retro'] select option { font: 400 15px/1 var(--r-font); padding: 5px 10px; color: var(--r-ink); }
+[data-look='retro'] select option:hover, [data-look='retro'] select option:focus-visible { background: var(--r-sel); color: var(--r-sel-ink); outline: none; }
+[data-look='retro'] select option:checked { font-weight: 700; }
+[data-look='retro'] select option::checkmark { content: '♥'; color: var(--r-accent); }
+[data-look='retro'] select option:hover::checkmark, [data-look='retro'] select option:focus-visible::checkmark { color: var(--r-sel-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-look='retro'] .panel.enter, [data-look='retro'] .page.enter { animation: none; }
+}
