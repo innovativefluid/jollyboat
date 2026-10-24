@@ -2,11 +2,15 @@
 
 # Jollyboat
 
-A desktop app for [Sharkord](https://sharkord.com) servers, for Windows and Linux on x64 and ARM (macOS experimental). Not affiliated with Sharkord.
+A desktop app for [Sharkord](https://sharkord.com) servers, for Windows and Linux on x64 and ARM (macOS experimental). It loads your server's own web app and adds what a browser tab can't: screen sharing with sound, global hotkeys, a tray, a voice overlay and themes. Not affiliated with Sharkord.
 
-![Sharkord in Jollyboat, both in dark mode: the Jollyboat theme on the left, Sharkord's own look on the right](docs/sharkord-theme.png)
+![The same Sharkord server in Jollyboat, both in dark mode: the Jollyboat theme on the left, Sharkord's own look on the right](docs/jollyboat-theme.png)
 
-<sub>The same server in both themes: Jollyboat's lcd look on the left, Sharkord's own on the right.</sub>
+<sub>The Jollyboat theme (left) and Sharkord's own look (right), both dark.</sub>
+
+![The same server in the Water theme: light on the left, dark on the right](docs/water-theme.png)
+
+<sub>The Water theme, light (left) and dark (right).</sub>
 
 ## What it adds
 
@@ -18,15 +22,23 @@ A desktop app for [Sharkord](https://sharkord.com) servers, for Windows and Linu
 - **Careful in calls** — asks before a reload or quit would drop you out of a call.
 
 **Around it**
-- **Tray** — shows when you are in voice, talking, muted, deafened, and new messages, in the look of the theme you picked (Sharkord, Jollyboat or Water). Closing the window minimizes, hides to the tray or quits.
+- **Tray** — shows when you are in voice, talking, muted or deafened, and when there are new messages; its icon matches your theme. Closing the window minimizes, hides to the tray or quits.
 - **Servers** — several, with proxy logins (basic auth), staying logged in, one that opens at start, and share codes to pass them on.
 - **One bar on top** — server name, zoom (50 to 300 %, the bar grows with it), servers and settings, window buttons.
 - **Light, dark or auto** — for everything: the Sharkord page, its bar, the overlay and the setup window.
-- **Themes** — Sharkord as it is, the **Jollyboat** theme (above, with the setup window's pixel type, pill buttons and a few stepped animations), **Water** (white and blue water under glass, the setup window and the bar included: live water with caustics, ripples and air bubbles under refracting, frosted glass, bubble buttons, a glass boat on liquid waves; Sharkord's parts float on it as glass panels the water shows through, the channel you are on a pill of water), or your own CSS.
 - **Languages** — English, German and Polish.
 - **Private** — talks to your servers, plus GitHub for update checks (one switch to turn off). No telemetry. On Windows, push-to-talk uses a keyboard hook while a hotkey is set: keys are compared with your hotkeys and never stored or sent.
 
-![servers and settings](docs/launcher.png)
+## Themes
+
+Pick one under **servers and settings**. The app's own windows (the bar above the page, the setup window, the overlay) follow along, in the lcd look or, with Water, in glass; each theme has its own tray icon.
+
+- **Sharkord** — Sharkord as it is.
+- **Jollyboat** — an lcd look: pixel type for headings, pill buttons, presence you can tell apart at a glance, a few stepped animations.
+- **Water** — white and blue water under glass. Live water with caustics, ripples and air bubbles runs behind everything; the sidebars, the chat and the bar are frosted glass panels floating on it, the buttons glass bubbles, the channel you are on a pill of water that fills as you pick it. Sent messages drop into the water, and whoever talks sends rings across it. It runs at 60 frames a second while the window is in front and 30 behind; without hardware graphics it keeps a lighter version drawn in CSS.
+- **Custom** — your own CSS for the Sharkord page, read again whenever the file changes.
+
+![The setup window: servers, app settings and privacy](docs/launcher.png)
 
 ## Install
 
@@ -58,6 +70,7 @@ npm run dist:win     # on Windows: the installer and both portable exes
 npm run dist:linux   # the unpacked app; the flatpak is built from source:
                      # flatpak-builder --user --install build-dir flatpak/net.innovativefluid.Jollyboat.yml
 npm run dist:mac     # on a mac (experimental)
+python3 tools/make-icons.py   # the app and tray icons, from build/pixel/ (needs Pillow)
 ```
 
 MIT — see [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
