@@ -30,7 +30,7 @@ html .light {
   --secondary: #d9ebf8;
   --secondary-foreground: #0a2f52;
   --muted: #dceaf6;
-  --muted-foreground: #335c7c;
+  --muted-foreground: #2b5170;
   --accent: #d3e7f7;
   --accent-foreground: #0a2f52;
   --destructive: #b2344a;
@@ -48,7 +48,7 @@ html .light {
   /* the aqua tokens as rgb triplets (design_handoff_aqua.md §3) */
   --w-pool-top: 232, 246, 255; --w-pool-mid: 159, 216, 246; --w-pool-bot: 47, 136, 216;
   --w-light: 255, 255, 255; --w-light-a: 0.8;
-  --w-fg: 10, 47, 82; --w-dim: 51, 92, 124; --w-mute: 120, 152, 178;
+  --w-fg: 10, 47, 82; --w-dim: 43, 81, 112; --w-mute: 120, 152, 178;
   --w-glass: 242, 249, 255; --w-glass-a: 0.54;
   --w-well: 255, 255, 255; --w-well-a: 0.62;
   --w-btn: 255, 255, 255; --w-btn-a: 0.34;
@@ -69,44 +69,44 @@ html .light {
 
 html.dark,
 html .dark {
-  --background: #0b2541;
+  --background: #081d34;
   --foreground: #e4f5ff;
-  --card: #0d2a46;
+  --card: #0a2138;
   --card-foreground: #e4f5ff;
-  --popover: rgba(12, 38, 64, 0.9);
+  --popover: rgba(9, 30, 52, 0.92);
   --popover-foreground: #e4f5ff;
   --primary: #4fcfff;
   --primary-foreground: #03244f;
-  --secondary: #143a60;
+  --secondary: #102f4f;
   --secondary-foreground: #e4f5ff;
-  --muted: #123556;
+  --muted: #0e2b47;
   --muted-foreground: #9cc5e2;
-  --accent: #173f66;
+  --accent: #133456;
   --accent-foreground: #e4f5ff;
   --destructive: #ff8c96;
   --border: rgba(143, 216, 255, 0.22);
   --input: rgba(143, 216, 255, 0.3);
   --ring: rgba(63, 212, 255, 0.8);
-  --sidebar: #0d2a46;
+  --sidebar: #0a2138;
   --sidebar-foreground: #e4f5ff;
   --sidebar-primary: #4fcfff;
   --sidebar-primary-foreground: #03244f;
-  --sidebar-accent: #173f66;
+  --sidebar-accent: #133456;
   --sidebar-accent-foreground: #e4f5ff;
   --sidebar-border: rgba(143, 216, 255, 0.22);
   --sidebar-ring: rgba(63, 212, 255, 0.8);
-  --w-pool-top: 15, 65, 108; --w-pool-mid: 8, 42, 76; --w-pool-bot: 2, 12, 26;
-  --w-light: 134, 226, 255; --w-light-a: 0.55;
+  --w-pool-top: 11, 51, 88; --w-pool-mid: 6, 32, 60; --w-pool-bot: 1, 8, 18;
+  --w-light: 134, 226, 255; --w-light-a: 0.5;
   --w-fg: 228, 245, 255; --w-dim: 156, 197, 226; --w-mute: 105, 144, 174;
-  --w-glass: 13, 42, 70; --w-glass-a: 0.64;
-  --w-well: 7, 26, 46; --w-well-a: 0.66;
-  --w-btn: 20, 64, 106; --w-btn-a: 0.42;
+  --w-glass: 10, 33, 56; --w-glass-a: 0.66;
+  --w-well: 5, 20, 37; --w-well-a: 0.7;
+  --w-btn: 16, 52, 88; --w-btn-a: 0.44;
   --w-edge: 143, 216, 255; --w-edge-a: 0.34;
   --w-liq-a: 79, 207, 255; --w-liq-b: 10, 72, 166;
   --w-on-liq-shade: 3, 36, 79;
-  --w-shade: 0, 6, 15; --w-shade-a: 0.55;
+  --w-shade: 0, 5, 12; --w-shade-a: 0.6;
   --w-glow: 63, 212, 255; --w-glow-a: 0.8;
-  --w-text-glow: 10, 58, 102; --w-text-glow-a: 0.6;
+  --w-text-glow: 4, 26, 48; --w-text-glow-a: 0.7;
   --w-warm: 255, 140, 150;
   --w-good: 79, 207, 255;
   --w-side-a: 0.84; --w-main-a: 0.74; --w-bar-a: 0.78;
@@ -273,6 +273,10 @@ html input:focus-visible, html textarea:focus-visible, html [data-slot="input"]:
   box-shadow: inset 0 2px 5px rgba(var(--w-shade), calc(var(--w-shade-a) * 0.8)), 0 0 0 3px rgba(var(--w-glow), 0.2), 0 0 12px rgba(var(--w-glow), 0.45);
 }
 html .tiptap.ProseMirror { font-family: 'Jollyboat Nunito', system-ui, sans-serif; }
+/* small print sharkord fades with alpha (message times, placeholders) would sink into the
+   water showing through the glass: the dim ink instead */
+html .text-primary\/60 { color: rgb(var(--w-dim)); }
+html [class*="text-muted-foreground/"] { color: rgba(var(--w-dim), 0.85); }
 html div:has(> [class*="tiptap"][class*="relative"]) {
   background: rgba(var(--w-well), var(--w-well-a));
   border: 1px solid rgba(var(--w-edge), var(--w-edge-a));
@@ -331,7 +335,7 @@ html [data-testid="user-status"][data-status="idle"] {
 }
 html [data-testid="user-status"][data-status="offline"] { background: rgba(var(--w-btn), 0.9); box-shadow: inset 0 0 0 1.5px rgba(var(--w-dim), 0.85); }
 /* the member list: whoever is offline fades back */
-html [data-testid="member-item"]:has([data-status="offline"]) > span { color: color-mix(in srgb, var(--foreground) 60%, transparent); }
+html [data-testid="member-item"]:has([data-status="offline"]) > span { color: color-mix(in srgb, var(--foreground) 70%, transparent); }
 html [data-testid="member-item"]:has([data-status="offline"]) [data-slot="avatar"] { opacity: 0.5; filter: grayscale(0.7); }
 
 /* ---- voice ------------------------------------------------------------------------------- */
@@ -408,3 +412,5 @@ html.jb-water main.bg-background {
   box-shadow: none;
 }
 html.jb-water main.bg-background > .border-b { border-color: rgba(var(--w-edge), 0.18); }
+/* the channel you are on: its pill of water is drawn there too (it fills as you pick it) */
+html.jb-water [data-testid="channel-item"].bg-accent { background: transparent; box-shadow: none; }

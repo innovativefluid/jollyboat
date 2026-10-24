@@ -61,7 +61,6 @@ body {
 canvas.paper { position: fixed; left: 0; top: 0; z-index: 0; image-rendering: pixelated; }
 canvas.sparks { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
 .page { position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column; padding: 14px 24px; gap: 14px; }
-.page.hidden { opacity: 0; }
 .page.enter { animation: page-in 420ms ease-out both; }
 @keyframes page-in { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
 

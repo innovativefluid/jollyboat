@@ -245,6 +245,11 @@ export const createWater = (canvas: HTMLCanvasElement, opts: TWaterOptions): TWa
   let simFbo: WebGLFramebuffer[] = [];
   let simCur = 0;
 
+  // B only exists where there is a stage (the setup window's boat)
+  const makeB = () => {
+    texB = tex(ww, wh, gl.RGBA8, gl.UNSIGNED_BYTE, true);
+    fboB = fbo(texB);
+  };
   const resize = () => {
     W = Math.max(1, window.innerWidth);
     H = Math.max(1, window.innerHeight);
@@ -258,12 +263,14 @@ export const createWater = (canvas: HTMLCanvasElement, opts: TWaterOptions): TWa
     const z = opts.zoom?.() || 1;
     canvas.style.width = `${W / z}px`;
     canvas.style.height = `${H / z}px`;
+    const hadB = !!texB;
     [texA, texB].forEach((t) => t && gl.deleteTexture(t));
     [fboA, fboB].forEach((f) => f && gl.deleteFramebuffer(f));
     texA = tex(ww, wh, gl.RGBA8, gl.UNSIGNED_BYTE, true);
-    texB = tex(ww, wh, gl.RGBA8, gl.UNSIGNED_BYTE, true);
     fboA = fbo(texA);
-    fboB = fbo(texB);
+    texB = null;
+    fboB = null;
+    if (hadB) makeB();
     if (simOn) {
       const nw = Math.max(16, Math.ceil(W / CELL));
       const nh = Math.max(16, Math.ceil(H / CELL));
@@ -511,8 +518,16 @@ export const createWater = (canvas: HTMLCanvasElement, opts: TWaterOptions): TWa
   let rainIn = 2;
   let slow = 0;
   let frames = 0;
+  // for tuning: the time spent building scenes (dom reads), and on the cpu side of a frame
+  let sceneMs = 0;
+  let frameMs = 0;
 
   const draw = (now: number) => {
+    const f0 = performance.now();
+    drawFrame(now);
+    frameMs += performance.now() - f0;
+  };
+  const drawFrame = (now: number) => {
     const dt = Math.min(0.1, last ? (now - last) / 1000 : 1 / 60);
     // a long run of slow frames: fewer pixels (not when a software renderer was asked for: tests)
     if (focused() && last && !opts.allowSoftware) {
@@ -540,7 +555,9 @@ export const createWater = (canvas: HTMLCanvasElement, opts: TWaterOptions): TWa
       }
     } else bubF.fill(0);
 
+    const t0 = performance.now();
     const scene = opts.scene(t);
+    sceneMs += performance.now() - t0;
     solid = scene.solid;
 
     gl.disable(gl.BLEND);
@@ -593,6 +610,7 @@ export const createWater = (canvas: HTMLCanvasElement, opts: TWaterOptions): TWa
     // 3. the boat and its waves, glass on the water, into B
     let bg = texA!;
     if (scene.stage.length) {
+      if (!texB) makeB();
       gl.bindFramebuffer(gl.READ_FRAMEBUFFER, fboA);
       gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fboB);
       gl.blitFramebuffer(0, 0, ww, wh, 0, 0, ww, wh, gl.COLOR_BUFFER_BIT, gl.NEAREST);
@@ -692,7 +710,17 @@ export const createWater = (canvas: HTMLCanvasElement, opts: TWaterOptions): TWa
   resize();
   raf = requestAnimationFrame(loop);
   void start;
-  Object.assign(window, { __waterFrames: () => frames, __waterQuality: () => quality });
+  // devtools: __waterCost() → ms per frame on the cpu (all of it, and the scene's dom reads)
+  Object.assign(window, {
+    __waterFrames: () => frames,
+    __waterQuality: () => quality,
+    __waterBench: (n = 200) => {
+      const t0 = performance.now();
+      for (let i = 0; i < n; i++) opts.scene(clock + i / 60);
+      return +((performance.now() - t0) / n).toFixed(3);
+    },
+    __waterCost: () => ({ frame: +(frameMs / Math.max(1, frames)).toFixed(3), scene: +(sceneMs / Math.max(1, frames)).toFixed(3), frames, size: [cw, ch, ww, wh] })
+  });
 
   return { stop, ripple, popAt, time: () => (reduce.matches ? 12 : clock), pointer: () => ptr, resize };
 };

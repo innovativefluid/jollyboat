@@ -13,7 +13,7 @@ export const currentLook = (): TLook => (getSettings().theme === 'water' ? 'wate
 
 /** what a window shows before its page has painted: the page's own background colour */
 export const windowBackground = (dark = nativeTheme.shouldUseDarkColors) =>
-  currentLook() === 'water' ? (dark ? '#082a4c' : '#9fd8f6') : dark ? '#18201c' : '#a6b08a';
+  currentLook() === 'water' ? (dark ? '#06203c' : '#9fd8f6') : dark ? '#18201c' : '#a6b08a';
 
 /** tells every open page of ours, and saved server pages whether the water runs behind them */
 export const broadcastLook = () => {

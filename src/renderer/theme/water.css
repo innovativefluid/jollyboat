@@ -32,37 +32,37 @@
   color-scheme: light;
 }
 :root[data-look='water'][data-theme='dark'] {
-  --w-pool-top: 15, 65, 108; --w-pool-mid: 8, 42, 76; --w-pool-bot: 2, 12, 26;
-  --w-light: 134, 226, 255; --w-light-a: 0.55;
+  --w-pool-top: 11, 51, 88; --w-pool-mid: 6, 32, 60; --w-pool-bot: 1, 8, 18;
+  --w-light: 134, 226, 255; --w-light-a: 0.5;
   --w-fg: 228, 245, 255; --w-dim: 156, 197, 226; --w-mute: 105, 144, 174;
-  --w-glass: 13, 42, 70; --w-glass-a: 0.64;
-  --w-well: 7, 26, 46; --w-well-a: 0.66;
-  --w-btn: 20, 64, 106; --w-btn-a: 0.42;
+  --w-glass: 10, 33, 56; --w-glass-a: 0.66;
+  --w-well: 5, 20, 37; --w-well-a: 0.7;
+  --w-btn: 16, 52, 88; --w-btn-a: 0.44;
   --w-edge: 143, 216, 255; --w-edge-a: 0.34;
   --w-liq-a: 79, 207, 255; --w-liq-b: 10, 72, 166;
   --w-on-liq-shade: 3, 36, 79;
-  --w-shade: 0, 6, 15; --w-shade-a: 0.55;
+  --w-shade: 0, 5, 12; --w-shade-a: 0.6;
   --w-glow: 63, 212, 255; --w-glow-a: 0.8;
   --w-spark: 216, 246, 255;
-  --w-text-glow: 10, 58, 102; --w-text-glow-a: 0.6;
+  --w-text-glow: 4, 26, 48; --w-text-glow-a: 0.7;
   --w-warm: 255, 150, 160;
   color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
   :root[data-look='water']:not([data-theme]) {
-    --w-pool-top: 15, 65, 108; --w-pool-mid: 8, 42, 76; --w-pool-bot: 2, 12, 26;
-    --w-light: 134, 226, 255; --w-light-a: 0.55;
+    --w-pool-top: 11, 51, 88; --w-pool-mid: 6, 32, 60; --w-pool-bot: 1, 8, 18;
+    --w-light: 134, 226, 255; --w-light-a: 0.5;
     --w-fg: 228, 245, 255; --w-dim: 156, 197, 226; --w-mute: 105, 144, 174;
-    --w-glass: 13, 42, 70; --w-glass-a: 0.64;
-    --w-well: 7, 26, 46; --w-well-a: 0.66;
-    --w-btn: 20, 64, 106; --w-btn-a: 0.42;
+    --w-glass: 10, 33, 56; --w-glass-a: 0.66;
+    --w-well: 5, 20, 37; --w-well-a: 0.7;
+    --w-btn: 16, 52, 88; --w-btn-a: 0.44;
     --w-edge: 143, 216, 255; --w-edge-a: 0.34;
     --w-liq-a: 79, 207, 255; --w-liq-b: 10, 72, 166;
     --w-on-liq-shade: 3, 36, 79;
-    --w-shade: 0, 6, 15; --w-shade-a: 0.55;
+    --w-shade: 0, 5, 12; --w-shade-a: 0.6;
     --w-glow: 63, 212, 255; --w-glow-a: 0.8;
     --w-spark: 216, 246, 255;
-    --w-text-glow: 10, 58, 102; --w-text-glow-a: 0.6;
+    --w-text-glow: 4, 26, 48; --w-text-glow-a: 0.7;
     --w-warm: 255, 150, 160;
     color-scheme: dark;
   }

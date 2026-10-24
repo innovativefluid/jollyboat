@@ -169,16 +169,6 @@ export const createSparks = (canvas: HTMLCanvasElement) => {
     kick();
   };
 
-  /** water: a ring of fizz (the intro's pop) */
-  const ring = (x: number, y: number, n: number, radius: number) => {
-    for (let i = 0; i < n; i++) {
-      const angle = (i / n) * Math.PI * 2;
-      fizz(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius);
-    }
-    for (let i = 0; i < Math.round(n / 4); i++) glint(x, y);
-    kick();
-  };
-
   const burstAt = (el: Element, n: number) => {
     const r = el.getBoundingClientRect();
     burst(r.left + r.width / 2, r.top + r.height / 2, n);
@@ -187,5 +177,5 @@ export const createSparks = (canvas: HTMLCanvasElement) => {
   window.addEventListener('resize', resize);
   resize();
 
-  return { burst, burstAt, ring };
+  return { burst, burstAt };
 };

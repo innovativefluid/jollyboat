@@ -22,7 +22,7 @@ A desktop app for [Sharkord](https://sharkord.com) servers, for Windows and Linu
 - **Servers** — several, with proxy logins (basic auth), staying logged in, one that opens at start, and share codes to pass them on.
 - **One bar on top** — server name, zoom (50 to 300 %, the bar grows with it), servers and settings, window buttons.
 - **Light, dark or auto** — for everything: the Sharkord page, its bar, the overlay and the setup window.
-- **Themes** — Sharkord as it is, the **Jollyboat** theme (above, with the setup window's pixel type, pill buttons and a few stepped animations), **Water** (white and blue water under glass, the setup window and the bar included: live water with caustics, ripples and air bubbles under refracting, frosted glass, bubble buttons, a glass boat on liquid waves; Sharkord's parts float on it as glass panels the water shows through), or your own CSS.
+- **Themes** — Sharkord as it is, the **Jollyboat** theme (above, with the setup window's pixel type, pill buttons and a few stepped animations), **Water** (white and blue water under glass, the setup window and the bar included: live water with caustics, ripples and air bubbles under refracting, frosted glass, bubble buttons, a glass boat on liquid waves; Sharkord's parts float on it as glass panels the water shows through, the channel you are on a pill of water), or your own CSS.
 - **Languages** — English, German and Polish.
 - **Private** — talks to your servers, plus GitHub for update checks (one switch to turn off). No telemetry. On Windows, push-to-talk uses a keyboard hook while a hotkey is set: keys are compared with your hotkeys and never stored or sent.
 

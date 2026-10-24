@@ -10,14 +10,14 @@ import type { TGlass, TItem, TPearls, TRgba, TScene, TTitle } from './engine';
 import { waterTokens, type TWaterTokens } from './tokens';
 
 type TSpring = { x: number; v: number };
-type TState = { hv: TSpring; pr: TSpring; lvl: TSpring; sl: TSpring; halo: TSpring; shown: TSpring; vel: number; seed: number; jiggle: TRgba; last: number };
+type TState = { hv: TSpring; pr: TSpring; lvl: TSpring; sl: TSpring; halo: TSpring; shown: TSpring; vel: number; seed: number; jiggle: TRgba; last: number; fresh: boolean };
 
 const states = new WeakMap<Element, TState>();
 const stateOf = (el: Element): TState => {
   let s = states.get(el);
   if (!s) {
     const z = () => ({ x: 0, v: 0 });
-    s = { hv: z(), pr: z(), lvl: z(), sl: z(), halo: z(), shown: { x: -1, v: 0 }, vel: 0, seed: Math.random(), jiggle: [0, 0, -100, 0], last: 0 };
+    s = { hv: z(), pr: z(), lvl: z(), sl: z(), halo: z(), shown: { x: -1, v: 0 }, vel: 0, seed: Math.random(), jiggle: [0, 0, -100, 0], last: 0, fresh: true };
     states.set(el, s);
   }
   return s;
@@ -41,36 +41,102 @@ const spring = (s: TSpring, target: number, k: number, damping: number, dt: numb
   return s.x;
 };
 
+/** a water level: an element seen for the first time starts full (white words on empty glass
+ * would not read while it filled); after that it fills and drains with the spring */
+const level = (s: TState, target: number, k: number, damping: number, dt: number, calm: boolean) => {
+  if (s.fresh) {
+    s.fresh = false;
+    s.lvl.x = target;
+  }
+  return spring(s.lvl, target, k, damping, dt, calm);
+};
+
 const rgba = (c: [number, number, number], a = 1): TRgba => [c[0] / 255, c[1] / 255, c[2] / 255, a];
 
 export type TGlassDom = {
   scene: (t: number) => TScene;
   /** a click on an element: the membrane jiggles, a ring runs across it */
   poke: (el: Element, x: number, y: number, strength: number) => void;
-  /** the intro's soap bubble, 0..1 grown (null: none) */
-  setIntro: (grow: number | null) => void;
   setPointer: (get: () => { x: number; y: number }) => void;
 };
 
 export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
   let lastT = 0;
-  let intro: number | null = null;
   let pointer = () => ({ x: -9999, y: -9999 });
   let shipX = -1;
   let time = 0;
 
+  // ---- what is on the page, read once and kept until the dom changes ------------------------
+  // (the scene is built every frame; reading computed styles for every element and its parents
+  // each time cost a millisecond or two a frame. lists, opacities, radii and fonts are kept
+  // until a mutation, a resize or a running animation says otherwise)
+  let dirty = true;
+  const lists = new Map<string, HTMLElement[]>();
+  const alphas = new Map<Element, number>();
+  const radiiCache = new Map<Element, TRgba>();
+  const cols = new Map<Element, Element | null>();
+  const observer = new MutationObserver(() => (dirty = true));
+  observer.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'hidden', 'style', 'disabled', 'type', 'open', 'data-look', 'data-theme'] });
+  window.addEventListener('resize', () => (dirty = true));
+  let colRects = new Map<Element, TRgba>();
+
+  const shown = (el: HTMLElement) => el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
+  /** the shown elements matching a selector */
+  const q = <T extends HTMLElement = HTMLElement>(sel: string, root: ParentNode = document): T[] => {
+    const key = root === document ? sel : `${sel}@${stateOf(root as Element).seed}`;
+    let list = lists.get(key);
+    if (!list) lists.set(key, (list = Array.from(root.querySelectorAll<HTMLElement>(sel)).filter(shown)));
+    return list as T[];
+  };
   const opacityOf = (el: Element) => {
-    let a = 1;
-    for (let p: Element | null = el; p && p !== document.documentElement; p = p.parentElement) a *= parseFloat(getComputedStyle(p).opacity) || 0;
+    let a = alphas.get(el);
+    if (a === undefined) {
+      a = 1;
+      for (let p: Element | null = el; p && p !== document.documentElement; p = p.parentElement) a *= parseFloat(getComputedStyle(p).opacity) || 0;
+      alphas.set(el, a);
+    }
     return a;
   };
-  const shown = (el: HTMLElement) => el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
+  const radiiOf = (el: Element): TRgba => {
+    let r = radiiCache.get(el);
+    if (!r) {
+      const cs = getComputedStyle(el);
+      r = [cs.borderTopLeftRadius, cs.borderTopRightRadius, cs.borderBottomRightRadius, cs.borderBottomLeftRadius].map((v) => parseFloat(v) || 0) as TRgba;
+      radiiCache.set(el, r);
+    }
+    return r;
+  };
   const clipOf = (el: Element): TRgba | null => {
-    const col = el.closest('.col, .grid');
+    let col = cols.get(el);
+    if (col === undefined) cols.set(el, (col = el.closest('.col, .grid')));
     if (!col) return null;
-    const r = col.getBoundingClientRect();
-    return [r.left - 14, r.top - 14, r.right + 14, r.bottom + 14];
+    let r = colRects.get(col);
+    if (!r) {
+      const b = col.getBoundingClientRect();
+      colRects.set(col, (r = [b.left - 14, b.top - 14, b.right + 14, b.bottom + 14]));
+    }
+    return r;
+  };
+  const fading = new WeakMap<Animation, boolean>();
+  const fades = (a: Animation) => {
+    let f = fading.get(a);
+    if (f === undefined) fading.set(a, (f = !!(a.effect as KeyframeEffect | null)?.getKeyframes().some((k) => 'opacity' in k)));
+    return f;
+  };
+  const refresh = () => {
+    if (dirty) {
+      dirty = false;
+      lists.clear();
+      alphas.clear();
+      radiiCache.clear();
+      cols.clear();
+      fontKey = '';
+    }
+    // an animation or transition of opacity running (a panel coming in, the toast): opacities
+    // move (the panels' slow breathing moves them, which their rects follow anyway)
+    else if (document.getAnimations().some((a) => a.playState === 'running' && fades(a))) alphas.clear();
+    colRects = new Map();
   };
   const isHot = (el: Element) => el.matches(':hover') || el.matches(':focus-visible');
 
@@ -123,14 +189,21 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
 
   const mask = document.createElement('canvas');
   let maskKey = '';
+  let fontKey = '';
+  let font = '';
+  let padLeft = 0;
   let fontsReady = false;
   void document.fonts.ready.then(() => (fontsReady = true));
   const titleItem = (tk: TWaterTokens, el: HTMLElement): TTitle | null => {
     if (!fontsReady) return null;
     const r = el.getBoundingClientRect();
     const pad = 14;
-    const cs = getComputedStyle(el);
-    const font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    if (!fontKey) {
+      const cs = getComputedStyle(el);
+      font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+      padLeft = parseFloat(cs.paddingLeft || '0');
+      fontKey = font;
+    }
     const text = el.dataset.text || el.textContent || '';
     const k = 2 * (window.devicePixelRatio || 1);
     const key = `${text}|${font}|${r.width}|${r.height}|${k}`;
@@ -147,7 +220,7 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
       const m = ctx.measureText(text);
       const asc = m.fontBoundingBoxAscent;
       const desc = m.fontBoundingBoxDescent;
-      ctx.fillText(text, pad + parseFloat(cs.paddingLeft || '0'), pad + (r.height - (asc + desc)) / 2 + asc);
+      ctx.fillText(text, pad + padLeft, pad + (r.height - (asc + desc)) / 2 + asc);
     }
     const deep = tk.poolMid[0] < 40;
     return {
@@ -178,7 +251,8 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
     if (!opts.boat) return [];
     const W = window.innerWidth;
     const H = window.innerHeight;
-    const baseY = H * 0.8 + 12.5 * Math.sin(t * 0.25);
+    // (low enough that the boat rides below the panels of a window of the default size)
+    const baseY = H * 0.845 + 10 * Math.sin(t * 0.25);
     const waveY = (k: number, x: number) => baseY + k * 15 + 8 * Math.sin(x * 0.018 + t * 0.6 + k * 1.3) + 4 * Math.sin(x * 0.046 - t * 0.9 + k);
     const out: TGlass[] = [];
     const common = (x: number, y: number, w: number, h: number, pad: number): TGlass => ({
@@ -248,16 +322,17 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
     const tk = waterTokens();
     const items: TItem[] = [];
     const solid: TRgba[] = [];
+    refresh();
+    // water that white words sit on: a little deeper than the study's, so they read on it
+    const liqText = rgba(tk.liqA.map((c, i) => c * 0.65 + tk.liqB[i] * 0.35) as [number, number, number]);
 
     // panels: frosted, thick-rimmed, wobbling; they do not follow the pointer (only a source
     // card, which is clicked, lights up under it)
-    for (const el of document.querySelectorAll<HTMLElement>('.panel, .footer, .source')) {
-      if (!shown(el)) continue;
+    for (const el of q('.panel, .footer, .source')) {
       const r = el.getBoundingClientRect();
       const s = stateOf(el);
-      const cs = getComputedStyle(el);
       const g = base(tk, el, r, 30);
-      g.radii = [cs.borderTopLeftRadius, cs.borderTopRightRadius, cs.borderBottomRightRadius, cs.borderBottomLeftRadius].map((v) => parseFloat(v) || 0) as TRgba;
+      g.radii = radiiOf(el);
       const small = !el.classList.contains('panel');
       g.bevel = small ? 10 : 18;
       g.frost = small ? 0.9 : 1;
@@ -278,8 +353,7 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
 
     // a slab: glass across a whole bar, its rims beyond the window but for the bottom one; it
     // fills the bar, so it is frosted only lightly and the water shows through
-    for (const el of document.querySelectorAll<HTMLElement>('.slab')) {
-      if (!shown(el)) continue;
+    for (const el of q('.slab')) {
       const r = el.getBoundingClientRect();
       const g = base(tk, el, new DOMRect(r.left - 40, r.top - 40, r.width + 80, r.height + 40 - 1), 20);
       Object.assign(g, { radii: [0, 0, 10, 10], bevel: 8, frost: 0.15, refr: 9, tint: rgba(tk.glass, tk.glassA - 0.02), gloss: 0, streaks: 0.6, irid: tk.irid * 0.6, wobble: 0, lift: 2, shade: rgba(tk.shade, tk.shadeA * 0.8), clip: null });
@@ -288,19 +362,17 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
     }
 
     // the title, the strip under it, pearl strings
-    const titleEl = document.querySelector<HTMLElement>('.title');
-    if (titleEl && shown(titleEl)) {
+    const titleEl = q('.title')[0];
+    if (titleEl) {
       const ti = titleItem(tk, titleEl);
       if (ti) items.push(ti);
     }
-    for (const el of document.querySelectorAll<HTMLElement>('canvas.strip')) {
-      if (!shown(el)) continue;
+    for (const el of q('canvas.strip')) {
       const g = base(tk, el, el.getBoundingClientRect(), 12);
       Object.assign(g, { radii: [4.5, 4.5, 4.5, 4.5], bevel: 4.5, frost: 0.5, refr: 4, gloss: 0.9, wobble: 0.5, lift: 1.5, liquid: [1, 2, 0.6, 0], flow: 34, shade: rgba(tk.shade, tk.shadeA * 0.6) });
       items.push(g);
     }
-    for (const el of document.querySelectorAll<HTMLElement>('.pearls')) {
-      if (!shown(el)) continue;
+    for (const el of q('.pearls')) {
       const r = el.getBoundingClientRect();
       const deep = tk.poolMid[0] < 40;
       const pearl: TPearls = {
@@ -321,8 +393,8 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
     }
 
     // the server dots: small beads, full of water when the server answered
-    for (const el of document.querySelectorAll<HTMLElement>('.dot')) {
-      if (!shown(el) || el.classList.contains('none')) continue;
+    for (const el of q('.dot')) {
+      if (el.classList.contains('none')) continue;
       const g = base(tk, el, el.getBoundingClientRect(), 8);
       const rr = g.w / 2;
       Object.assign(g, { radii: [rr, rr, rr, rr], bevel: rr, frost: 0.5, refr: 3, gloss: 0.9, wobble: 0, lift: 1, liquid: [el.classList.contains('ok') ? 1 : 0, 1, 0.3, 0], tint: rgba(tk.btn, tk.btnA + 0.25), shade: rgba(tk.shade, tk.shadeA * 0.5) });
@@ -330,8 +402,7 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
     }
 
     // pills (and the bar's chips): bubbles, the major ones holding water
-    for (const el of document.querySelectorAll<HTMLButtonElement>('.pill, .chip')) {
-      if (!shown(el)) continue;
+    for (const el of q<HTMLButtonElement>('.pill, .chip')) {
       const r = el.getBoundingClientRect();
       const s = stateOf(el);
       const h = r.height;
@@ -341,7 +412,7 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
       const hv = spring(s.hv, active && isHot(el) ? 1 : 0, 4, 0.22, dt, calm);
       const pr = spring(s.pr, active && el.matches(':active') ? 1 : 0, 6, 0.3, dt, calm);
       const sl = spring(s.sl, side(r), 2.2, 0.08, dt, calm);
-      const lvl = spring(s.lvl, major ? (el.matches(':active') ? 0.97 : 0.86 + 0.08 * hv) : 0, 3, 0.18, dt, calm);
+      const lvl = level(s, major ? (el.matches(':active') ? 0.97 : 0.86 + 0.08 * hv) : 0, 3, 0.18, dt, calm);
       const g = base(tk, el, r, 18);
       Object.assign(g, {
         radii: alt ? [h * 0.34, h / 2, h * 0.34, h / 2] : [h / 2, h * 0.34, h / 2, h * 0.34],
@@ -353,6 +424,7 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
         gloss: 0.95,
         wobble: 1,
         liquid: [lvl, major ? 1 : 0, 1.3 + 1.2 * Math.abs(sl), 0],
+        liqA: liqText,
         slosh: sl * 0.5,
         lift: major ? 3.5 : 2.5,
         shade: rgba(tk.shade, tk.shadeA * (major ? 1.1 : 0.7))
@@ -362,30 +434,28 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
     }
 
     // segments: the chosen one fills with water, the one it leaves drains
-    for (const row of document.querySelectorAll<HTMLElement>('.seg')) {
-      if (!shown(row)) continue;
-      [...row.querySelectorAll<HTMLButtonElement>('button')].forEach((el, i) => {
+    for (const row of q('.seg')) {
+      q<HTMLButtonElement>('button', row).forEach((el, i) => {
         const r = el.getBoundingClientRect();
         const s = stateOf(el);
         const sel = el.classList.contains('on');
         const hv = spring(s.hv, isHot(el) ? 1 : 0, 4, 0.22, dt, calm);
         const pr = spring(s.pr, el.matches(':active') ? 1 : 0, 6, 0.3, dt, calm);
-        const lvl = spring(s.lvl, sel ? 0.9 : 0, 2.4, 0.2, dt, calm);
+        const lvl = level(s, sel ? 0.9 : 0, 2.4, 0.2, dt, calm);
         const sl = spring(s.sl, side(r), 2, 0.08, dt, calm);
         const a = i % 2 ? 9 : 15;
         const b = i % 2 ? 15 : 9;
         const g = base(tk, el, r, 16);
-        Object.assign(g, { radii: [a, b, a, b], bevel: 12, hover: hv, press: pr, frost: 0.75, refr: 8, wobble: 0.9, liquid: [lvl, 1, 1.1 + Math.abs(sl), 0], slosh: sl * 0.5, lift: sel ? 3 : 2, shade: rgba(tk.shade, tk.shadeA * (sel ? 1 : 0.6)) });
+        Object.assign(g, { radii: [a, b, a, b], bevel: 12, hover: hv, press: pr, frost: 0.75, refr: 8, wobble: 0.9, liquid: [lvl, 1, 1.1 + Math.abs(sl), 0], liqA: liqText, slosh: sl * 0.5, lift: sel ? 3 : 2, shade: rgba(tk.shade, tk.shadeA * (sel ? 1 : 0.6)) });
         items.push(g);
       });
     }
 
     // checks: a small glass cube that fills with water when on
-    for (const el of document.querySelectorAll<HTMLInputElement>('.check input[type=checkbox]')) {
-      if (!shown(el)) continue;
+    for (const el of q<HTMLInputElement>('.check input[type=checkbox]')) {
       const s = stateOf(el);
       const hv = spring(s.hv, isHot(el) || !!el.closest('.check')?.matches(':hover') ? 1 : 0, 4, 0.22, dt, calm);
-      const lvl = spring(s.lvl, el.checked ? 0.88 : 0, 2.6, 0.2, dt, calm);
+      const lvl = level(s, el.checked ? 0.88 : 0, 2.6, 0.2, dt, calm);
       const g = base(tk, el, el.getBoundingClientRect(), 14);
       Object.assign(g, { radii: [7, 5, 7, 5], bevel: 7, hover: hv, press: el.matches(':active') ? 1 : 0, frost: 0.6, refr: 5, wobble: 0.6, lift: 2, liquid: [lvl, 1, 0.9, 0], shade: rgba(tk.shade, tk.shadeA * 0.7) });
       if (el.disabled) g.alpha *= 0.45;
@@ -393,8 +463,7 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
     }
 
     // wells: recessed glass for text, glowing at the rim while focused
-    for (const el of document.querySelectorAll<HTMLInputElement>('input[type=text], input[type=password], input[type=url]')) {
-      if (!shown(el)) continue;
+    for (const el of q<HTMLInputElement>('input[type=text], input[type=password], input[type=url]')) {
       const s = stateOf(el);
       const lit = document.activeElement === el;
       const hv = spring(s.hv, el.matches(':hover') ? 1 : 0, 4, 0.22, dt, calm);
@@ -405,8 +474,7 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
     }
 
     // sliders: a glass tube that fills with water up to a glass marble
-    for (const el of document.querySelectorAll<HTMLInputElement>('input[type=range]')) {
-      if (!shown(el)) continue;
+    for (const el of q<HTMLInputElement>('input[type=range]')) {
       const r = el.getBoundingClientRect();
       const s = stateOf(el);
       const min = Number(el.min || 0);
@@ -432,20 +500,11 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
     }
 
     // the toast: a water bubble that pops in at the top
-    for (const el of document.querySelectorAll<HTMLElement>('.toast')) {
+    for (const el of Array.from(document.querySelectorAll<HTMLElement>('.toast'))) {
       const a = opacityOf(el);
       if (a < 0.01) continue;
       const g = base(tk, el, el.getBoundingClientRect(), 18);
-      Object.assign(g, { radii: [19, 9, 19, 9], bevel: 18, frost: 0.5, refr: 9, liquid: [0.92, 1, 1.6, 0], lift: 5, alpha: a, clip: null });
-      items.push(g);
-    }
-
-    // the intro: a clear soap bubble swelling at the centre
-    if (intro !== null && intro > 0.02) {
-      const d = 210 * intro;
-      const r = new DOMRect(window.innerWidth / 2 - d / 2, window.innerHeight / 2 - d / 2, d, d);
-      const g = base(tk, document.body, r, 24);
-      Object.assign(g, { radii: [d / 2, d / 2, d / 2, d / 2], bevel: Math.max(1, d * 0.2), tint: [1, 1, 1, 0.04], frost: 0, refr: 16, irid: 1, gloss: 0.55, wobble: 2.6, lift: 0, shade: [0, 0, 0, 0], alpha: 1, clip: null, jiggle: [0, 0, -100, 0] });
+      Object.assign(g, { radii: [19, 9, 19, 9], bevel: 18, frost: 0.5, refr: 9, liquid: [0.92, 1, 1.6, 0], liqA: liqText, lift: 5, alpha: a, clip: null });
       items.push(g);
     }
 
@@ -458,9 +517,6 @@ export const createGlassDom = (opts: { boat?: boolean } = {}): TGlassDom => {
       const s = stateOf(el);
       const pad = el.matches('.panel, .footer, .source') ? 30 : el.matches('.seg button, input[type=text], input[type=password], input[type=url]') ? 16 : el.matches('.check input') ? 14 : 18;
       s.jiggle = [x + pad, y + pad, time, strength];
-    },
-    setIntro: (grow) => {
-      intro = grow;
     },
     setPointer: (get) => {
       pointer = get;

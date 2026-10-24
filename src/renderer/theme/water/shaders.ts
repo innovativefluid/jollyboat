@@ -418,18 +418,26 @@ void main() {
   vec2 p = (pos - C) / scl;
 
   float d = shapeAt(p);
-  const float e = 0.6;
-  vec2 g = vec2(shapeAt(p + vec2(e, 0.0)) - d, shapeAt(p + vec2(0.0, e)) - d) / e;
-  float gl = length(g);
-  g = gl > 1e-4 ? g / gl : vec2(0.0, -1.0);
   float aa = clamp(0.5 - d / px, 0.0, 1.0);
-
-  // ---- outside: soft shadow and halo
-  float dsh = shapeAt(p - vec2(0.0, lift * (1.0 + 0.4 * hover - 0.6 * press)));
-  float shA = shade.w * (1.0 - smoothstep(-lift * 0.8, lift * 3.2 + 2.0, dsh));
   float on = max(hover * 0.75, halo);
-  float glA = glow.w * on * exp(-max(d, 0.0) / (5.0 + 3.0 * halo)) * step(0.0, d);
-  vec4 outside = vec4(glow.rgb * glA, glA) + vec4(shade.rgb * shA, shA) * (1.0 - glA);
+  // the rim's direction: only where the rim bends (deeper in, the surface is flat; a panel's
+  // inside is most of its pixels, so this skips three shape evaluations there)
+  vec2 g = vec2(0.0, -1.0);
+  if (d > -bevel - 1.0) {
+    const float e = 0.6;
+    vec2 g2 = vec2(shapeAt(p + vec2(e, 0.0)) - d, shapeAt(p + vec2(0.0, e)) - d) / e;
+    float gl = length(g2);
+    if (gl > 1e-4) g = g2 / gl;
+  }
+
+  // ---- outside: soft shadow and halo (not needed where the glass covers all of the pixel)
+  vec4 outside = vec4(0.0);
+  if (aa < 1.0) {
+    float dsh = shapeAt(p - vec2(0.0, lift * (1.0 + 0.4 * hover - 0.6 * press)));
+    float shA = shade.w * (1.0 - smoothstep(-lift * 0.8, lift * 3.2 + 2.0, dsh));
+    float glA = glow.w * on * exp(-max(d, 0.0) / (5.0 + 3.0 * halo)) * step(0.0, d);
+    outside = vec4(glow.rgb * glA, glA) + vec4(shade.rgb * shA, shA) * (1.0 - glA);
+  }
   if (aa <= 0.0) { o = outside * alpha; return; }
 
   // ---- surface normal from the rim profile (a quarter circle of width bevel)
@@ -528,9 +536,11 @@ void main() {
   col += mix(vec3(0.75, 0.95, 1.0), liqA.rgb + 0.35, 0.3) * bot * (0.22 + 0.25 * hover) * raised;
   // fresnel: rims turn white, then pick up thin-film colour
   col = mix(col, vec3(1.0), rimF * 0.45 * raised);
-  float th = vnoise(p * 0.03 + vec2(time * 0.08, seed)) * 2.2 + n.x * 0.8 - n.y * 0.5 + time * 0.05;
-  vec3 film = 0.5 + 0.5 * cos(TAU * (th + vec3(0.0, 0.33, 0.67)));
-  col = mix(col, col * 0.55 + film * 0.6, irid * rimF);
+  if (irid * rimF > 0.002) {
+    float th = vnoise(p * 0.03 + vec2(time * 0.08, seed)) * 2.2 + n.x * 0.8 - n.y * 0.5 + time * 0.05;
+    vec3 film = 0.5 + 0.5 * cos(TAU * (th + vec3(0.0, 0.33, 0.67)));
+    col = mix(col, col * 0.55 + film * 0.6, irid * rimF);
+  }
   // gloss cap: the bright lid over the upper half
   float capH = min(B.y * 0.86, 30.0);
   float curve = (p.x / max(B.x, 1.0)) * (p.x / max(B.x, 1.0)) * capH * 0.35;

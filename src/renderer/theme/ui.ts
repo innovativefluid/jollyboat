@@ -1,4 +1,5 @@
-// small shared pieces: boot (the backdrop, sparks, strip), feedback on clicks, toast, hints, intro.
+// small shared pieces: boot (the backdrop, sparks, strip), feedback on clicks, toast, hints, the
+// page coming in.
 //
 // the backdrop follows the look live: the lcd paper (2d canvas) or the water (webgl2); without
 // webgl2 the water look keeps its css gradient and css glass (html.no-gl).
@@ -25,7 +26,7 @@ const allowSoftGl = () => {
 
 const lookNow = (): TLook => (document.documentElement.dataset.look === 'water' ? 'water' : 'lcd');
 
-export const bootTheme = ({ intro = 'quick', boat = false, fps, pool }: { intro?: 'bubble' | 'quick'; boat?: boolean; fps?: { focused: number; blurred: number }; pool?: () => { view: [number, number]; offset: [number, number] } } = {}) => {
+export const bootTheme = ({ boat = false, fps, pool }: { boat?: boolean; fps?: { focused: number; blurred: number }; pool?: () => { view: [number, number]; offset: [number, number] } } = {}) => {
   const sparksCanvas = document.createElement('canvas');
   sparksCanvas.className = 'sparks';
   document.body.append(sparksCanvas);
@@ -131,12 +132,11 @@ export const bootTheme = ({ intro = 'quick', boat = false, fps, pool }: { intro?
     fx.burst(r.left + 11 + k * (r.width - 22), r.top + r.height / 2, 3);
   });
 
-  // ---- the intro ---------------------------------------------------------------------------
+  // ---- the page comes in ---------------------------------------------------------------------
 
   const page = document.querySelector<HTMLElement>('.page');
   const enter = () => {
     if (!page) return;
-    page.classList.remove('hidden');
     page.classList.add('enter');
     const done = (e: AnimationEvent) => {
       if (e.target !== page) return;
@@ -158,45 +158,9 @@ export const bootTheme = ({ intro = 'quick', boat = false, fps, pool }: { intro?
     });
   };
 
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const current = backdrop as TBackdrop | null;
-  if (intro === 'bubble' && lookNow() === 'water' && current?.water && current.dom && !reduce) soapBubble(page, enter, current.water, current.dom, fx);
-  else enter();
+  enter();
 
   return { fx, ripple: (x: number, y: number, amp: number) => backdrop?.water?.ripple(x, y, amp) };
-};
-
-// the water look's intro (the study's): a clear soap bubble swells at the centre to 210 px over
-// 520 ms, holds 180 ms and pops into two ripples and a ring of fizz; then the page comes in. a
-// click skips to the pop, and 2.5 s is the most it can take
-const soapBubble = (page: HTMLElement | null, enter: () => void, water: TWater, dom: TGlassDom, fx: ReturnType<typeof createSparks>) => {
-  page?.classList.add('hidden');
-  const start = performance.now();
-  let popped = false;
-  let grow = 0;
-  const pop = () => {
-    if (popped) return;
-    popped = true;
-    dom.setIntro(null);
-    const cx = window.innerWidth / 2;
-    const cy = window.innerHeight / 2;
-    water.ripple(cx, cy, -1.3, 8);
-    water.ripple(cx, cy, -0.6, 20);
-    fx.ring(cx, cy, 30, 100 * Math.max(0.3, grow));
-    enter();
-  };
-  const step = (now: number) => {
-    if (popped) return;
-    const ms = now - start;
-    if (ms > 700) return pop();
-    const k = Math.min(1, ms / 520);
-    grow = 1 - Math.pow(1 - k, 3);
-    dom.setIntro(grow);
-    requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-  window.addEventListener('pointerdown', pop, { once: true });
-  window.setTimeout(pop, 2500);
 };
 
 let toastEl: HTMLDivElement | null = null;

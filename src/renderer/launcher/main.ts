@@ -5,7 +5,7 @@ import { t, translatePage } from '../i18n';
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
 translatePage();
-const { fx } = bootTheme({ intro: 'bubble', boat: true });
+const { fx } = bootTheme({ boat: true });
 
 const list = $('server-list');
 const editorPanel = $('editor');
