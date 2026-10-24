@@ -1,5 +1,7 @@
-/* the soundcard lcd look, ported to css. one ink, no accent: emphasis is fill vs outline.
-   the app's own pages are always this light lcd scheme; the os theme only reaches the sharkord page. */
+/* the soundcard lcd look, ported to css. one ink, no accent: emphasis is fill vs outline. light
+   or dark with the colour mode (prefers-color-scheme follows it); the bar and the overlay take
+   the server page's own scheme instead (data-theme). the water look is water.css, on top of this
+   file while <html data-look="water">. */
 
 @font-face { font-family: 'Pixelify Sans'; src: url('../fonts/PixelifySans.ttf') format('truetype'); font-weight: 400 700; }
 @font-face { font-family: 'Jersey 10'; src: url('../fonts/Jersey10.ttf') format('truetype'); }
@@ -18,6 +20,23 @@
   --fg-rgb: 26, 34, 28;
   --dim-rgb: 70, 80, 62;
   color-scheme: light;
+}
+/* the neg lcd: pale ink on a dark panel */
+:root[data-theme='dark'] {
+  --bg: #18201c; --panel: #202a24; --fg: #c4d6a6; --dim: #94a47e; --mute: #6c7a5e;
+  --faint: #384438; --line: #303c32; --spark: #ecf8ce; --shadow-a: 0.45;
+  --fg-rgb: 196, 214, 166; --dim-rgb: 148, 164, 126;
+  --shadow: rgba(0, 0, 0, 0.5); --shadow-dim: rgba(0, 0, 0, 0.35);
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg: #18201c; --panel: #202a24; --fg: #c4d6a6; --dim: #94a47e; --mute: #6c7a5e;
+    --faint: #384438; --line: #303c32; --spark: #ecf8ce; --shadow-a: 0.45;
+    --fg-rgb: 196, 214, 166; --dim-rgb: 148, 164, 126;
+    --shadow: rgba(0, 0, 0, 0.5); --shadow-dim: rgba(0, 0, 0, 0.35);
+    color-scheme: dark;
+  }
 }
 :root {
   --px: 'Pixelify Sans', ui-monospace, monospace;

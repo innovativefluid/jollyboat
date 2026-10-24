@@ -5,6 +5,7 @@ import { installBasicAuth, refreshBasicAuth } from './basic-auth';
 import { getBridgeStatus, startBridge, stopBridge } from './hotkeys/bridge';
 import { registerIpc } from './ipc';
 import { iconPath, isOwnPageUrl, originOf, pageUrl, preloadPath } from './paths';
+import { windowBackground } from './look';
 import { installDisplayMediaHandler } from './screen-share';
 import { findServerByUrl, getSettings, onServersChanged, saveSettings } from './settings';
 import { log } from './log';
@@ -134,9 +135,10 @@ const sendBarState = () => {
   wc.send('bar:state', { server: serverName, zoom: page()?.getZoomFactor() ?? 1, theme: pageTheme, maximized: !!mainWindow?.isMaximized(), streams: streamCount() });
   layout();
   setOverlayTheme(barDark() ? 'dark' : 'light');
-  const bg = barDark() ? '#18201c' : '#a6b08a';
+  const bg = windowBackground(barDark());
   barView?.setBackgroundColor(bg);
   mainWindow?.setBackgroundColor(bg);
+  if (launcherWindow && !launcherWindow.isDestroyed()) launcherWindow.setBackgroundColor(windowBackground());
 };
 ipcMain.on('server:theme', (event, theme: unknown) => {
   if (event.sender !== page() || !findServerByUrl(event.senderFrame?.url ?? '')) return;
@@ -216,7 +218,7 @@ const createMainWindow = () => {
     ...(process.platform === 'darwin' ? { titleBarStyle: 'hidden' as const, trafficLightPosition: { x: 12, y: 10 } } : { frame: false }),
     icon: iconPath(),
     title: 'Jollyboat',
-    backgroundColor: dark ? '#18201c' : '#a6b08a'
+    backgroundColor: windowBackground(dark)
   });
   const server = new WebContentsView({ webPreferences });
   const barv = new WebContentsView({ webPreferences });
@@ -224,7 +226,7 @@ const createMainWindow = () => {
   serverView = server;
   barView = barv;
   server.setBackgroundColor('#0a0a0a');
-  barv.setBackgroundColor(dark ? '#18201c' : '#a6b08a');
+  barv.setBackgroundColor(windowBackground(dark));
   win.contentView.addChildView(server);
   win.contentView.addChildView(barv);
   layout();
@@ -431,7 +433,7 @@ const createLauncherWindow = () => {
     autoHideMenuBar: true,
     icon: iconPath(),
     title: 'Jollyboat',
-    backgroundColor: '#a6b08a',
+    backgroundColor: windowBackground(),
     webPreferences
   });
   launcherWindow = win;
@@ -663,7 +665,8 @@ if (!app.requestSingleInstanceLock()) {
     registerIpc({
       connectToServer,
       getMainWindow: () => mainWindow,
-      spellcheckAtStart
+      spellcheckAtStart,
+      onLookChange: sendBarState
     });
     // no application menu: the bar above the server page and its shortcuts replace it. a mac
     // needs one anyway (cmd+c / cmd+v in text fields go through the edit menu)

@@ -9,18 +9,18 @@
 // per-row tables rebuilt each frame (O(w + h) trig), and the radial term uses sin/cos(r·.09)
 // tables built once per resize. the per-cell loop is multiplies and adds only.
 
-import { LCD } from './scheme';
+import { lcdScheme } from './scheme';
 import boatMap from '../../../build/pixel/icon-32.txt?raw';
 
 const CELL = 5;
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 
 // the boat from the icon map (sail and hull only; the icon's own water line is left out).
-// '#' ink, 'g' dim, 'w' spark — as ink units, spark brightens
+// '#' ink, 'g' dim, 'w' spark: the scheme says how much ink each is
 const BOAT = boatMap
   .split('\n')
   .slice(0, 23)
-  .map((row) => [...row].map((c) => (c === '#' ? 60 : c === 'g' ? 32 : c === 'w' ? -22 : 0)));
+  .map((row) => [...row]);
 const BOAT_W = Math.max(...BOAT.map((r) => r.length));
 const BOAT_H = BOAT.length;
 const WAVES = 3;
@@ -49,7 +49,6 @@ export const createPaper = (canvas: HTMLCanvasElement) => {
   let pointerX: number | null = null; // in cells
   let shipX = 0;
   let lastT = 0;
-  const params = LCD;
   let raf = 0;
   let running = true;
   let frameCost = 0; // ms, exponential average, for the dev console
@@ -133,9 +132,13 @@ export const createPaper = (canvas: HTMLCanvasElement) => {
     const sway = Math.sin(t * 0.5) * 0.8;
     const left = Math.round(shipX - BOAT_W / 2 + sway);
     const top = Math.round(waveY(0, shipX, t)) - BOAT_H + 1;
+    const weights = lcdScheme().boatInk;
     for (let r = 0; r < BOAT_H; r++) {
       const row = BOAT[r];
-      for (let c = 0; c < row.length; c++) if (row[c]) put(left + c, top + r, row[c]);
+      for (let c = 0; c < row.length; c++) {
+        const w = weights[row[c]];
+        if (w) put(left + c, top + r, w);
+      }
     }
   };
 
@@ -143,7 +146,9 @@ export const createPaper = (canvas: HTMLCanvasElement) => {
     if (!image) return;
 
     const t0 = performance.now();
-    const { bg, bgLum, lift, amp, lattice: latticeAmt, glare, inkDir } = params;
+    const { bg, fg, bgLum, lift, amp, lattice: latticeAmt, glare, inkDir } = lcdScheme();
+    // light: ink darkens the paper. dark (the neg): ink is pale, mixed in toward the ink colour
+    const mixInk = inkDir > 0;
     const tp = t * 0.6;
     const glareU = ((t % 24) / 24) * 1.24 - 0.12;
     const data = image.data;
@@ -182,13 +187,19 @@ export const createPaper = (canvas: HTMLCanvasElement) => {
         const u = diag[i] - glareU;
         if (u > 0 && u < 0.12) l += glare * Math.sin((Math.PI * u) / 0.12);
 
-        l += inkK * ink[i];
+        if (!mixInk) l += inkK * ink[i];
         l = l < 0 ? 0 : l > 1 ? 1 : l;
 
         const o = i << 2;
-        const rr = r0 * l;
-        const gg = g0 * l;
-        const bb = b0 * l;
+        let rr = r0 * l;
+        let gg = g0 * l;
+        let bb = b0 * l;
+        if (mixInk && ink[i] !== 0) {
+          const k = ink[i] >= 60 ? 0.9 : ink[i] <= 0 ? 0 : (ink[i] / 60) * 0.9;
+          rr += (fg[0] - rr) * k;
+          gg += (fg[1] - gg) * k;
+          bb += (fg[2] - bb) * k;
+        }
         data[o] = rr > 255 ? 255 : rr;
         data[o + 1] = gg > 255 ? 255 : gg;
         data[o + 2] = bb > 255 ? 255 : bb;
@@ -218,15 +229,15 @@ export const createPaper = (canvas: HTMLCanvasElement) => {
   };
 
   // the boat follows the pointer's horizontal position; it stays put when the pointer leaves
-  window.addEventListener('pointermove', (e) => {
+  const onMove = (e: PointerEvent) => {
     pointerX = e.clientX / CELL;
-  });
-
+  };
   // the page is hidden (tray, other tab): nothing to draw. rAF already pauses, this resumes it
-  document.addEventListener('visibilitychange', () => {
+  const onVisible = () => {
     if (!document.hidden && running && !raf) raf = requestAnimationFrame(loop);
-  });
-
+  };
+  window.addEventListener('pointermove', onMove);
+  document.addEventListener('visibilitychange', onVisible);
   window.addEventListener('resize', resize);
 
   resize();
@@ -242,6 +253,9 @@ export const createPaper = (canvas: HTMLCanvasElement) => {
       running = false;
       cancelAnimationFrame(raf);
       raf = 0;
+      window.removeEventListener('pointermove', onMove);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('resize', resize);
     }
   };
 };

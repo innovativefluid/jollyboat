@@ -5,6 +5,7 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'" />
     <title>Jollyboat voice</title>
     <link rel="stylesheet" href="../theme/theme.css" />
+    <link rel="stylesheet" href="../theme/water.css" />
     <style>
       /* the voice overlay: the lcd look on a see-through window. the background takes the opacity
          from the settings; text and the talking fill stay solid, with an outline in the
@@ -48,6 +49,41 @@
       .icons { display: flex; gap: 3px; flex: none; }
       .icons svg { width: 12px; height: 12px; shape-rendering: crispEdges; display: block; }
       .empty { font: 500 13px/1.2 var(--px); color: var(--dim); padding: 2px 5px; }
+
+      /* the water look: a frosted glass card; whoever talks is filled with water. the slider's
+         opacity is the glass's; text keeps a halo of the glass colour so it reads over anything */
+      [data-look='water'] .card {
+        background:
+          linear-gradient(to bottom, rgba(255, 255, 255, calc(var(--alpha) * 0.45)), rgba(255, 255, 255, 0) 30px),
+          rgba(var(--w-glass), max(var(--alpha), 0.0));
+        border: 1px solid rgba(var(--w-edge), max(calc(var(--w-edge-a) + 0.2), var(--alpha)));
+        border-radius: 19px 9px 19px 9px;
+        padding: 6px 7px 7px;
+        --outline: rgba(var(--w-glass), calc(1 - var(--alpha) * 0.5));
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, calc(var(--alpha) * 0.6));
+      }
+      [data-look='water'] .head { font: 700 12px/1 var(--w-font); color: rgb(var(--w-dim)); }
+      [data-look='water'] .row { font: 800 14px/1.15 var(--w-font); color: rgb(var(--w-fg)); border-radius: 12px 7px 12px 7px; padding: 3px 7px; }
+      [data-look='water'] .row .self { color: rgb(var(--w-dim)); font-weight: 600; }
+      [data-look='water'] .row.quiet .who { color: rgb(var(--w-dim)); }
+      [data-look='water'] .dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(var(--w-edge), 0.8); background: rgba(var(--w-btn), 0.6); }
+      [data-look='water'] .row.talking {
+        color: #fff;
+        text-shadow: 0 1px 1px rgba(var(--w-on-liq-shade), 0.95);
+        background:
+          linear-gradient(to bottom, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 50%),
+          linear-gradient(to top, rgb(var(--w-liq-b)), rgb(var(--w-liq-a)) 86%, rgba(255, 255, 255, 0.9) 90%, rgb(var(--w-liq-a)) 94%);
+        box-shadow: 0 0 10px rgba(var(--w-glow), 0.6);
+      }
+      [data-look='water'] .row.talking .dot { background: #fff; border-color: #fff; }
+      [data-look='water'] .row.talking .self { color: rgba(255, 255, 255, 0.85); }
+      [data-look='water'] .icons svg { shape-rendering: auto; }
+      [data-look='water'] .empty { font: 600 13px/1.2 var(--w-font); color: rgb(var(--w-dim)); }
+      [data-look='water'] .place { font: 600 12px/1.2 var(--w-font); color: rgb(var(--w-dim)); }
+      [data-look='water'] .place button {
+        font: 800 12px/1 var(--w-font); color: #fff; border: 1px solid rgba(var(--w-edge), 0.8); border-radius: 12px 7px 12px 7px; padding: 4px 11px;
+        background: linear-gradient(to top, rgb(var(--w-liq-b)), rgb(var(--w-liq-a)));
+      }
     </style>
   </head>
   <body>

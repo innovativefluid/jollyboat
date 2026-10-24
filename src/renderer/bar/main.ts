@@ -57,9 +57,30 @@ const repaint = () => {
 
 repaint();
 dark.addEventListener('change', repaint);
+// the water look's mark: the svg boat rocks and bobs, the water line drifts a pixel at a time.
+// only an actual change is drawn, about three times a second (an svg animation in css would
+// make the page tick every frame)
+const bob = document.querySelector<SVGGElement>('.mark-water .bob')!;
+const flow = document.querySelector<SVGPathElement>('.mark-water .flow')!;
+const calm = window.matchMedia('(prefers-reduced-motion: reduce)');
+let shownWater = '';
+const drawWaterMark = (t = performance.now() / 1000) => {
+  const swell = Math.round(Math.sin((t * Math.PI * 2) / 3.2) * 3); // -3..3
+  const drift = calm.matches ? 0 : Math.floor(t * 2.5) % 8;
+  const key = calm.matches ? 'still' : `${swell}:${drift}`;
+  if (key === shownWater) return;
+  shownWater = key;
+  const s = calm.matches ? 0 : swell;
+  bob.setAttribute('transform', `translate(0 ${((s + 3) / 6).toFixed(2)}) rotate(${s} 14 21)`);
+  flow.setAttribute('transform', `translate(${-drift} 0)`);
+};
+
 setInterval(() => {
-  if (!document.hidden) drawMark();
+  if (document.hidden) return;
+  if (document.documentElement.dataset.look === 'water') drawWaterMark();
+  else drawMark();
 }, 100);
+window.shell.onLook(repaint);
 
 $('settings').onclick = () => window.shell.barAction('settings');
 $('popout').onclick = () => window.shell.barAction('popout');

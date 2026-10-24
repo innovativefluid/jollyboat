@@ -15,6 +15,7 @@ Jollyboat is MIT licensed (`LICENSE`). It ships with the following third-party w
 | [Pixelify Sans](https://github.com/eifetx/Pixelify-Sans) | SIL OFL 1.1 (`src/renderer/fonts/OFL-PixelifySans.txt`) | pixel typeface of the setup pages |
 | [Jersey 10](https://github.com/scfried/soft-type-jersey) | SIL OFL 1.1 (`src/renderer/fonts/OFL-Jersey10.txt`) | counter typeface |
 | [Fredoka](https://github.com/hafontia-zz/Fredoka) | SIL OFL 1.1 (`src/renderer/fonts/OFL-Fredoka.txt`) | body typeface |
+| [Nunito](https://github.com/googlefonts/nunito) | SIL OFL 1.1 (`src/renderer/fonts/OFL-Nunito.txt`) | typeface of the Water theme (Latin and Latin Extended subset) |
 
 ## Protocols and services
 
@@ -24,4 +25,4 @@ Jollyboat is MIT licensed (`LICENSE`). It ships with the following third-party w
 
 ## Build tools (not shipped)
 
-electron-builder (MIT), electron-vite (MIT), Vite (MIT), TypeScript (Apache-2.0), Pillow for the icon script (MIT-CMU).
+electron-builder (MIT), electron-vite (MIT), Vite (MIT), TypeScript (Apache-2.0), Pillow for the icon script (MIT-CMU), fontTools for the Nunito subset (MIT), SciPy for the Water theme's caustic tiles (BSD-3-Clause).

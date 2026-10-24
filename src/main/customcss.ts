@@ -1,5 +1,5 @@
-// A theme on the server page (opt-in): the app's own lcd look (resources/themes/lcd.css) or
-// custom.css next to the settings. Put into the page after every load, and for custom.css
+// A theme on the server page (opt-in): the app's own lcd look (resources/themes/lcd.css), the
+// water look (resources/themes/water.css) or custom.css next to the settings. Put into the page after every load, and for custom.css
 // again whenever the file changes. `url("jollyboat-font:Name")` in either becomes one of the
 // app's bundled fonts as a data url (Sharkord's own content policy allows those).
 
@@ -10,10 +10,10 @@ import { log } from './log';
 import { getSettings } from './settings';
 
 const MAX_BYTES = 1024 * 1024;
-const FONTS = ['PixelifySans', 'Fredoka', 'Jersey10'];
+const FONTS = ['PixelifySans', 'Fredoka', 'Jersey10', 'Nunito'];
 
 const cssPath = () => join(app.getPath('userData'), 'custom.css');
-const themePath = () => join(__dirname, '../../resources/themes/lcd.css');
+const themePath = (name: 'lcd' | 'water' = 'lcd') => join(__dirname, `../../resources/themes/${name}.css`);
 const assetsDir = () => join(__dirname, '../renderer/assets');
 
 let target: (() => WebContents | null) | null = null;
@@ -51,7 +51,8 @@ const readFile = (path: string) => {
 
 const themeCss = () => {
   const { theme } = getSettings();
-  if (theme === 'jollyboat') return readFile(themePath());
+  if (theme === 'jollyboat') return readFile(themePath('lcd'));
+  if (theme === 'water') return readFile(themePath('water'));
   if (theme === 'custom') return readFile(cssPath());
   return '';
 };

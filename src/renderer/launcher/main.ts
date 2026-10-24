@@ -5,7 +5,7 @@ import { t, translatePage } from '../i18n';
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
 translatePage();
-const { fx } = bootTheme();
+const { fx } = bootTheme({ intro: 'bubble' });
 
 const list = $('server-list');
 const editorPanel = $('editor');
@@ -326,7 +326,7 @@ const renderSettings = async () => {
     toast(t('saved'));
   });
 
-  // light or dark for the server page, its bar and the overlay (this window stays as it is)
+  // light or dark for every window: the server page, its bar, the overlay and this one
   segment(
     $('color-mode'),
     [{ value: 'auto' as const, label: t('auto') }, { value: 'dark' as const, label: t('dark') }, { value: 'light' as const, label: t('light') }],
@@ -337,11 +337,12 @@ const renderSettings = async () => {
     }
   );
 
-  // the server page's theme: Sharkord's own, the app's lcd look, or custom.css next to the settings
+  // the server page's theme: Sharkord's own, the app's lcd look, the water look, or custom.css next
+  // to the settings. the water theme also takes the app's own windows under water
   $('css-row').hidden = settings.theme !== 'custom';
   segment(
     $('theme-kind'),
-    [{ value: 'none' as const, label: 'Sharkord' }, { value: 'jollyboat' as const, label: 'Jollyboat' }, { value: 'custom' as const, label: t('custom') }],
+    [{ value: 'none' as const, label: 'Sharkord' }, { value: 'jollyboat' as const, label: 'Jollyboat' }, { value: 'water' as const, label: t('Water') }, { value: 'custom' as const, label: t('custom') }],
     settings.theme,
     (v) => {
       $('css-row').hidden = v !== 'custom';

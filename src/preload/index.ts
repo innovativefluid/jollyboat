@@ -18,15 +18,45 @@ type TBootstrap = {
   bridge: { ownedByUs: boolean; token: string } | null;
   login: { token: string | null } | null;
   colorMode: 'auto' | 'dark' | 'light';
+  /** the app's own windows: the lcd look or the water look */
+  look: 'lcd' | 'water';
   screenAudio: { pipewire: boolean; virtualMic: string; dropRestrict: boolean } | null;
 };
 
 const boot = ipcRenderer.sendSync('shell:bootstrap') as TBootstrap;
 
 if (boot.ownPage) {
+  // the look goes on <html> as data-look before anything is painted (the preload runs before
+  // the document has an element: the parser's first insert is caught), then follows the setting
+  const markLook = (look: string) => {
+    const root = document.documentElement;
+    if (root) root.dataset.look = look;
+    return !!root;
+  };
+  if (!markLook(boot.look)) {
+    const watcher = new MutationObserver(() => markLook(boot.look) && watcher.disconnect());
+    watcher.observe(document, { childList: true });
+  }
+  const lookListeners: ((look: 'lcd' | 'water') => void)[] = [];
+  ipcRenderer.on('shell:look', (_e, look: 'lcd' | 'water') => {
+    if (look !== 'lcd' && look !== 'water') return;
+    markLook(look);
+    for (const cb of lookListeners) cb(look);
+  });
+
   // each of our pages gets only what it uses: the setup window the settings / servers api, the
   // picker, prompt and bar their one or two calls
-  const common = { platform: boot.platform, version: boot.version, storeUpdates: boot.storeUpdates, wayland: boot.wayland, lang: boot.lang };
+  const common = {
+    platform: boot.platform,
+    version: boot.version,
+    storeUpdates: boot.storeUpdates,
+    wayland: boot.wayland,
+    lang: boot.lang,
+    look: boot.look,
+    onLook: (cb: (look: 'lcd' | 'water') => void) => {
+      lookListeners.push(cb);
+    }
+  };
   const byPage = {
     launcher: {
       getSettings: () => ipcRenderer.invoke('settings:get') as Promise<TSettings>,

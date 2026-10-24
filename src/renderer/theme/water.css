@@ -1,0 +1,356 @@
+/* the water look of the app's own pages (design_handoff_aqua.md): white and blue water under
+   glass. on while <html data-look="water">; day (light) and deep (dark) with the colour mode, or
+   with the server page's data-theme in the bar and the overlay. the water behind, the panels'
+   glass and the boat are drawn by water/water.ts; everything here is the controls on that glass.
+   tokens are rgb triplets so every colour can take its alpha (§3). */
+
+@font-face { font-family: 'Nunito'; src: url('../fonts/Nunito.ttf') format('truetype'); font-weight: 200 1000; }
+
+/* the water level inside a glass control, 0..1, eased with a little overshoot */
+@property --lvl { syntax: '<number>'; inherits: false; initial-value: 0; }
+
+:root[data-look='water'] {
+  --w-font: 'Nunito', system-ui, sans-serif;
+  --w-pool-top: 232, 246, 255; --w-pool-mid: 159, 216, 246; --w-pool-bot: 47, 136, 216;
+  --w-light: 255, 255, 255; --w-light-a: 0.8;
+  --w-fg: 10, 47, 82; --w-dim: 51, 92, 124; --w-mute: 120, 152, 178;
+  --w-glass: 242, 249, 255; --w-glass-a: 0.54;
+  --w-well: 255, 255, 255; --w-well-a: 0.62;
+  --w-btn: 255, 255, 255; --w-btn-a: 0.34;
+  --w-edge: 42, 106, 163; --w-edge-a: 0.42;
+  --w-liq-a: 92, 192, 247; --w-liq-b: 7, 87, 194;
+  --w-on-liq-shade: 6, 56, 111;
+  --w-shade: 11, 74, 134; --w-shade-a: 0.3;
+  --w-glow: 70, 205, 255; --w-glow-a: 0.7;
+  --w-spark: 255, 255, 255;
+  --w-text-glow: 255, 255, 255; --w-text-glow-a: 0.55;
+  --w-warm: 178, 52, 74;
+  /* the lcd tokens, for the bits of the pages that use them directly */
+  --bg: rgb(var(--w-pool-mid)); --panel: rgba(var(--w-glass), 0.8); --fg: rgb(var(--w-fg)); --dim: rgb(var(--w-dim));
+  --mute: rgb(var(--w-mute)); --faint: rgba(var(--w-edge), 0.3); --line: rgba(var(--w-edge), 0.22); --spark: rgb(var(--w-spark));
+  --fg-rgb: var(--w-fg); --dim-rgb: var(--w-dim); --shadow: rgba(var(--w-shade), var(--w-shade-a)); --shadow-dim: rgba(var(--w-shade), 0.2);
+  color-scheme: light;
+}
+:root[data-look='water'][data-theme='dark'] {
+  --w-pool-top: 15, 65, 108; --w-pool-mid: 8, 42, 76; --w-pool-bot: 2, 12, 26;
+  --w-light: 134, 226, 255; --w-light-a: 0.55;
+  --w-fg: 228, 245, 255; --w-dim: 156, 197, 226; --w-mute: 105, 144, 174;
+  --w-glass: 13, 42, 70; --w-glass-a: 0.64;
+  --w-well: 7, 26, 46; --w-well-a: 0.66;
+  --w-btn: 20, 64, 106; --w-btn-a: 0.42;
+  --w-edge: 143, 216, 255; --w-edge-a: 0.34;
+  --w-liq-a: 79, 207, 255; --w-liq-b: 10, 72, 166;
+  --w-on-liq-shade: 3, 36, 79;
+  --w-shade: 0, 6, 15; --w-shade-a: 0.55;
+  --w-glow: 63, 212, 255; --w-glow-a: 0.8;
+  --w-spark: 216, 246, 255;
+  --w-text-glow: 10, 58, 102; --w-text-glow-a: 0.6;
+  --w-warm: 255, 150, 160;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='water']:not([data-theme]) {
+    --w-pool-top: 15, 65, 108; --w-pool-mid: 8, 42, 76; --w-pool-bot: 2, 12, 26;
+    --w-light: 134, 226, 255; --w-light-a: 0.55;
+    --w-fg: 228, 245, 255; --w-dim: 156, 197, 226; --w-mute: 105, 144, 174;
+    --w-glass: 13, 42, 70; --w-glass-a: 0.64;
+    --w-well: 7, 26, 46; --w-well-a: 0.66;
+    --w-btn: 20, 64, 106; --w-btn-a: 0.42;
+    --w-edge: 143, 216, 255; --w-edge-a: 0.34;
+    --w-liq-a: 79, 207, 255; --w-liq-b: 10, 72, 166;
+    --w-on-liq-shade: 3, 36, 79;
+    --w-shade: 0, 6, 15; --w-shade-a: 0.55;
+    --w-glow: 63, 212, 255; --w-glow-a: 0.8;
+    --w-spark: 216, 246, 255;
+    --w-text-glow: 10, 58, 102; --w-text-glow-a: 0.6;
+    --w-warm: 255, 150, 160;
+    color-scheme: dark;
+  }
+}
+
+/* ---- the page ---------------------------------------------------------------------------- */
+
+[data-look='water'] body {
+  background: linear-gradient(160deg, rgb(var(--w-pool-top)), rgb(var(--w-pool-mid)) 45%, rgb(var(--w-pool-bot)));
+  color: rgb(var(--w-fg));
+  font: 500 14px/1.25 var(--w-font);
+}
+[data-look='water'] ::selection { background: rgba(var(--w-glow), 0.45); color: rgb(var(--w-fg)); }
+canvas.water { position: fixed; left: 0; top: 0; z-index: 0; }
+canvas.intro { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 11; pointer-events: none; }
+[data-look='water'] .page { padding: 12px 22px 10px; }
+
+/* text on glass is raised: an etched highlight under it */
+[data-look='water'] .page { text-shadow: 0 1px 0 rgba(var(--w-text-glow), var(--w-text-glow-a)); }
+
+/* ---- the title: glass letters holding water at about half, sloshing (§7) ----------------- */
+
+[data-look='water'] .title {
+  font: 800 40px/1 var(--w-font);
+  letter-spacing: 0.2px;
+  color: transparent;
+  text-shadow: none;
+  background-image:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.7) 0 16%, rgba(255, 255, 255, 0.06) 40%, transparent 42%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='40' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='w' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0.45' stop-color='%235cc0f7'/%3E%3Cstop offset='1' stop-color='%230757c2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0 20 C 22.5 18.4, 22.5 18.4, 45 20 S 67.5 21.6, 90 20 L 90 40 L 0 40 Z' fill='url%28%23w%29' fill-opacity='0.55'/%3E%3Cpath d='M0 20 C 22.5 18.4, 22.5 18.4, 45 20 S 67.5 21.6, 90 20' fill='none' stroke='%23fff' stroke-width='1.6' stroke-opacity='0.55'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='40' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='w' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0.45' stop-color='%235cc0f7'/%3E%3Cstop offset='1' stop-color='%230757c2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0 19 C 30 16.8, 30 16.8, 60 19 S 90 21.2, 120 19 L 120 40 L 0 40 Z' fill='url%28%23w%29' fill-opacity='1'/%3E%3Cpath d='M0 19 C 30 16.8, 30 16.8, 60 19 S 90 21.2, 120 19' fill='none' stroke='%23fff' stroke-width='1.6' stroke-opacity='1.00'/%3E%3C/svg%3E"),
+    linear-gradient(rgba(var(--w-glass), 0.62), rgba(var(--w-glass), 0.62));
+  background-size: 100% 100%, 90px 100%, 120px 100%, 100% 100%;
+  background-repeat: no-repeat, repeat-x, repeat-x, no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-stroke: 1px rgba(var(--w-edge), 0.75);
+  filter: drop-shadow(0 3px 3px rgba(var(--w-shade), calc(var(--w-shade-a) * 0.9))) drop-shadow(0 0 7px rgba(var(--w-glow), 0.4));
+  animation: w-slosh 9s linear infinite;
+}
+[data-look='water'] .title::before { content: none; }
+@keyframes w-slosh {
+  from { background-position: 0 0, 0 1px, 0 0, 0 0; }
+  50% { background-position: 0 0, -45px -1px, 60px 1px, 0 0; }
+  to { background-position: 0 0, -90px 1px, 120px 0, 0 0; }
+}
+[data-look='water'] .title-block { gap: 6px; }
+[data-look='water'] canvas.strip { height: 9px; image-rendering: auto; }
+[data-look='water'] .header { height: 56px; }
+
+/* ---- panels: the glass slab is drawn on the water; here only its shape and breathing --- */
+
+[data-look='water'] .panel {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  border-radius: 30px 14px 16px 28px;
+  padding: 11px 20px 12px;
+  animation: w-breathe 9s ease-in-out infinite alternate;
+}
+[data-look='water'] .panel.alt { border-radius: 14px 30px 28px 16px; animation-direction: alternate-reverse; animation-delay: 0s; }
+[data-look='water'] .panel.enter { animation: w-panel-in 460ms cubic-bezier(0.2, 0.9, 0.3, 1.15) both, w-breathe 9s ease-in-out infinite alternate; }
+[data-look='water'] .panel.enter.alt { animation: w-panel-in 460ms cubic-bezier(0.2, 0.9, 0.3, 1.15) both, w-breathe 9s ease-in-out infinite alternate-reverse; }
+@keyframes w-breathe { from { transform: translate(0, 0); } to { transform: translate(2px, -1.5px); } }
+@keyframes w-panel-in { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+[data-look='water'] .page.enter { animation: w-page-in 460ms cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+@keyframes w-page-in { from { opacity: 0; transform: scale(0.96); } 91% { opacity: 1; } to { opacity: 1; transform: none; } }
+/* without webgl2: the glass in css */
+.no-gl[data-look='water'] .panel {
+  background: rgba(var(--w-glass), calc(var(--w-glass-a) + 0.25));
+  border: 1px solid rgba(var(--w-edge), var(--w-edge-a));
+  box-shadow: 0 7px 18px -6px rgba(var(--w-shade), var(--w-shade-a)), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(14px);
+}
+[data-look='water'] .panel-title { font: 800 16px/1.25 var(--w-font); letter-spacing: 0.1px; margin-bottom: 2px; }
+[data-look='water'] .panel-title::before { color: rgb(var(--w-dim)); }
+
+/* ---- glass bubbles: pills and segments. clear glass, or water in the glass (§5) ----------- */
+
+[data-look='water'] :is(.pill, .seg button) {
+  position: relative;
+  isolation: isolate;
+  height: 36px;
+  padding: 0 17px;
+  border-radius: 18px 12px 18px 12px;
+  font: 700 14px/1 var(--w-font);
+  letter-spacing: 0.1px;
+  color: rgb(var(--w-fg));
+  text-shadow: 0 1px 0 rgba(var(--w-text-glow), var(--w-text-glow-a));
+  border: 1px solid rgba(var(--w-edge), calc(var(--w-edge-a) + 0.12));
+  --lvl: 0;
+  background:
+    linear-gradient(to top, rgb(var(--w-liq-b)) 0, color-mix(in srgb, rgb(var(--w-liq-b)) 55%, rgb(var(--w-liq-a))) calc(var(--lvl) * 62%), rgb(var(--w-liq-a)) calc(var(--lvl) * 100% - 3px), rgba(255, 255, 255, 0.92) calc(var(--lvl) * 100% - 1.5px), rgba(255, 255, 255, 0) calc(var(--lvl) * 100% + 0.5px)),
+    rgba(var(--w-btn), var(--w-btn-a));
+  box-shadow:
+    0 3.5px 7px -2px rgba(var(--w-shade), var(--w-shade-a)),
+    inset 0 -5px 8px -4px rgba(var(--w-light), var(--w-light-a)),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: --lvl 520ms cubic-bezier(0.3, 1.5, 0.5, 1), transform 260ms cubic-bezier(0.3, 1.7, 0.5, 1), box-shadow 180ms ease;
+}
+/* the gloss cap */
+[data-look='water'] :is(.pill, .seg button)::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: 6px;
+  right: 6px;
+  top: 2px;
+  height: 46%;
+  border-radius: 14px 9px 6px 6px / 11px 8px 5px 5px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.08));
+  opacity: 0.85;
+  pointer-events: none;
+}
+[data-look='water'][data-theme='dark'] :is(.pill, .seg button)::before { opacity: 0.45; }
+@media (prefers-color-scheme: dark) { [data-look='water']:not([data-theme]) :is(.pill, .seg button)::before { opacity: 0.45; } }
+
+/* water in the glass: text on water is white, raised with the water's own shade */
+[data-look='water'] .pill:not(.minor),
+[data-look='water'] .seg button.on {
+  --lvl: 0.86;
+  color: #fff;
+  font-weight: 800;
+  text-shadow: 0 1px 1px rgba(var(--w-on-liq-shade), 0.95), 0 0 4px rgba(var(--w-on-liq-shade), 0.6);
+}
+[data-look='water'] .seg button.on { --lvl: 0.9; }
+[data-look='water'] :is(.pill, .seg button):hover:not(:disabled) {
+  box-shadow:
+    0 4.5px 9px -2px rgba(var(--w-shade), var(--w-shade-a)),
+    inset 0 -5px 8px -4px rgba(var(--w-light), var(--w-light-a)),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 0 0 3px rgba(var(--w-glow), 0.16),
+    0 0 14px rgba(var(--w-glow), calc(var(--w-glow-a) * 0.55));
+}
+[data-look='water'] .pill:not(.minor):hover:not(:disabled), [data-look='water'] .seg button.on:hover { --lvl: 0.94; }
+[data-look='water'] :is(.pill, .seg button):active:not(:disabled) {
+  transform: scale(1.044, 0.945);
+  box-shadow: 0 2.5px 5px -2px rgba(var(--w-shade), var(--w-shade-a)), inset 0 -5px 8px -4px rgba(var(--w-light), var(--w-light-a)), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: --lvl 520ms cubic-bezier(0.3, 1.5, 0.5, 1), transform 60ms ease-out, box-shadow 60ms;
+}
+[data-look='water'] .pill:not(.minor):active:not(:disabled) { --lvl: 0.97; }
+[data-look='water'] :is(.pill, .seg button):disabled { opacity: 0.45; }
+[data-look='water'] :is(.pill, .seg button):focus-visible {
+  outline: none;
+  box-shadow: 0 3.5px 7px -2px rgba(var(--w-shade), var(--w-shade-a)), 0 0 0 3px rgba(var(--w-glow), 0.55), 0 0 14px rgba(var(--w-glow), 0.5);
+}
+[data-look='water'] .pill.alt { border-radius: 12px 18px 12px 18px; }
+[data-look='water'] .pill.small { height: 28px; padding: 0 14px; font-size: 13px; border-radius: 14px 10px 14px 10px; }
+[data-look='water'] .pill.small.alt { border-radius: 10px 14px 10px 14px; }
+[data-look='water'] .pill.minor { padding: 0 15px; }
+[data-look='water'] .pill.small.minor { padding: 0 12px; }
+/* segments: 30 tall, 7 apart, corners alternating per index */
+[data-look='water'] .seg { gap: 7px; flex-wrap: wrap; }
+[data-look='water'] .seg button { height: 28px; padding: 0 12px; font-size: 13px; border-radius: 14px 9px 14px 9px; }
+[data-look='water'] .seg button:nth-child(even) { border-radius: 9px 14px 9px 14px; }
+/* a click: squash and a jiggle that dies away */
+[data-look='water'] .jiggle { animation: w-jiggle 480ms ease-out; }
+@keyframes w-jiggle {
+  0% { transform: scale(1.044, 0.945); }
+  22% { transform: scale(0.975, 1.03); }
+  44% { transform: scale(1.014, 0.987); }
+  66% { transform: scale(0.994, 1.006); }
+  100% { transform: none; }
+}
+
+/* ---- wells (inputs): recessed glass ------------------------------------------------------ */
+
+[data-look='water'] :is(input[type='text'], input[type='password'], input[type='url']) {
+  height: 38px;
+  padding: 0 13px;
+  border-radius: 11px 17px 11px 17px;
+  background: rgba(var(--w-well), var(--w-well-a));
+  color: rgb(var(--w-fg));
+  border: 1px solid rgba(var(--w-edge), var(--w-edge-a));
+  box-shadow: inset 0 2px 5px rgba(var(--w-shade), calc(var(--w-shade-a) * 0.9)), inset 0 -1px 0 rgba(255, 255, 255, 0.4);
+  font: 600 15px/1 var(--w-font);
+  text-shadow: none;
+  transition: border-color 160ms, box-shadow 200ms;
+}
+[data-look='water'] input:focus {
+  border-color: rgba(var(--w-glow), 0.9);
+  box-shadow: inset 0 2px 5px rgba(var(--w-shade), calc(var(--w-shade-a) * 0.9)), 0 0 0 3px rgba(var(--w-glow), 0.22), 0 0 12px rgba(var(--w-glow), 0.45);
+}
+[data-look='water'] input::placeholder { color: rgb(var(--w-mute)); }
+[data-look='water'] input:-webkit-autofill { -webkit-text-fill-color: rgb(var(--w-fg)); box-shadow: 0 0 0 100px rgba(var(--w-well), 1) inset; }
+[data-look='water'] .field { grid-template-columns: 96px 1fr; }
+[data-look='water'] .field > label { font: 700 12px/38px var(--w-font); color: rgb(var(--w-dim)); }
+[data-look='water'] .field > .control .note { font: 500 13px/1.25 var(--w-font); color: rgb(var(--w-dim)); }
+
+/* ---- checks: a small glass bubble, filled with water and a white tick when on ----------- */
+
+[data-look='water'] .check { font: 600 14px/1.2 var(--w-font); color: rgb(var(--w-fg)); }
+[data-look='water'] .check input {
+  width: 20px;
+  height: 20px;
+  border-radius: 7px 5px 7px 5px;
+  border: 1px solid rgba(var(--w-edge), calc(var(--w-edge-a) + 0.15));
+  --lvl: 0;
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.06) 48%, transparent 50%),
+    linear-gradient(to top, rgb(var(--w-liq-b)) 0, rgb(var(--w-liq-a)) calc(var(--lvl) * 100% - 2px), rgba(255, 255, 255, 0.9) calc(var(--lvl) * 100% - 1px), transparent calc(var(--lvl) * 100%)),
+    rgba(var(--w-btn), var(--w-btn-a));
+  box-shadow: 0 2px 4px -1px rgba(var(--w-shade), var(--w-shade-a)), inset 0 -3px 5px -3px rgba(var(--w-light), var(--w-light-a));
+  transition: --lvl 480ms cubic-bezier(0.3, 1.5, 0.5, 1), transform 200ms cubic-bezier(0.3, 1.7, 0.5, 1);
+}
+[data-look='water'] .check input:checked {
+  --lvl: 0.88;
+  border-color: rgba(var(--w-edge), calc(var(--w-edge-a) + 0.25));
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M3 7.4l2.6 2.6L11 4.4' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 14px no-repeat,
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.05) 48%, transparent 50%),
+    linear-gradient(to top, rgb(var(--w-liq-b)) 0, rgb(var(--w-liq-a)) calc(var(--lvl) * 100% - 2px), rgba(255, 255, 255, 0.9) calc(var(--lvl) * 100% - 1px), transparent calc(var(--lvl) * 100%)),
+    rgba(var(--w-btn), var(--w-btn-a));
+}
+[data-look='water'] .check input:hover { box-shadow: 0 2px 4px -1px rgba(var(--w-shade), var(--w-shade-a)), 0 0 10px rgba(var(--w-glow), 0.5); }
+[data-look='water'] .check input:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--w-glow), 0.55); }
+
+/* ---- the slider: a tube that fills with water up to a glass marble ----------------------- */
+
+[data-look='water'] .slider { height: 24px; }
+[data-look='water'] .slider::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 5px;
+  border: 1px solid rgba(var(--w-edge), calc(var(--w-edge-a) + 0.1));
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0) 55%),
+    linear-gradient(to right, rgb(var(--w-liq-b)), rgb(var(--w-liq-a)) var(--fill, 50%), transparent var(--fill, 50%)),
+    rgba(var(--w-well), var(--w-well-a));
+  box-shadow: inset 0 1px 3px rgba(var(--w-shade), var(--w-shade-a));
+}
+[data-look='water'] .slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -7px;
+  border-radius: 50%;
+  border: 1px solid rgba(var(--w-edge), calc(var(--w-edge-a) + 0.2));
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.95) 0 2.5px, rgba(255, 255, 255, 0.35) 5px, transparent 6px),
+    linear-gradient(to top, rgb(var(--w-liq-b)) 0, rgb(var(--w-liq-a)) 70%, rgba(255, 255, 255, 0.9) 72%, transparent 74%),
+    rgba(var(--w-btn), 0.7);
+  box-shadow: 0 3px 5px -1px rgba(var(--w-shade), var(--w-shade-a)), inset 0 -3px 5px -2px rgba(var(--w-light), var(--w-light-a));
+  transition: transform 200ms cubic-bezier(0.3, 1.7, 0.5, 1);
+}
+[data-look='water'] .slider:active::-webkit-slider-thumb { transform: scale(1.12); }
+[data-look='water'] .slider:focus-visible { outline: none; }
+[data-look='water'] .slider:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px rgba(var(--w-glow), 0.55); }
+
+/* ---- words ------------------------------------------------------------------------------- */
+
+[data-look='water'] .hint { font: 600 13.5px/1.18 var(--w-font); color: rgb(var(--w-dim)); }
+[data-look='water'] .hint.good, [data-look='water'] .hint.bad { color: rgb(var(--w-fg)); }
+[data-look='water'] .hint.bad::before { color: rgb(var(--w-warm)); font-weight: 800; }
+[data-look='water'] .meta { font: 600 13px/1.25 var(--w-font); color: rgb(var(--w-dim)); }
+[data-look='water'] button.link { color: rgb(var(--w-fg)); text-decoration-color: rgba(var(--w-edge), 0.8); }
+[data-look='water'] .item { border-bottom: 1px solid rgba(var(--w-edge), 0.22); padding: 9px 0; }
+[data-look='water'] .item .name { font: 800 16px/1.25 var(--w-font); }
+[data-look='water'] .col::-webkit-scrollbar-thumb { background: rgba(var(--w-edge), 0.5); border-radius: 4px; }
+
+/* the footer sits on open water: a small frosted strip under its words (§10) */
+[data-look='water'] .footer {
+  align-self: flex-start;
+  padding: 3px 12px;
+  border-radius: 12px 7px 12px 7px;
+  background: rgba(var(--w-glass), calc(var(--w-glass-a) + 0.12));
+  border: 1px solid rgba(var(--w-edge), calc(var(--w-edge-a) * 0.7));
+  backdrop-filter: blur(8px);
+}
+
+/* ---- the toast: a pill of water that pops in -------------------------------------------- */
+
+[data-look='water'] .toast {
+  height: 38px;
+  padding: 0 20px;
+  border-radius: 19px 9px 19px 9px;
+  font: 800 15px/36px var(--w-font);
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(var(--w-on-liq-shade), 0.85);
+  border: 1px solid rgba(var(--w-edge), calc(var(--w-edge-a) + 0.2));
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.05) 45%, transparent 47%),
+    linear-gradient(to top, rgb(var(--w-liq-b)) 0, rgb(var(--w-liq-a)) 89%, rgba(255, 255, 255, 0.9) 91%, rgba(var(--w-btn), 0.6) 93%);
+  box-shadow: 0 5px 10px -3px rgba(var(--w-shade), var(--w-shade-a)), inset 0 -5px 8px -4px rgba(var(--w-light), var(--w-light-a));
+  transform: translateX(-50%) scale(0.85);
+  transition: opacity 220ms, transform 420ms cubic-bezier(0.3, 1.7, 0.5, 1);
+}
+[data-look='water'] .toast.show { transform: translateX(-50%) scale(1); }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-look='water'] .title, [data-look='water'] .panel, [data-look='water'] .jiggle { animation: none; }
+}

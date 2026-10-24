@@ -1,6 +1,6 @@
-// Light, dark or the system's for the server page (and with it the bar and the overlay, which
-// follow the page). Chromium's own scheme (prefers-color-scheme, scrollbars, the pip window)
-// follows too; the app's own windows declare `color-scheme: light` and stay the lcd look.
+// Light, dark or the system's for every window: the server page (and with it the bar and the
+// overlay, which follow the page) and the app's own windows, through Chromium's own scheme
+// (prefers-color-scheme, scrollbars, the pip window).
 
 import { nativeTheme, webContents } from 'electron';
 import { findServerByUrl, getSettings } from './settings';

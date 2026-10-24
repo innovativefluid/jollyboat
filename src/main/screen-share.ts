@@ -11,6 +11,7 @@ import { t } from './lang';
 import { loopbackForRequest, markShareGranted } from './screen-audio';
 import { getSettings, saveSettings } from './settings';
 import { pageUrl, preloadPath, iconPath } from './paths';
+import { windowBackground } from './look';
 
 const isWaylandSession = () =>
   process.platform === 'linux' && (!!process.env.WAYLAND_DISPLAY || process.env.XDG_SESSION_TYPE === 'wayland');
@@ -31,6 +32,7 @@ const openPicker = (parent: BaseWindow | undefined, sources: TCaptureSource[]) =
       autoHideMenuBar: true,
       icon: iconPath(),
       title: t('Share your screen'),
+      backgroundColor: windowBackground(),
       webPreferences: { preload: preloadPath(), sandbox: true, contextIsolation: true }
     });
 

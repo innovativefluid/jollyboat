@@ -21,6 +21,7 @@
       <li>An optional voice overlay that shows who is talking, clicks go through it</li>
       <li>A tray icon that shows when you are in a call, talking, muted or deafened, and new messages</li>
       <li>Several servers, proxy logins (basic auth), staying logged in and share codes</li>
+      <li>Themes: Sharkord's own look, Jollyboat's lcd look, Water, or your own CSS, light or dark</li>
       <li>Asks before a reload or quit would drop you out of a call</li>
       <li>Talks only to your servers, no telemetry</li>
     </ul>
@@ -81,6 +82,11 @@
   </keywords>
 
   <releases>
+    <release version="0.3.6" date="2026-10-24">
+      <description>
+        <p>A new Water theme: white and blue water under glass, light and dark, for the Sharkord page and for the app's own windows (live water with ripples, air bubbles and the boat riding the waves). The light and dark setting now reaches the setup window too.</p>
+      </description>
+    </release>
     <release version="0.3.5" date="2026-10-23">
       <description>
         <p>The Jollyboat theme is easier to read: online, idle and offline look different at a glance, offline members fade back, text and lines have more contrast, and hover, keyboard focus and menus are clearer.</p>

@@ -5,6 +5,7 @@ import { setStreams } from './popout';
 import { editCustomCss, refreshCustomCss, useExample } from './customcss';
 import { currentLang, onLanguageChange, t } from './lang';
 import { applyColorMode } from './colormode';
+import { broadcastLook, currentLook } from './look';
 import { getAutoStart, isAutoStartSupported, setAutoStart } from './autostart';
 import { basicHeaderFor } from './basic-auth';
 import { getBridgeStatus, getBridgeToken } from './hotkeys/bridge';
@@ -39,7 +40,7 @@ import {
   upsertServer
 } from './settings';
 
-type THandlers = { connectToServer: (id: string) => void; getMainWindow: () => BaseWindow | null; spellcheckAtStart: boolean };
+type THandlers = { connectToServer: (id: string) => void; getMainWindow: () => BaseWindow | null; spellcheckAtStart: boolean; /** the theme changed: window colours */ onLookChange: () => void };
 
 let spellcheckAtStartup = false;
 
@@ -65,7 +66,7 @@ const pickSettingsPatch = (patch: unknown): Partial<TSettings> => {
   if (p.onClose === 'minimize' || p.onClose === 'tray' || p.onClose === 'quit') out.onClose = p.onClose;
   if (typeof p.notifyTray === 'boolean') out.notifyTray = p.notifyTray;
   if (typeof p.overlay === 'boolean') out.overlay = p.overlay;
-  if (p.theme === 'none' || p.theme === 'jollyboat' || p.theme === 'custom') out.theme = p.theme;
+  if (p.theme === 'none' || p.theme === 'jollyboat' || p.theme === 'water' || p.theme === 'custom') out.theme = p.theme;
   if (p.colorMode === 'auto' || p.colorMode === 'dark' || p.colorMode === 'light') out.colorMode = p.colorMode;
   if (p.language === 'system' || p.language === 'en' || p.language === 'de' || p.language === 'pl') out.language = p.language;
   if (typeof p.overlayOpacity === 'number' && Number.isFinite(p.overlayOpacity)) out.overlayOpacity = Math.min(100, Math.max(0, Math.round(p.overlayOpacity)));
@@ -138,7 +139,7 @@ const fromSavedServer = (event: IpcMainEvent) => !!findServerByUrl(event.senderF
 const idList = (ids: unknown): string[] | null =>
   Array.isArray(ids) ? ids.filter((i): i is string => typeof i === 'string') : null;
 
-export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart }: THandlers) => {
+export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart, onLookChange }: THandlers) => {
   spellcheckAtStartup = spellcheckAtStart;
 
   // sync bootstrap for the preload. the bridge token and the capture patch go only to pages
@@ -161,6 +162,7 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart 
       // sharkord's own login, kept across launches (the page would hold it in localStorage anyway)
       login: server && server.keepLogin !== false ? { token: loginTokenFor(server) } : null,
       colorMode: getSettings().colorMode,
+      look: currentLook(),
       screenAudio: server
         ? {
             pipewire: getScreenAudioMode() === 'pipewire',
@@ -261,7 +263,11 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart 
     if (picked.spellcheck !== undefined) applySpellcheck(saved.spellcheck);
     if (picked.checkUpdates === true) startUpdater();
     if (picked.overlay !== undefined || picked.overlayOpacity !== undefined) refreshOverlay();
-    if (picked.theme !== undefined) refreshCustomCss();
+    if (picked.theme !== undefined) {
+      refreshCustomCss();
+      broadcastLook();
+      onLookChange();
+    }
     if (picked.colorMode !== undefined) applyColorMode();
     if (picked.language !== undefined) onLanguageChange();
     return saved;

@@ -2,6 +2,7 @@
 
 import { BrowserWindow, ipcMain, type BaseWindow } from 'electron';
 import { iconPath, isOwnPageUrl, pageUrl, preloadPath } from './paths';
+import { windowBackground } from './look';
 
 type TPrompt = { message: string; detail?: string; yes: string; no: string };
 
@@ -28,7 +29,7 @@ export const askPrompt = (parent: BaseWindow | undefined, prompt: TPrompt) =>
       autoHideMenuBar: true,
       icon: iconPath(),
       title: 'Jollyboat',
-      backgroundColor: '#a6b08a',
+      backgroundColor: windowBackground(),
       webPreferences: { preload: preloadPath(), sandbox: true, contextIsolation: true }
     });
     promptWindow.setMenuBarVisibility(false);
