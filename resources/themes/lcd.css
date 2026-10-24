@@ -167,13 +167,14 @@ html .border-r, html .border-l, html .border-b, html .border-t, html .border { b
 
 /* ---- voice ------------------------------------------------------------------------------ */
 
-/* who is talking: an ink outline on the avatar that steps out and back like a sound wave on
-   an lcd, the louder the thicker and the quicker. no glow */
-html .speaking-effect-low, html .speaking-effect-medium, html .speaking-effect-high { box-shadow: none; outline-style: solid; outline-color: var(--jb-ink); }
-html .speaking-effect-low { outline-width: 2px; animation: jb-talk 1.2s steps(2, jump-none) infinite; }
-html .speaking-effect-medium { outline-width: 3px; animation: jb-talk 0.8s steps(2, jump-none) infinite; }
-html .speaking-effect-high { outline-width: 4px; animation: jb-talk 0.5s steps(2, jump-none) infinite; }
-@keyframes jb-talk { from { outline-offset: 1px; } to { outline-offset: 3px; } }
+/* who is talking: an ink outline that blinks between ink and dim like an lcd segment, the louder
+   the quicker. it never changes its size or place (on a big video tile a moving outline read as
+   the tile itself jumping). no glow */
+html .speaking-effect-low, html .speaking-effect-medium, html .speaking-effect-high { box-shadow: none; outline: 2px solid var(--jb-ink); outline-offset: 2px; }
+html .speaking-effect-low { animation: jb-talk 1.2s steps(2, jump-none) infinite; }
+html .speaking-effect-medium { animation: jb-talk 0.8s steps(2, jump-none) infinite; }
+html .speaking-effect-high { animation: jb-talk 0.5s steps(2, jump-none) infinite; }
+@keyframes jb-talk { from { outline-color: var(--jb-ink); } to { outline-color: var(--jb-dim); } }
 
 /* the places sharkord colours directly: greens and blues become ink, reds the one warm tone,
    yellows and greys the dim ink; tints (bg-green-500/15 and the like) a wash of the same */

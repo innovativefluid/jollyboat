@@ -343,12 +343,16 @@ html [data-testid="member-item"]:has([data-status="offline"]) [data-slot="avatar
 
 /* ---- voice ------------------------------------------------------------------------------- */
 
-/* who is talking: a halo of light around the avatar that swells with the voice */
-html .speaking-effect-low, html .speaking-effect-medium, html .speaking-effect-high { outline: none; }
-html .speaking-effect-low { box-shadow: 0 0 0 2px rgba(var(--w-glow), 0.85), 0 0 8px rgba(var(--w-glow), 0.6); }
-html .speaking-effect-medium { box-shadow: 0 0 0 2.5px rgba(var(--w-glow), 0.9), 0 0 12px rgba(var(--w-glow), 0.7); animation: jb-talk 0.9s ease-in-out infinite alternate; }
-html .speaking-effect-high { box-shadow: 0 0 0 3px rgb(var(--w-glow)), 0 0 16px rgba(var(--w-glow), 0.85); animation: jb-talk 0.55s ease-in-out infinite alternate; }
-@keyframes jb-talk { from { scale: 1; } to { scale: 1.035; } }
+/* who is talking: a ring of light that glows brighter and pulses quicker with the voice. the
+   ring keeps its width and the tile its size (a swelling tile in the voice view was jarring) */
+html .speaking-effect-low, html .speaking-effect-medium, html .speaking-effect-high { outline: none; box-shadow: 0 0 0 2px rgba(var(--w-glow), 0.85), 0 0 8px rgba(var(--w-glow), 0.55); }
+html .speaking-effect-low { animation: none; }
+html .speaking-effect-medium { animation: jb-talk 0.9s ease-in-out infinite alternate; }
+html .speaking-effect-high { animation: jb-talk 0.55s ease-in-out infinite alternate; }
+@keyframes jb-talk {
+  from { box-shadow: 0 0 0 2px rgba(var(--w-glow), 0.85), 0 0 8px rgba(var(--w-glow), 0.55); }
+  to { box-shadow: 0 0 0 2px rgb(var(--w-glow)), 0 0 18px rgba(var(--w-glow), 0.9); }
+}
 
 /* the places sharkord colours directly: greens and blues become water, reds a warm tone,
    yellows and greys the dim ink; tints a wash of the same */
