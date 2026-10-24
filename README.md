@@ -18,7 +18,7 @@ A desktop app for [Sharkord](https://sharkord.com) servers, for Windows and Linu
 - **Careful in calls** — asks before a reload or quit would drop you out of a call.
 
 **Around it**
-- **Tray** — shows when you are in voice, talking, muted, deafened, and new messages. Closing the window minimizes, hides to the tray or quits.
+- **Tray** — shows when you are in voice, talking, muted, deafened, and new messages, in the look of the theme you picked (Sharkord, Jollyboat or Water). Closing the window minimizes, hides to the tray or quits.
 - **Servers** — several, with proxy logins (basic auth), staying logged in, one that opens at start, and share codes to pass them on.
 - **One bar on top** — server name, zoom (50 to 300 %, the bar grows with it), servers and settings, window buttons.
 - **Light, dark or auto** — for everything: the Sharkord page, its bar, the overlay and the setup window.

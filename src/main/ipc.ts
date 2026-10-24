@@ -21,7 +21,7 @@ import {
   unmutePipeWireShare,
   VIRTUAL_MIC_LABEL
 } from './screen-audio';
-import { addUnread, setTitleUnread, setVoiceState } from './tray';
+import { addUnread, refreshTrayTheme, setTitleUnread, setVoiceState } from './tray';
 import { diagnostics } from './diagnostics';
 import { log } from './log';
 import { getUpdateStatus, installUpdateNow, onUpdateStatus, openReleasePage, startUpdater, updatesFromStore } from './updater';
@@ -268,6 +268,7 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart,
     if (picked.theme !== undefined) {
       refreshCustomCss();
       broadcastLook();
+      refreshTrayTheme();
       onLookChange();
     }
     if (picked.colorMode !== undefined) applyColorMode();

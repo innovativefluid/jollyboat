@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import type { TVoiceState } from '../shared/types';
 import { log } from './log';
 import { t, whenLanguageChanges } from './lang';
+import { getSettings } from './settings';
 
 type TTrayActions = {
   toggle: () => void;
@@ -37,16 +38,27 @@ let tray: Tray | null = null;
 let actions: TTrayActions | null = null;
 const icons = new Map<string, Electron.NativeImage>();
 
-// windows wants an .ico (several sizes, no smoothing); everywhere else the png is fine
+// one set of icons per theme, each from the theme's dark scheme (tools/make-icons.py): the lcd
+// pixel boat for the Jollyboat theme, the same boat in Sharkord's greys for Sharkord itself (and
+// custom css), a glass tile of water for the Water theme
+type TTraySet = 'lcd' | 'sharkord' | 'water';
+const traySet = (): TTraySet => {
+  const theme = getSettings().theme;
+  return theme === 'water' ? 'water' : theme === 'jollyboat' ? 'lcd' : 'sharkord';
+};
+
+// windows wants an .ico (several sizes); everywhere else the png is fine
 const iconFor = (name: string) => {
-  let img = icons.get(name);
+  const set = traySet();
+  const key = `${set}/${name}`;
+  let img = icons.get(key);
 
   if (!img) {
     const ext = process.platform === 'win32' ? 'ico' : 'png';
-    const path = join(__dirname, `../../resources/tray/${name}.${ext}`);
+    const path = join(__dirname, `../../resources/tray/${set}/${name}.${ext}`);
     // the mac menu bar is 16 pt tall: the 32 px icon goes in as its @2x
     img = process.platform === 'darwin' ? nativeImage.createFromBuffer(readFileSync(path), { scaleFactor: 2 }) : nativeImage.createFromPath(path);
-    icons.set(name, img);
+    icons.set(key, img);
   }
 
   return img;
@@ -86,9 +98,10 @@ let shownIcon = '';
 const renderIcon = () => {
   if (!tray) return;
   const name = iconName();
-  if (name === shownIcon) return;
-  shownIcon = name;
-  log('tray', 'icon', name);
+  const key = `${traySet()}/${name}`;
+  if (key === shownIcon) return;
+  shownIcon = key;
+  log('tray', 'icon', key);
   const img = iconFor(name);
   tray.setImage(img.isEmpty() ? nativeImage.createEmpty() : img);
 };
@@ -186,8 +199,15 @@ export const clearUnread = () => {
   actions?.getMainWindow()?.flashFrame(false);
 };
 
+/** the theme changed: its icons (the tray's, the taskbar overlay) */
+export const refreshTrayTheme = () => {
+  if (!tray) return;
+  renderIcon();
+  renderBadge();
+};
+
 export const hasTray = () => !!tray;
 
 /** one line for diagnostics */
 export const describeTray = () =>
-  `tray: ${tray ? 'created' : 'none'} | icon ${iconName()} | page ${state.connected ? 'controls found' : 'no controls'} | voice ${state.inVoice} | talking ${state.speaking} | mic muted ${state.micMuted} | deafened ${state.deafened} | unread ${unread()}`;
+  `tray: ${tray ? 'created' : 'none'} | icon ${traySet()}/${iconName()} | page ${state.connected ? 'controls found' : 'no controls'} | voice ${state.inVoice} | talking ${state.speaking} | mic muted ${state.micMuted} | deafened ${state.deafened} | unread ${unread()}`;
