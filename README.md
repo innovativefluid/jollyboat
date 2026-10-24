@@ -4,7 +4,7 @@
 
 A desktop app for [Sharkord](https://sharkord.com) servers, for Windows and Linux on x64 and ARM (macOS experimental). Not affiliated with Sharkord.
 
-![Sharkord in Jollyboat: the Jollyboat theme on the left, Sharkord's own look on the right](docs/sharkord-theme.png)
+![Sharkord in Jollyboat, both in dark mode: the Jollyboat theme on the left, Sharkord's own look on the right](docs/sharkord-theme.png)
 
 <sub>The same server in both themes: Jollyboat's lcd look on the left, Sharkord's own on the right.</sub>
 
