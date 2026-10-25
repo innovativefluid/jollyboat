@@ -44,7 +44,7 @@ const share = () => {
   if (selected) window.shell.pickerChoose({ sourceId: selected });
 };
 
-segment(document.getElementById('kind')!, [{ value: 'screen', label: t('screens') }, { value: 'window', label: t('windows') }], kind, (v) => {
+const showKind = segment(document.getElementById('kind')!, [{ value: 'screen', label: t('screens') }, { value: 'window', label: t('windows') }], kind, (v) => {
   kind = v;
   render();
 });
@@ -67,7 +67,7 @@ window.shell.onPickerSources((list, lastName) => {
     selected = last.id;
     kind = last.kind;
     shareBtn.disabled = false;
-    document.querySelectorAll<HTMLButtonElement>('#kind button').forEach((b) => b.classList.toggle('on', b.textContent === (kind === 'screen' ? 'screens' : 'windows')));
+    showKind(kind);
   }
   render();
 });

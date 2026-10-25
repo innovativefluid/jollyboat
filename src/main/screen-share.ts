@@ -57,20 +57,39 @@ ipcMain.on('picker:choose', (event, result: TPickerResult) => {
   pickerWindow?.close();
 });
 
+// every screen and window with a preview. on windows a window whose preview can't be captured
+// (windows graphics capture refusing it, e.g. some overlays, games, other apps' special windows)
+// can make the previewed list come back short or fail as a whole, so the plain list (names only,
+// no capture, cheap) is fetched alongside and anything missing from the previews is still offered
 const listSources = async (): Promise<TCaptureSource[]> => {
-  const sources = await desktopCapturer.getSources({
-    types: ['screen', 'window'],
-    thumbnailSize: { width: 320, height: 200 },
-    fetchWindowIcons: true
-  });
+  const [withPreviews, plain] = await Promise.all([
+    desktopCapturer
+      .getSources({ types: ['screen', 'window'], thumbnailSize: { width: 320, height: 200 }, fetchWindowIcons: true })
+      .catch((err) => {
+        log('screen-share', 'previews failed', String(err));
+        return [];
+      }),
+    process.platform === 'win32'
+      ? desktopCapturer.getSources({ types: ['screen', 'window'], thumbnailSize: { width: 0, height: 0 } }).catch(() => [])
+      : Promise.resolve([])
+  ]);
+  const seen = new Set(withPreviews.map((s) => s.id));
+  const all = [...withPreviews, ...plain.filter((s) => !seen.has(s.id))];
 
-  return sources.map((s) => ({
+  const out: TCaptureSource[] = all.map((s) => ({
     id: s.id,
     name: s.name,
     kind: s.id.startsWith('screen') ? 'screen' : 'window',
-    thumbnail: s.thumbnail.isEmpty() ? '' : s.thumbnail.toDataURL(),
+    thumbnail: !s.thumbnail || s.thumbnail.isEmpty() ? '' : s.thumbnail.toDataURL(),
     appIcon: s.appIcon && !s.appIcon.isEmpty() ? s.appIcon.toDataURL() : undefined
   }));
+  // counts only: window titles can be private
+  const windows = out.filter((s) => s.kind === 'window');
+  log(
+    'screen-share',
+    `sources: ${out.length - windows.length} screens, ${windows.length} windows (${windows.filter((s) => !s.thumbnail).length} without preview, ${all.length - withPreviews.length} only in the plain list, ${windows.filter((s) => /jollyboat/i.test(s.name)).length} of ours)`
+  );
+  return out;
 };
 
 export const installDisplayMediaHandler = (getMainWindow: () => BaseWindow | null) => {
@@ -97,6 +116,7 @@ export const installDisplayMediaHandler = (getMainWindow: () => BaseWindow | nul
       const raw = await desktopCapturer.getSources({ types: ['screen', 'window'], thumbnailSize: { width: 0, height: 0 } });
       const source = raw.find((s) => s.id === pick.sourceId);
 
+      log('screen-share', `picked a ${pick.sourceId.startsWith('screen') ? 'screen' : 'window'}${source ? '' : ', gone by now'}`);
       if (!source) return callback({});
 
       saveSettings({ lastSourceName: source.name });
