@@ -7,6 +7,7 @@ import { registerIpc } from './ipc';
 import { iconPath, isOwnPageUrl, originOf, pageUrl, preloadPath } from './paths';
 import { windowBackground } from './look';
 import { installDisplayMediaHandler } from './screen-share';
+import { installContextMenu, installDownloads, isServerFile, saveUrl } from './downloads';
 import { findServerByUrl, getSettings, onServersChanged, saveSettings } from './settings';
 import { log } from './log';
 import { diagnostics } from './diagnostics';
@@ -278,11 +279,17 @@ const createMainWindow = () => {
   win.on('unmaximize', onMaximizeChange);
   wc.on('zoom-changed', (_e, direction) => zoom(direction === 'in' ? 1 : -1));
   installCustomCss(page, wc);
+  installContextMenu(wc, win);
   wc.on('page-title-updated', (_e, title) => win.setTitle(`${title} — Jollyboat`));
 
-  // links Sharkord opens in a new window go to the system browser
+  // links Sharkord opens in a new window go to the system browser; the server's own files from a
+  // server behind a proxy login are saved here instead (the browser doesn't have the login)
   let lastExternal = 0;
   wc.setWindowOpenHandler(({ url }) => {
+    if (findServerByUrl(wc.getURL())?.basicAuth && isServerFile(url, wc.getURL())) {
+      saveUrl(wc, url);
+      return { action: 'deny' };
+    }
     // at most one external tab per second, so a page cannot flood the browser
     if (/^https?:/i.test(url) && Date.now() - lastExternal > 1000) {
       lastExternal = Date.now();
@@ -673,6 +680,7 @@ if (!app.requestSingleInstanceLock()) {
     log('start', `screen audio: ${initScreenAudio()} in ${Math.round(performance.now() - audioStart)} ms`);
 
     installBasicAuth();
+    installDownloads();
     onServersChanged(refreshBasicAuth);
     installDisplayMediaHandler(() => mainWindow);
   bindMainPage(page);

@@ -23,6 +23,7 @@ import {
 } from './screen-audio';
 import { addUnread, refreshTrayTheme, setTitleUnread, setVoiceState } from './tray';
 import { diagnostics } from './diagnostics';
+import { isServerFile, saveUrl } from './downloads';
 import { log } from './log';
 import { getUpdateStatus, installUpdateNow, onUpdateStatus, openReleasePage, startUpdater, updatesFromStore } from './updater';
 import {
@@ -244,6 +245,12 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart,
   });
 
   // warnings from the page side, for diagnostics
+  // the save buttons next to sharkord's links: only the server's own files
+  ipcMain.on('server:save', (event, url: unknown) => {
+    if (!fromSavedServer(event) || typeof url !== 'string' || !isServerFile(url, event.senderFrame?.url ?? '')) return;
+    saveUrl(event.sender, url);
+  });
+
   ipcMain.on('server:log', (event, text: unknown) => {
     if (!fromSavedServer(event) || typeof text !== 'string') return;
     log('page', text.slice(0, 500));

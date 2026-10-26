@@ -7,6 +7,8 @@ import { contextBridge, ipcRenderer, webFrame } from 'electron';
 import { LOOKS, type TLook, type TPalette } from '../shared/types';
 import type { TOverlayState, TPickerResult, TServerInput, TSettings, TUpdateStatus, TVoiceMember, TVoiceReport } from '../shared/types';
 import { startPageWater } from './water';
+import { startSaveButtons } from './save-buttons';
+import { createT } from '../shared/i18n';
 
 type TBootstrap = {
   ownPage: 'launcher' | 'picker' | 'prompt' | 'bar' | 'overlay' | null;
@@ -453,6 +455,16 @@ if (boot.isSavedServer) {
     }
     enforceScheme();
   });
+
+  // --- save buttons for pictures and files (no other browser needed) -----------------------
+  window.addEventListener(
+    'DOMContentLoaded',
+    () => {
+      const tr = createT(boot.lang);
+      startSaveButtons({ save: tr('Save'), saveImage: tr('Save image'), saveFile: tr('Save file') }, (url) => ipcRenderer.send('server:save', url));
+    },
+    { once: true }
+  );
 
   // --- the water theme: the water behind the page (the theme's css does the rest) ----------
   let pageWater: ReturnType<typeof startPageWater> = null;
