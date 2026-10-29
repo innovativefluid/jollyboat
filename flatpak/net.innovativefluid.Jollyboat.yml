@@ -19,12 +19,13 @@ finish-args:
   - --socket=fallback-x11
   - --socket=pulseaudio
   - --device=dri
-  # game controllers (the Gamepad API, for plugins like Jollyplay): /dev/input only, and udev's
+  # game controllers (the Gamepad API, for plugins like Jollyplay): the devices, and udev's
   # database read-only, where chromium looks up which input devices are joysticks
-  # (ID_INPUT_JOYSTICK); without it it ignores them even with the devices there. Flatpak before
-  # 1.15.6 skips this device type (it still runs, without controllers; there
-  # `flatpak override --user --device=all net.innovativefluid.Jollyboat` gives them)
-  - --device=input
+  # (ID_INPUT_JOYSTICK); without it it ignores them even with the devices there.
+  # (--device=input would be narrower, but needs Flatpak 1.15.6+ and a --require-version that
+  # shuts out Flatpak 1.14, still Ubuntu 24.04's; its fallback syntax needs Flatpak 1.18.
+  # webcams stay with the camera portal: WebRtcPipeWireCamera)
+  - --device=all
   - --filesystem=/run/udev:ro
   # screen shares with sound: venmic links the other apps' audio streams into the share
   - --filesystem=xdg-run/pipewire-0
