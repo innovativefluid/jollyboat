@@ -30,7 +30,14 @@ export type TServerEntry = {
   keepLogin?: boolean;
   /** Sharkord's 7-day login token, encrypted like the password; only handed to that server's page */
   loginEnc?: string;
+  /** a Sharkord invite code (from an invite link or a share code): the page opens with it until
+   *  someone logs in there */
+  invite?: string;
 };
+
+/** what an import did: names, ids still without their proxy password, ids whose proxy wants a
+ *  login (an invite link can't carry one), and whether an invite came along */
+export type TImported = { names: string[]; missing: string[]; needsLogin?: string[]; invited?: boolean };
 
 export type TServerInput = {
   id?: string;
@@ -38,6 +45,8 @@ export type TServerInput = {
   url: string;
   basicAuth?: { username: string; password: string } | null;
   keepLogin?: boolean;
+  /** an invite code; null drops a stored one (an invite link as the url brings its own) */
+  invite?: string | null;
 };
 
 export type TSettings = {

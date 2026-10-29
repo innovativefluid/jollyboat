@@ -82,6 +82,11 @@
   </keywords>
 
   <releases>
+    <release version="0.3.15" date="2026-10-29">
+      <description>
+        <p>Sharkord invites: paste an invite link into the import field or as a new server's address, and the server opens on its sign-up screen with the invite. Behind a proxy login the app asks for it first. A server's share code can carry an invite too, so a friend can join a server behind a proxy login with one code. A server added from a link takes its own name once it can be reached, and adding a server that is already saved updates it instead of making a second one.</p>
+      </description>
+    </release>
     <release version="0.3.14" date="2026-10-29">
       <description>
         <p>Water theme: the Jollyboat title in the setup window shows properly in the pink and black-and-white colours (it was covered by a white block).</p>

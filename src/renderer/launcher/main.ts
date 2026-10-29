@@ -1,4 +1,4 @@
-import { isTinted, type TPalette, type TServerEntry, type TServerInput, type TSettings, type TTintedTheme, type TUpdateStatus } from '../../shared/types';
+import { isTinted, type TImported, type TPalette, type TServerEntry, type TServerInput, type TSettings, type TTintedTheme, type TUpdateStatus } from '../../shared/types';
 import { bootTheme, hint, segment, toast } from '../theme/ui';
 import { t, translatePage } from '../i18n';
 
@@ -76,7 +76,7 @@ const renderServers = async () => {
     row.querySelector('.name')!.textContent = server.name;
     row.querySelector('.meta')!.textContent = failure
       ? `! ${failure}`
-      : `${server.url.replace(/^https?:\/\//, '')}${server.basicAuth ? ` | ${t('proxy login')}` : ''}${startsInto(server) ? ` | ${t('opens at start')}` : ''}${testLabel(server)}`;
+      : `${server.url.replace(/^https?:\/\//, '')}${server.basicAuth ? ` | ${t('proxy login')}` : ''}${server.invite ? ` | ${t('invite')}` : ''}${startsInto(server) ? ` | ${t('opens at start')}` : ''}${testLabel(server)}`;
     row.querySelector<HTMLButtonElement>('.connect')!.onclick = (e) => {
       e.stopPropagation();
       // behind a proxy login without its password (a share code without it): ask for it first
@@ -125,6 +125,7 @@ const openEditor = (server?: TServerEntry) => {
   resetRemove();
   hint(testStatus, '');
   hint(shareStatus, '');
+  $<HTMLInputElement>('share-invite').value = '';
   editorPanel.hidden = false;
   editorPanel.classList.add('enter');
   right.classList.add('editing');
@@ -156,7 +157,7 @@ const save = async () => {
     failures.delete(server.id);
     openEditor(server);
     if (test.ok) {
-      hint(testStatus, `saved | ${test.info.name}${test.version ? ` | sharkord ${test.version}` : ''}`, 'good');
+      hint(testStatus, `saved | ${test.info.name}${test.version ? ` | sharkord ${test.version}` : ''}${server.invite ? ` | ${t('invite')}` : ''}`, 'good');
     } else {
       hint(testStatus, `${t('saved')} | ${test.error}`, 'bad');
     }
@@ -187,7 +188,12 @@ for (const input of [fUrl, fName, fUser, fPass]) {
 // a plain http server sends the proxy login in clear
 const urlNote = $('url-note');
 const checkUrl = () => {
-  urlNote.textContent = /^http:\/\/(?!(localhost|127\.|10\.|192\.168\.|\[::1\]))/i.test(fUrl.value.trim()) ? '! http: the proxy login travels unencrypted' : '';
+  const value = fUrl.value.trim();
+  urlNote.textContent = /^http:\/\/(?!(localhost|127\.|10\.|192\.168\.|\[::1\]))/i.test(value)
+    ? '! http: the proxy login travels unencrypted'
+    : /[?&]invite=[A-Za-z0-9_-]{4,64}(&|$)/.test(value)
+      ? t('an invite link | it is kept and used when the server opens')
+      : '';
 };
 fUrl.addEventListener('input', checkUrl);
 
@@ -230,11 +236,13 @@ const withPasswords = () => $<HTMLInputElement>('share-passwords').checked;
 $('share-copy').onclick = async () => {
   if (!editingId) return;
   try {
-    const code = await window.shell.shareCode([editingId], withPasswords());
+    const invite = $<HTMLInputElement>('share-invite').value.trim();
+    const code = await window.shell.shareCode([editingId], withPasswords(), invite);
     await navigator.clipboard.writeText(code);
     fx.burstAt($('share-copy'), 10);
     const behindLogin = !!servers.find((s) => s.id === editingId)?.basicAuth;
-    hint(shareStatus, !behindLogin ? t('copied') : withPasswords() ? t('copied with the proxy password') : t('copied without the proxy password | they need it too'), 'good');
+    const what = !behindLogin ? t('copied') : withPasswords() ? t('copied with the proxy password') : t('copied without the proxy password | they need it too');
+    hint(shareStatus, invite ? `${what} | ${t('with the invite')}` : what, 'good');
   } catch (err) {
     hint(shareStatus, (err as Error).message, 'bad');
   }
@@ -259,16 +267,31 @@ $('export-all').onclick = async () => {
   }
 };
 
-const afterImport = async (result: { names: string[]; missing: string[] } | null) => {
+const afterImport = async (result: TImported | null) => {
   if (!result) return;
-  const { names, missing } = result;
+  const { names, missing, needsLogin = [], invited } = result;
   toast(names.length === 1 ? t('imported one server') : t('imported {n} servers', { n: names.length }));
   hint(listStatus, `${t('imported')} | ${names.join(' | ')}`, 'good');
   $<HTMLInputElement>('import-code').value = '';
   $('import-row').hidden = true;
   closeEditor(); // an imported server may have replaced the one being edited
+  // an invite link behind a proxy login: the link can't carry the login, so straight to its fields
+  if (needsLogin[0]) return void (await askLogin(needsLogin[0]));
   // the code came without the proxy password: straight to the field for it
-  if (missing[0]) await askPassword(missing[0], t('the code had no proxy password | ask for it and enter it here'));
+  if (missing[0]) return void (await askPassword(missing[0], t('the code had no proxy password | ask for it and enter it here')));
+  if (invited) hint(listStatus, `${t('imported')} | ${names.join(' | ')} | ${t('open it to create your account with the invite')}`, 'good');
+};
+
+/** opens a server's editor at its proxy login (user and password), with why */
+const askLogin = async (id: string) => {
+  servers = await window.shell.listServers();
+  const server = servers.find((s) => s.id === id);
+  if (!server) return;
+  openEditor(server);
+  authBox.checked = true;
+  authFields.hidden = false;
+  fUser.focus();
+  hint(testStatus, t('this server has a proxy login | enter the user and password you were given, then open it'), 'bad');
 };
 
 /** opens a server's editor at its proxy password, with why */

@@ -94,7 +94,7 @@ if (boot.ownPage) {
       editCustomCss: () => ipcRenderer.invoke('css:edit') as Promise<string>,
       positionOverlay: () => ipcRenderer.invoke('overlay:position'),
       useCssExample: () => ipcRenderer.invoke('css:example'),
-      shareCode: (ids: string[] | null, withPasswords: boolean) => ipcRenderer.invoke('share:code', ids, withPasswords),
+      shareCode: (ids: string[] | null, withPasswords: boolean, invite?: string) => ipcRenderer.invoke('share:code', ids, withPasswords, invite ?? ''),
       exportFile: (ids: string[] | null, withPasswords: boolean) => ipcRenderer.invoke('share:exportFile', ids, withPasswords),
       importText: (text: string) => ipcRenderer.invoke('share:importText', text),
       importFile: () => ipcRenderer.invoke('share:importFile'),

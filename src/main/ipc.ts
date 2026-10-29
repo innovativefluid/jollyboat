@@ -11,7 +11,7 @@ import { basicHeaderFor } from './basic-auth';
 import { getBridgeStatus, getBridgeToken } from './hotkeys/bridge';
 import { isOwnPageUrl, ownPageOf } from './paths';
 import { applySpellcheck } from './privacy';
-import { buildExport, exportToFile, importFromFile, importShared, parseShared, toCode } from './share';
+import { buildExport, exportToFile, importFromFile, importInvite, importShared, parseShared, shareInvite, toCode } from './share';
 import {
   canExcludeOwnAudioOnWindows,
   describeScreenAudio,
@@ -38,6 +38,7 @@ import {
   saveSettings,
   setKeepLogin,
   setLoginToken,
+  clearInvite,
   upsertServer
 } from './settings';
 
@@ -85,6 +86,26 @@ const pickSettingsPatch = (patch: unknown): Partial<TSettings> => {
   }
 
   return out;
+};
+
+/** adding a server that is already saved (say, its invite link pasted as a new server) updates
+ * that one instead of making a twin: its name and proxy login stay unless new ones are given */
+const sameServer = (input: TServerInput): TServerInput => {
+  if (input.id) return input;
+  let origin: string;
+  try {
+    origin = normalizeUrl(input.url);
+  } catch {
+    return input;
+  }
+  const saved = getSettings().servers.find((s) => s.url === origin);
+  if (!saved) return input;
+  return {
+    ...input,
+    id: saved.id,
+    name: input.name.trim() || saved.name,
+    basicAuth: input.basicAuth ?? (saved.basicAuth ? { username: saved.basicAuth.username, password: '' } : null)
+  };
 };
 
 const pickServerInput = (input: unknown): TServerInput => {
@@ -242,7 +263,10 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart,
     const server = findServerByUrl(event.senderFrame?.url ?? '');
     if (!server) return;
     if (token === null) setLoginToken(server.id, null);
-    else if (typeof token === 'string' && token.length > 0 && token.length <= 4096) setLoginToken(server.id, token);
+    else if (typeof token === 'string' && token.length > 0 && token.length <= 4096) {
+      setLoginToken(server.id, token);
+      clearInvite(server.id);
+    }
   });
 
   // sharkord's title carries its own unread total: "name (3)"
@@ -293,11 +317,12 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart,
   }));
   ipcMain.handle('servers:list', guard(() => publicServers()));
   // saving also tests the connection and records the outcome on the entry
-  ipcMain.handle('servers:save', guard(async (_e, input: unknown) => {
-    const entry = upsertServer(pickServerInput(input));
-    const test = await testServer({ ...pickServerInput(input), id: entry.id });
+  ipcMain.handle('servers:save', guard(async (_e, raw: unknown) => {
+    const input = sameServer(pickServerInput(raw));
+    const entry = upsertServer(input);
+    const test = await testServer({ ...input, id: entry.id });
 
-    recordTest(entry.id, { ok: test.ok, status: test.ok ? undefined : test.status });
+    recordTest(entry.id, { ok: test.ok, status: test.ok ? undefined : test.status }, test.ok ? test.info.name : undefined);
 
     const saved = getSettings().servers.find((s) => s.id === entry.id)!;
     const { basicAuth, ...safe } = saved;
@@ -314,10 +339,25 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart,
   ipcMain.handle('screenAudio:info', guard(() => describeScreenAudio()));
 
   // sharing: ids null = every server; passwords only when asked
-  ipcMain.handle('share:code', guard((_e, ids: unknown, withPasswords: unknown) => toCode(buildExport(idList(ids), withPasswords === true))));
+  ipcMain.handle('share:code', guard((_e, ids: unknown, withPasswords: unknown, invite: unknown) => {
+    const list = idList(ids);
+    const one = list?.length === 1 ? getSettings().servers.find((s) => s.id === list[0]) : undefined;
+    return toCode(buildExport(list, withPasswords === true, one ? shareInvite(invite, one.url) : undefined));
+  }));
   // file dialogs belong to the window that asked (the launcher)
   ipcMain.handle('share:exportFile', guard((e, ids: unknown, withPasswords: unknown) => exportToFile(BrowserWindow.fromWebContents(e.sender), buildExport(idList(ids), withPasswords === true))));
-  ipcMain.handle('share:importText', guard((_e, text: unknown) => importShared(parseShared(String(text ?? '').slice(0, 200_000)))));
+  // a share code, or a plain sharkord invite link
+  ipcMain.handle('share:importText', guard(async (_e, text: unknown) => {
+    const s = String(text ?? '').slice(0, 200_000);
+    const invited = await importInvite(s, async (url) => {
+      try {
+        return (await net.fetch(`${url}/info`, { signal: AbortSignal.timeout(8000) })).status;
+      } catch {
+        return null;
+      }
+    });
+    return invited ?? importShared(parseShared(s));
+  }));
   ipcMain.handle('share:importFile', guard((e) => importFromFile(BrowserWindow.fromWebContents(e.sender))));
   ipcMain.handle('app:website', guard(() => shell.openExternal('https://innovativefluid.net')));
   ipcMain.handle('autostart:get', guard(() => ({ supported: isAutoStartSupported(), enabled: getAutoStart() })));

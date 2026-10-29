@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { chmodSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PALETTES, type TPalettes, type TServerEntry, type TServerInput, type TSettings } from '../shared/types';
+import { INVITE_CODE, parseInvite } from '../shared/invite';
 
 const DEFAULTS: TSettings = {
   servers: [],
@@ -55,7 +56,8 @@ const sanitize = (raw: unknown): TSettings => {
             ? { lastTest: { ok: test.ok, at: test.at, ...(typeof test.status === 'number' ? { status: test.status } : {}) } }
             : {}),
           ...(e.keepLogin === false ? { keepLogin: false } : {}),
-          ...(e.keepLogin !== false && typeof e.loginEnc === 'string' ? { loginEnc: e.loginEnc } : {})
+          ...(e.keepLogin !== false && typeof e.loginEnc === 'string' ? { loginEnc: e.loginEnc } : {}),
+          ...(typeof e.invite === 'string' && INVITE_CODE.test(e.invite) ? { invite: e.invite } : {})
         }
       ];
     });
@@ -153,6 +155,10 @@ export const upsertServer = (input: TServerInput): TServerEntry => {
     ...(existing?.lastTest && existing.url === normalizeUrl(input.url) ? { lastTest: existing.lastTest } : {})
   };
   const keepLogin = input.keepLogin ?? existing?.keepLogin ?? true;
+  // an invite: given, or in the address (an invite link pasted as the url), or kept from before
+  const invite =
+    input.invite === null ? undefined : (input.invite && INVITE_CODE.test(input.invite) ? input.invite : undefined) ?? parseInvite(input.url)?.code ?? (existing?.url === entry.url ? existing?.invite : undefined);
+  if (invite) entry.invite = invite;
 
   if (!keepLogin) entry.keepLogin = false;
   // the login token belongs to one origin
@@ -189,11 +195,14 @@ export const removeServer = (id: string) => {
   serverListeners.forEach((l) => l());
 };
 
-export const recordTest = (id: string, result: { ok: boolean; status?: number }) => {
+/** the outcome of a connection test; a server still named after its address (added from a link)
+ * takes the name the server gives itself */
+export const recordTest = (id: string, result: { ok: boolean; status?: number }, serverName?: string) => {
   const settings = getSettings();
+  const named = (s: TServerEntry) => (serverName?.trim() && s.name === new URL(s.url).host ? { name: serverName.trim().slice(0, 100) } : {});
 
   saveSettings({
-    servers: settings.servers.map((s) => (s.id === id ? { ...s, lastTest: { ...result, at: Date.now() } } : s))
+    servers: settings.servers.map((s) => (s.id === id ? { ...s, ...named(s), lastTest: { ...result, at: Date.now() } } : s))
   });
 };
 
@@ -213,6 +222,13 @@ export const findServerByUrl = (url: string) => {
 // sharkord's login token for a server page (null when none is held or keeping is off)
 export const loginTokenFor = (server: TServerEntry) =>
   server.keepLogin !== false && server.loginEnc ? decryptPassword(server.loginEnc) : null;
+
+/** an invite is done with once someone logged in on that server */
+export const clearInvite = (id: string) => {
+  const settings = getSettings();
+  if (!settings.servers.some((s) => s.id === id && s.invite)) return;
+  saveSettings({ servers: settings.servers.map((s) => (s.id === id ? (({ invite, ...rest }) => rest)(s) : s)) });
+};
 
 export const setLoginToken = (id: string, token: string | null) => {
   const settings = getSettings();

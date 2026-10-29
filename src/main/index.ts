@@ -560,7 +560,8 @@ const connectToServer = (id: string, show = true) => {
   serverName = server.name;
   setServerName(server.name);
   sendBarState();
-  page()?.loadURL(server.url);
+  // with an invite still to use, sharkord's connect screen gets it as ?invite= (it reads it from there)
+  page()?.loadURL(server.invite ? `${server.url}/?invite=${encodeURIComponent(server.invite)}` : server.url);
   if (show) focusWindow(win);
   // the launcher has done its job; it comes back from the bar or the tray
   launcherWindow?.close();

@@ -47,7 +47,7 @@
               <button class="pill minor small" id="export-all" data-i18n>share all</button>
             </div>
             <div class="row" id="import-row" style="margin-top: 10px" hidden>
-              <input type="text" id="import-code" placeholder="paste a share code" data-i18n-placeholder style="flex: 1" spellcheck="false" />
+              <input type="text" id="import-code" placeholder="paste a share code or an invite link" data-i18n-placeholder style="flex: 1" spellcheck="false" />
               <button class="pill small" id="import-go" data-i18n>import</button>
               <button class="pill minor small alt" id="import-file" data-i18n>from file</button>
             </div>
@@ -60,7 +60,7 @@
             <div class="panel-title" data-i18n>welcome aboard</div>
             <div class="intro-text" data-i18n>Jollyboat is a desktop app for Sharkord servers. Add the address of a server to start: your login stays saved, voice works from the tray, screen shares carry sound, and hotkeys work from any window.</div>
             <div class="intro-text" style="margin-top: 6px" data-i18n>Nothing leaves this computer except what you send to your servers.</div>
-            <div class="row" style="margin-top: 10px"><button class="pill small" id="intro-add" data-i18n>add a server</button><span class="meta" data-i18n>or import a share code on the left</span></div>
+            <div class="row" style="margin-top: 10px"><button class="pill small" id="intro-add" data-i18n>add a server</button><span class="meta" data-i18n>or import a share code or an invite link on the left</span></div>
           </section>
           <section class="panel alt" id="editor" hidden>
             <div class="row">
@@ -107,6 +107,9 @@
                   <button class="pill minor small" id="share-copy" data-i18n>copy code</button>
                   <button class="pill minor small alt" id="share-file" data-i18n>save file</button>
                   <label class="check"><input type="checkbox" id="share-passwords" /> <span data-i18n>include proxy password</span></label>
+                </div>
+                <div class="row" style="margin-top: 6px">
+                  <input type="text" id="share-invite" placeholder="with a Sharkord invite (optional): its link or code" data-i18n-placeholder style="flex: 1" spellcheck="false" />
                 </div>
                 <div class="hint" id="share-status" style="margin-top: 6px"></div>
               </div>

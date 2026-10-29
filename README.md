@@ -28,6 +28,7 @@ A desktop app for [Sharkord](https://sharkord.com) servers, for Windows and Linu
 **Around it**
 - **Tray** — shows when you are in voice, talking, muted or deafened, and when there are new messages; its icon matches your theme. Closing the window minimizes, hides to the tray or quits.
 - **Servers** — several, with proxy logins (basic auth), staying logged in, one that opens at start, and share codes to pass them on.
+- **Invites** — paste a Sharkord invite link where a server or a share code goes, and the server opens on its sign-up screen with the invite filled in. Behind a proxy login the app asks for that login first, which a browser would have needed too. A share code can carry an invite along with the proxy login, so a friend needs only that one code.
 - **Saving pictures and files** — a save button under pictures and videos, on file cards and in the full-screen picture, and a right-click menu (save or copy images and links, cut, copy, paste, spelling). The app saves them itself, so it works behind a proxy login, where another browser couldn't open them.
 - **One bar on top** — server name, zoom (50 to 300 %, the bar grows with it), servers and settings, window buttons.
 - **Light, dark or auto** — for everything: the Sharkord page, its bar, the overlay and the setup window.

@@ -7,8 +7,10 @@ import type {
   TServerInput,
   TSettings,
   TTestResult,
-  TOverlayState
+  TOverlayState,
+  TImported
 } from '../shared/types';
+
 
 declare global {
   interface Window {
@@ -31,10 +33,10 @@ declare global {
       bridgeStatus: () => Promise<TBridgeStatus>;
       screenAudioInfo: () => Promise<{ ok: boolean; text: string }>;
       openWebsite: () => Promise<void>;
-      shareCode: (ids: string[] | null, withPasswords: boolean) => Promise<string>;
+      shareCode: (ids: string[] | null, withPasswords: boolean, invite?: string) => Promise<string>;
       exportFile: (ids: string[] | null, withPasswords: boolean) => Promise<string | null>;
-      importText: (text: string) => Promise<{ names: string[]; missing: string[] }>;
-      importFile: () => Promise<{ names: string[]; missing: string[] } | null>;
+      importText: (text: string) => Promise<TImported>;
+      importFile: () => Promise<TImported | null>;
       getAutoStart: () => Promise<{ supported: boolean; enabled: boolean }>;
       setAutoStart: (enabled: boolean) => Promise<boolean>;
       updateStatus: () => Promise<TUpdateStatus>;
