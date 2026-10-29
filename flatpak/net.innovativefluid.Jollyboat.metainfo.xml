@@ -82,6 +82,11 @@
   </keywords>
 
   <releases>
+    <release version="0.3.14" date="2026-10-29">
+      <description>
+        <p>Water theme: the Jollyboat title in the setup window shows properly in the pink and black-and-white colours (it was covered by a white block).</p>
+      </description>
+    </release>
     <release version="0.3.13" date="2026-10-29">
       <description>
         <p>Theme colours: themes keep their look and come in a few colours, picked with little colour squares beside the theme menu. Water comes in blue, pink, or black and white (white by day, black by night); Retro in pink, green, or the classic grey with navy title bars. Retro pink and Retro green are one theme again (settings with Retro green carry over). The panels of the setup window no longer shift about while idle.</p>
