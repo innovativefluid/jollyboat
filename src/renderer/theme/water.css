@@ -112,7 +112,7 @@ canvas.water { position: fixed; left: 0; top: 0; z-index: 0; }
 [data-look='water'] canvas.strip { height: 9px; image-rendering: auto; }
 [data-look='water'] .header { height: 56px; }
 
-/* ---- panels: the glass slab is drawn on the water; here only its shape and breathing --- */
+/* ---- panels: the glass slab is drawn on the water; here only its shape ---------------- */
 
 [data-look='water'] .panel {
   background: transparent;
@@ -120,12 +120,9 @@ canvas.water { position: fixed; left: 0; top: 0; z-index: 0; }
   box-shadow: none;
   border-radius: 30px 14px 16px 28px;
   padding: 11px 20px 12px;
-  animation: w-breathe 9s ease-in-out infinite alternate;
 }
-[data-look='water'] .panel.alt { border-radius: 14px 30px 28px 16px; animation-direction: alternate-reverse; animation-delay: 0s; }
-[data-look='water'] .panel.enter { animation: w-panel-in 460ms cubic-bezier(0.2, 0.9, 0.3, 1.15) both, w-breathe 9s ease-in-out infinite alternate; }
-[data-look='water'] .panel.enter.alt { animation: w-panel-in 460ms cubic-bezier(0.2, 0.9, 0.3, 1.15) both, w-breathe 9s ease-in-out infinite alternate-reverse; }
-@keyframes w-breathe { from { transform: translate(0, 0); } to { transform: translate(2px, -1.5px); } }
+[data-look='water'] .panel.alt { border-radius: 14px 30px 28px 16px; }
+[data-look='water'] .panel.enter { animation: w-panel-in 460ms cubic-bezier(0.2, 0.9, 0.3, 1.15) both; }
 @keyframes w-panel-in { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 [data-look='water'] .page.enter { animation: w-page-in 460ms cubic-bezier(0.2, 0.8, 0.3, 1) both; }
 @keyframes w-page-in { from { opacity: 0; transform: scale(0.96); } 91% { opacity: 1; } to { opacity: 1; transform: none; } }
@@ -405,3 +402,123 @@ canvas.water { position: fixed; left: 0; top: 0; z-index: 0; }
 [data-look='water'] .tint { border-radius: 8px; border: 1px solid rgba(var(--w-edge), var(--w-edge-a)); background: rgba(var(--w-btn), var(--w-btn-a)); }
 [data-look='water'] .tint .sw { border-radius: 3px; overflow: hidden; box-shadow: none; }
 [data-look='water'] .tint.on { border-color: rgb(var(--w-liq-a)); box-shadow: 0 0 0 2px rgba(var(--w-glow), 0.35), 0 0 10px rgba(var(--w-glow), 0.45); }
+
+/* ---- theme tints: the same water in other colours (data-palette) --------------------------- */
+
+/* pink water, rose glass */
+:root[data-look='water'][data-palette='pink'] {
+  --w-pool-top: 255, 240, 247; --w-pool-mid: 247, 182, 216; --w-pool-bot: 216, 69, 143;
+  --w-light: 255, 255, 255; --w-light-a: 0.8;
+  --w-fg: 74, 15, 46; --w-dim: 124, 58, 92; --w-mute: 168, 120, 146;
+  --w-glass: 255, 245, 250; --w-glass-a: 0.54;
+  --w-well: 255, 255, 255; --w-well-a: 0.62;
+  --w-btn: 255, 255, 255; --w-btn-a: 0.34;
+  --w-edge: 179, 58, 120; --w-edge-a: 0.42;
+  --w-liq-a: 255, 140, 200; --w-liq-b: 194, 24, 122;
+  --w-on-liq-shade: 110, 10, 60;
+  --w-shade: 134, 20, 80; --w-shade-a: 0.3;
+  --w-glow: 255, 111, 192; --w-glow-a: 0.7;
+  --w-spark: 255, 255, 255;
+  --w-text-glow: 255, 255, 255; --w-text-glow-a: 0.55;
+  --w-warm: 178, 52, 74;
+}
+:root[data-look='water'][data-palette='pink'][data-theme='dark'] {
+  --w-pool-top: 74, 15, 51; --w-pool-mid: 42, 8, 32; --w-pool-bot: 13, 2, 8;
+  --w-light: 255, 163, 214; --w-light-a: 0.5;
+  --w-fg: 255, 232, 245; --w-dim: 224, 166, 200; --w-mute: 170, 110, 145;
+  --w-glass: 42, 11, 32; --w-glass-a: 0.66;
+  --w-well: 26, 6, 20; --w-well-a: 0.7;
+  --w-btn: 74, 22, 56; --w-btn-a: 0.44;
+  --w-edge: 255, 159, 212; --w-edge-a: 0.34;
+  --w-liq-a: 255, 127, 200; --w-liq-b: 168, 22, 106;
+  --w-on-liq-shade: 60, 5, 35;
+  --w-shade: 12, 0, 7; --w-shade-a: 0.6;
+  --w-glow: 255, 95, 191; --w-glow-a: 0.8;
+  --w-spark: 255, 216, 239;
+  --w-text-glow: 30, 4, 20; --w-text-glow-a: 0.7;
+  --w-warm: 255, 150, 160;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='water'][data-palette='pink']:not([data-theme]) {
+    --w-pool-top: 74, 15, 51; --w-pool-mid: 42, 8, 32; --w-pool-bot: 13, 2, 8;
+    --w-light: 255, 163, 214; --w-light-a: 0.5;
+    --w-fg: 255, 232, 245; --w-dim: 224, 166, 200; --w-mute: 170, 110, 145;
+    --w-glass: 42, 11, 32; --w-glass-a: 0.66;
+    --w-well: 26, 6, 20; --w-well-a: 0.7;
+    --w-btn: 74, 22, 56; --w-btn-a: 0.44;
+    --w-edge: 255, 159, 212; --w-edge-a: 0.34;
+    --w-liq-a: 255, 127, 200; --w-liq-b: 168, 22, 106;
+    --w-on-liq-shade: 60, 5, 35;
+    --w-shade: 12, 0, 7; --w-shade-a: 0.6;
+    --w-glow: 255, 95, 191; --w-glow-a: 0.8;
+    --w-spark: 255, 216, 239;
+    --w-text-glow: 30, 4, 20; --w-text-glow-a: 0.7;
+    --w-warm: 255, 150, 160;
+  }
+}
+[data-look='water'][data-palette='pink'] .title {
+  background-image:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.7) 0 16%, rgba(255, 255, 255, 0.06) 40%, transparent 42%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='40' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='w' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0.45' stop-color='%23ff8cc8'/%3E%3Cstop offset='1' stop-color='%23c2187a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0 20 C 22.5 18.4, 22.5 18.4, 45 20 S 67.5 21.6, 90 20 L 90 40 L 0 40 Z' fill='url%28%23w%29' fill-opacity='0.55'/%3E%3Cpath d='M0 20 C 22.5 18.4, 22.5 18.4, 45 20 S 67.5 21.6, 90 20' fill='none' stroke='%23fff' stroke-width='1.6' stroke-opacity='0.55'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='40' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='w' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0.45' stop-color='%23ff8cc8'/%3E%3Cstop offset='1' stop-color='%23c2187a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0 19 C 30 16.8, 30 16.8, 60 19 S 90 21.2, 120 19 L 120 40 L 0 40 Z' fill='url%28%23w%29' fill-opacity='1'/%3E%3Cpath d='M0 19 C 30 16.8, 30 16.8, 60 19 S 90 21.2, 120 19' fill='none' stroke='%23fff' stroke-width='1.6' stroke-opacity='1.00'/%3E%3C/svg%3E"),
+    linear-gradient(rgba(var(--w-glass), 0.62), rgba(var(--w-glass), 0.62));
+}
+
+/* black and white: white water and clear glass by day, black water by night */
+:root[data-look='water'][data-palette='mono'] {
+  --w-pool-top: 255, 255, 255; --w-pool-mid: 230, 230, 230; --w-pool-bot: 154, 154, 154;
+  --w-light: 255, 255, 255; --w-light-a: 0.8;
+  --w-fg: 20, 20, 20; --w-dim: 74, 74, 74; --w-mute: 130, 130, 130;
+  --w-glass: 255, 255, 255; --w-glass-a: 0.54;
+  --w-well: 255, 255, 255; --w-well-a: 0.62;
+  --w-btn: 255, 255, 255; --w-btn-a: 0.34;
+  --w-edge: 90, 90, 90; --w-edge-a: 0.42;
+  --w-liq-a: 140, 140, 140; --w-liq-b: 46, 46, 46;
+  --w-on-liq-shade: 20, 20, 20;
+  --w-shade: 51, 51, 51; --w-shade-a: 0.3;
+  --w-glow: 154, 154, 154; --w-glow-a: 0.6;
+  --w-spark: 255, 255, 255;
+  --w-text-glow: 255, 255, 255; --w-text-glow-a: 0.55;
+  --w-warm: 178, 52, 74;
+}
+:root[data-look='water'][data-palette='mono'][data-theme='dark'] {
+  --w-pool-top: 42, 42, 42; --w-pool-mid: 18, 18, 18; --w-pool-bot: 0, 0, 0;
+  --w-light: 224, 224, 224; --w-light-a: 0.45;
+  --w-fg: 242, 242, 242; --w-dim: 180, 180, 180; --w-mute: 128, 128, 128;
+  --w-glass: 20, 20, 20; --w-glass-a: 0.66;
+  --w-well: 10, 10, 10; --w-well-a: 0.7;
+  --w-btn: 42, 42, 42; --w-btn-a: 0.44;
+  --w-edge: 216, 216, 216; --w-edge-a: 0.3;
+  --w-liq-a: 189, 189, 189; --w-liq-b: 92, 92, 92;
+  --w-on-liq-shade: 0, 0, 0;
+  --w-shade: 0, 0, 0; --w-shade-a: 0.6;
+  --w-glow: 255, 255, 255; --w-glow-a: 0.6;
+  --w-spark: 240, 240, 240;
+  --w-text-glow: 0, 0, 0; --w-text-glow-a: 0.7;
+  --w-warm: 255, 150, 160;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='water'][data-palette='mono']:not([data-theme]) {
+    --w-pool-top: 42, 42, 42; --w-pool-mid: 18, 18, 18; --w-pool-bot: 0, 0, 0;
+    --w-light: 224, 224, 224; --w-light-a: 0.45;
+    --w-fg: 242, 242, 242; --w-dim: 180, 180, 180; --w-mute: 128, 128, 128;
+    --w-glass: 20, 20, 20; --w-glass-a: 0.66;
+    --w-well: 10, 10, 10; --w-well-a: 0.7;
+    --w-btn: 42, 42, 42; --w-btn-a: 0.44;
+    --w-edge: 216, 216, 216; --w-edge-a: 0.3;
+    --w-liq-a: 189, 189, 189; --w-liq-b: 92, 92, 92;
+    --w-on-liq-shade: 0, 0, 0;
+    --w-shade: 0, 0, 0; --w-shade-a: 0.6;
+    --w-glow: 255, 255, 255; --w-glow-a: 0.6;
+    --w-spark: 240, 240, 240;
+    --w-text-glow: 0, 0, 0; --w-text-glow-a: 0.7;
+    --w-warm: 255, 150, 160;
+  }
+}
+[data-look='water'][data-palette='mono'] .title {
+  background-image:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.7) 0 16%, rgba(255, 255, 255, 0.06) 40%, transparent 42%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='40' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='w' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0.45' stop-color='%238c8c8c'/%3E%3Cstop offset='1' stop-color='%232e2e2e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0 20 C 22.5 18.4, 22.5 18.4, 45 20 S 67.5 21.6, 90 20 L 90 40 L 0 40 Z' fill='url%28%23w%29' fill-opacity='0.55'/%3E%3Cpath d='M0 20 C 22.5 18.4, 22.5 18.4, 45 20 S 67.5 21.6, 90 20' fill='none' stroke='%23fff' stroke-width='1.6' stroke-opacity='0.55'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='40' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='w' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0.45' stop-color='%238c8c8c'/%3E%3Cstop offset='1' stop-color='%232e2e2e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0 19 C 30 16.8, 30 16.8, 60 19 S 90 21.2, 120 19 L 120 40 L 0 40 Z' fill='url%28%23w%29' fill-opacity='1'/%3E%3Cpath d='M0 19 C 30 16.8, 30 16.8, 60 19 S 90 21.2, 120 19' fill='none' stroke='%23fff' stroke-width='1.6' stroke-opacity='1.00'/%3E%3C/svg%3E"),
+    linear-gradient(rgba(var(--w-glass), 0.62), rgba(var(--w-glass), 0.62));
+}

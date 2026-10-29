@@ -5,7 +5,7 @@
 
 import { nativeTheme, webContents } from 'electron';
 import { isOwnPageUrl } from './paths';
-import type { TLook, TPalette } from '../shared/types';
+import { isTinted, type TLook, type TPalette } from '../shared/types';
 import { findServerByUrl, getSettings } from './settings';
 
 export type { TLook, TPalette };
@@ -15,15 +15,24 @@ export const currentLook = (): TLook => {
   return theme === 'water' ? 'water' : theme === 'retro' ? 'retro' : 'lcd';
 };
 
-/** the retro look's colours, picked beside the theme */
-export const currentPalette = (): TPalette => getSettings().palettes.retro;
+/** the current theme's colours, picked beside the theme menu (lcd has none: blue, unused) */
+export const currentPalette = (): TPalette => {
+  const { theme, palettes } = getSettings();
+  return isTinted(theme) ? palettes[theme] : 'blue';
+};
+
+// [light, dark] per theme and palette: the pool's middle, the retro desktop
+const BACKGROUNDS = {
+  water: { blue: ['#9fd8f6', '#06203c'], pink: ['#f7b6d8', '#2a0820'], mono: ['#e6e6e6', '#121212'] },
+  retro: { pink: ['#f9c9e4', '#1c1029'], green: ['#9fe0c8', '#0b1f24'], grey: ['#a8acb4', '#1e1f24'] }
+} as const;
 
 /** what a window shows before its page has painted: the page's own background colour */
 export const windowBackground = (dark = nativeTheme.shouldUseDarkColors) => {
   const look = currentLook();
-  if (look === 'water') return dark ? '#06203c' : '#9fd8f6';
-  if (look === 'retro' && currentPalette() === 'green') return dark ? '#0b1f24' : '#9fe0c8';
-  if (look === 'retro') return dark ? '#1c1029' : '#f9c9e4';
+  const palette = currentPalette();
+  if (look === 'water') return BACKGROUNDS.water[palette as 'blue']?.[dark ? 1 : 0] ?? BACKGROUNDS.water.blue[dark ? 1 : 0];
+  if (look === 'retro') return BACKGROUNDS.retro[palette as 'pink']?.[dark ? 1 : 0] ?? BACKGROUNDS.retro.pink[dark ? 1 : 0];
   return dark ? '#18201c' : '#a6b08a';
 };
 
@@ -34,6 +43,6 @@ export const broadcastLook = () => {
   for (const wc of webContents.getAllWebContents()) {
     if (wc.isDestroyed()) continue;
     if (isOwnPageUrl(wc.getURL())) wc.send('shell:look', look, palette);
-    else if (findServerByUrl(wc.getURL())) wc.send('shell:water', look === 'water');
+    else if (findServerByUrl(wc.getURL())) wc.send('shell:water', look === 'water', palette);
   }
 };

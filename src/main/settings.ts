@@ -2,7 +2,7 @@ import { app, safeStorage } from 'electron';
 import { randomUUID } from 'node:crypto';
 import { chmodSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { TServerEntry, TServerInput, TSettings } from '../shared/types';
+import { PALETTES, type TPalettes, type TServerEntry, type TServerInput, type TSettings } from '../shared/types';
 
 const DEFAULTS: TSettings = {
   servers: [],
@@ -15,7 +15,7 @@ const DEFAULTS: TSettings = {
   overlay: false,
   overlayOpacity: 75,
   theme: 'none',
-  palettes: { retro: 'pink' },
+  palettes: { retro: 'pink', water: 'blue' },
   colorMode: 'auto',
   language: 'system',
   overlayPosition: null,
@@ -69,7 +69,8 @@ const sanitize = (raw: unknown): TSettings => {
   else if (r.theme === 'retro-green') out.theme = 'retro'; // 0.3.11/0.3.12: Retro green was a theme of its own
   else if (r.customCss === true) out.theme = 'custom'; // 0.3.2
   const pal = (r.palettes ?? {}) as Record<string, unknown>;
-  out.palettes = { retro: pal.retro === 'green' || (pal.retro === undefined && r.theme === 'retro-green') ? 'green' : 'pink' };
+  const pick = <K extends keyof typeof PALETTES>(k: K, v: unknown): TPalettes[K] => ((PALETTES[k] as readonly unknown[]).includes(v) ? (v as TPalettes[K]) : (PALETTES[k][0] as TPalettes[K]));
+  out.palettes = { retro: pick('retro', pal.retro ?? (r.theme === 'retro-green' ? 'green' : undefined)), water: pick('water', pal.water) };
   if (r.language === 'system' || r.language === 'en' || r.language === 'de' || r.language === 'pl') out.language = r.language;
   if (r.onClose === 'minimize' || r.onClose === 'tray' || r.onClose === 'quit') out.onClose = r.onClose;
   for (const key of ['spellcheck', 'checkUpdates', 'notifyTray', 'autostart', 'overlay'] as const) {

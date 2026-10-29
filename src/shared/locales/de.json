@@ -1,5 +1,7 @@
 {
   "Add to dictionary": "Zum Wörterbuch hinzufügen",
+  "Black and white": "Schwarz-Weiß",
+  "Blue": "Blau",
   "Copy": "Kopieren",
   "Copy image": "Bild kopieren",
   "Copy image address": "Bildadresse kopieren",
@@ -11,6 +13,7 @@
   "Developer tools": "Entwicklerwerkzeuge",
   "Full screen": "Vollbild",
   "Green": "Grün",
+  "Grey": "Grau",
   "Jollyboat is a desktop app for Sharkord servers. Add the address of a server to start: your login stays saved, voice works from the tray, screen shares carry sound, and hotkeys work from any window.": "Jollyboat ist eine Desktop-App für Sharkord-Server. Trag die Adresse eines Servers ein, dann geht es los: dein Login bleibt gespeichert, Sprache läuft aus dem Tray, Bildschirmfreigaben nehmen den Ton mit, und Hotkeys gehen aus jedem Fenster.",
   "Jollyboat on GitHub": "Jollyboat auf GitHub",
   "Leave call": "Anruf verlassen",

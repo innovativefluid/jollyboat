@@ -8,12 +8,13 @@ import { copyFileSync, existsSync, readdirSync, readFileSync, watch, writeFileSy
 import { join } from 'node:path';
 import { log } from './log';
 import { getSettings } from './settings';
+import { PALETTES } from '../shared/types';
 
 const MAX_BYTES = 1024 * 1024;
 const FONTS = ['PixelifySans', 'Fredoka', 'Jersey10', 'Nunito', 'DotGothic16'];
 
 const cssPath = () => join(app.getPath('userData'), 'custom.css');
-const themePath = (name: 'lcd' | 'water' | 'retro' | 'retro-green' = 'lcd') => join(__dirname, `../../resources/themes/${name}.css`);
+const themePath = (name = 'lcd') => join(__dirname, `../../resources/themes/${name}.css`);
 const assetsDir = () => join(__dirname, '../renderer/assets');
 
 let target: (() => WebContents | null) | null = null;
@@ -52,9 +53,12 @@ const readFile = (path: string) => {
 const themeCss = () => {
   const { theme } = getSettings();
   if (theme === 'jollyboat') return readFile(themePath('lcd'));
-  if (theme === 'water') return readFile(themePath('water'));
-  // the retro theme; in green, its green colours over it
-  if (theme === 'retro') return getSettings().palettes.retro === 'green' ? `${readFile(themePath('retro'))}\n${readFile(themePath('retro-green'))}` : readFile(themePath('retro'));
+  // tinted themes: another palette is a file of colours put after the theme
+  if (theme === 'retro' || theme === 'water') {
+    const palette = getSettings().palettes[theme];
+    const base = readFile(themePath(theme));
+    return palette === PALETTES[theme][0] ? base : `${base}\n${readFile(themePath(`${theme}-${palette}`))}`;
+  }
   if (theme === 'custom') return readFile(cssPath());
   return '';
 };

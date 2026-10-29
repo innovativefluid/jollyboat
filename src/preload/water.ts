@@ -12,10 +12,9 @@
 // motion.
 
 import { createWater, type TGlass, type TRgba, type TScene, type TWater } from '../renderer/theme/water/engine';
-import { DAY, DEEP } from '../renderer/theme/water/tokens';
+import { waterTokensFor, type TWaterTokens } from '../renderer/theme/water/tokens';
 
 const rgba = (c: [number, number, number], a = 1): TRgba => [c[0] / 255, c[1] / 255, c[2] / 255, a];
-const tokens = () => (document.documentElement.classList.contains('dark') ? DEEP : DAY);
 
 type TSlab = 'top' | 'left' | 'right' | 'main';
 
@@ -31,7 +30,7 @@ const BUTTONS = `:is([data-slot="button"], button:where(.inline-flex.whitespace-
 // a toggle that is on holds water; a muted one red water, like the warning buttons
 const WARM_A: [number, number, number] = [217, 87, 107];
 const WARM_B: [number, number, number] = [142, 31, 51];
-const tintOf = (tk: typeof DAY) => tk.glassA + (tk === DAY ? -0.08 : -0.12);
+const tintOf = (tk: TWaterTokens) => tk.glassA + (tk.day ? -0.08 : -0.12);
 
 // the parts of sharkord's layout, as the theme's css knows them too
 type TPart = { el: HTMLElement; kind: TSlab; radii: TRgba };
@@ -65,7 +64,9 @@ const spring = (s: TSpring, target: number, k: number, damping: number, dt: numb
   return s.x;
 };
 
-export const startPageWater = (allowSoftware: boolean, focused: () => boolean): TWater | null => {
+export const startPageWater = (allowSoftware: boolean, focused: () => boolean, palette: () => string): TWater | null => {
+  // the theme's palette, light or dark as the page is
+  const tokens = () => waterTokensFor(palette(), document.documentElement.classList.contains('dark'));
   const canvas = document.createElement('canvas');
   canvas.className = 'jb-water';
   canvas.style.cssText = 'position:fixed;left:0;top:0;z-index:-1;pointer-events:none;';
@@ -123,7 +124,7 @@ export const startPageWater = (allowSoftware: boolean, focused: () => boolean): 
     }
   };
 
-  const glassBase = (tk: typeof DAY, el: Element, r: DOMRect, pad: number): TGlass => ({
+  const glassBase = (tk: TWaterTokens, el: Element, r: DOMRect, pad: number): TGlass => ({
     type: 'glass',
     kind: 0,
     x: r.left,

@@ -96,6 +96,49 @@
 [data-look='retro'][data-palette='green'] .check input:checked {
   background: var(--r-field) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' shape-rendering='crispEdges'%3E%3Cpath d='M11 4h1v1h-1zM12 4h1v1h-1zM10 5h1v1h-1zM11 5h1v1h-1zM12 5h1v1h-1zM9 6h1v1h-1zM10 6h1v1h-1zM11 6h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM8 7h1v1h-1zM9 7h1v1h-1zM10 7h1v1h-1zM3 8h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM9 8h1v1h-1zM4 9h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM7 10h1v1h-1zM6 11h1v1h-1z' fill='%230f8060'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
 }
+/* Retro grey (data-palette="grey"): the classic grey windows with navy to blue title bars on a
+   cool grey desktop; at night charcoal windows */
+:root[data-look='retro'][data-palette='grey'] {
+  --r-desk: #a8acb4; --r-desk2: #8e96a2; --r-check: rgba(255, 255, 255, 0.12);
+  --r-dot-a: #ffffff; --r-dot-b: #1084d0; --r-dot-c: #dfdfdf;
+  --r-face: #c0c0c0; --r-light: #ffffff; --r-mid: #dfdfdf; --r-shadow: #808080; --r-dark: #000000;
+  --r-ink: #000000; --r-dim: #404040; --r-mute: #6b6b6b;
+  --r-title-a: #000080; --r-title-b: #1084d0; --r-title-ink: #ffffff; --r-title-off: #808080;
+  --r-sel: #000080; --r-sel-ink: #ffffff; --r-field: #ffffff; --r-accent: #10308a; --r-accent-hi: #6a9ad8; --r-warn: #c4223d;
+  --r-drop: rgba(0, 0, 0, 0.3);
+  --spark: #ffffff; --fg-rgb: 0, 0, 0; --dim-rgb: 64, 64, 64;
+  color-scheme: light;
+}
+:root[data-look='retro'][data-palette='grey'][data-theme='dark'] {
+  --r-desk: #1e1f24; --r-desk2: #2b2e36; --r-check: rgba(255, 255, 255, 0.04);
+  --r-dot-a: #e0e0e0; --r-dot-b: #3a6ea5; --r-dot-c: #8a8a90;
+  --r-face: #3a3a3e; --r-light: #6e6e74; --r-mid: #4a4a50; --r-shadow: #202024; --r-dark: #050506;
+  --r-ink: #ececec; --r-dim: #b0b0b6; --r-mute: #85858c;
+  --r-title-a: #0a246a; --r-title-b: #3a6ea5; --r-title-ink: #ffffff; --r-title-off: #4a4a50;
+  --r-sel: #3a6ea5; --r-sel-ink: #ffffff; --r-field: #1e1e22; --r-accent: #2f5d9a; --r-accent-hi: #8ab4e8; --r-warn: #ff6f8a;
+  --r-drop: rgba(0, 0, 0, 0.45);
+  --spark: #ececec; --fg-rgb: 236, 236, 236; --dim-rgb: 176, 176, 182;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='retro'][data-palette='grey']:not([data-theme]) {
+    --r-desk: #1e1f24; --r-desk2: #2b2e36; --r-check: rgba(255, 255, 255, 0.04);
+    --r-dot-a: #e0e0e0; --r-dot-b: #3a6ea5; --r-dot-c: #8a8a90;
+    --r-face: #3a3a3e; --r-light: #6e6e74; --r-mid: #4a4a50; --r-shadow: #202024; --r-dark: #050506;
+    --r-ink: #ececec; --r-dim: #b0b0b6; --r-mute: #85858c;
+    --r-title-a: #0a246a; --r-title-b: #3a6ea5; --r-title-ink: #ffffff; --r-title-off: #4a4a50;
+    --r-sel: #3a6ea5; --r-sel-ink: #ffffff; --r-field: #1e1e22; --r-accent: #2f5d9a; --r-accent-hi: #8ab4e8; --r-warn: #ff6f8a;
+    --r-drop: rgba(0, 0, 0, 0.45);
+    --spark: #ececec; --fg-rgb: 236, 236, 236; --dim-rgb: 176, 176, 182;
+    color-scheme: dark;
+  }
+}
+:root[data-look='retro'][data-palette='grey'] {
+  --r-winbtns: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='12' shape-rendering='crispEdges'%3E%3Cg%3E%3Crect width='14' height='12' fill='%23c0c0c0'/%3E%3Cpath d='M0 0h14v1H1v11H0z' fill='%23fff'/%3E%3Cpath d='M13 1h1v11H0v-1h13z' fill='%23000000'/%3E%3Crect x='4' y='8' width='6' height='2' fill='%23000000'/%3E%3C/g%3E%3Cg transform='translate(16)'%3E%3Crect width='14' height='12' fill='%23c0c0c0'/%3E%3Cpath d='M0 0h14v1H1v11H0z' fill='%23fff'/%3E%3Cpath d='M13 1h1v11H0v-1h13z' fill='%23000000'/%3E%3Cpath d='M3 2h8v8H3z M4 4v5h6V4z' fill='%23000000' fill-rule='evenodd'/%3E%3C/g%3E%3Cg transform='translate(32)'%3E%3Crect width='14' height='12' fill='%23c0c0c0'/%3E%3Cpath d='M0 0h14v1H1v11H0z' fill='%23fff'/%3E%3Cpath d='M13 1h1v11H0v-1h13z' fill='%23000000'/%3E%3Cpath d='M4 3h2v1h1v1h-1v-1H4z M8 3h2v1H9v1H8V4h0z M6 5h2v2H6z M5 7h1v1H5z M8 7h1v1H8z M4 8h2v1H4z M8 8h2v1H8z' fill='%23000000'/%3E%3C/g%3E%3C/svg%3E");
+}
+[data-look='retro'][data-palette='grey'] .check input:checked {
+  background: var(--r-field) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' shape-rendering='crispEdges'%3E%3Cpath d='M11 4h1v1h-1zM12 4h1v1h-1zM10 5h1v1h-1zM11 5h1v1h-1zM12 5h1v1h-1zM9 6h1v1h-1zM10 6h1v1h-1zM11 6h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM8 7h1v1h-1zM9 7h1v1h-1zM10 7h1v1h-1zM3 8h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM9 8h1v1h-1zM4 9h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM7 10h1v1h-1zM6 11h1v1h-1z' fill='%23000080'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
+}
 :root[data-look='retro'] {
   --r-raised: inset -1px -1px var(--r-dark), inset 1px 1px var(--r-light), inset -2px -2px var(--r-shadow), inset 2px 2px var(--r-mid);
   --r-sunken: inset 1px 1px var(--r-shadow), inset -1px -1px var(--r-light), inset 2px 2px var(--r-dark), inset -2px -2px var(--r-mid);

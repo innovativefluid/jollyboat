@@ -1,5 +1,5 @@
 import { BrowserWindow, ipcMain, net, safeStorage, shell, webContents, type BaseWindow, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
-import { PALETTES, type TPalette, type TServerInput, type TSettings, type TTestResult, type TVoiceReport } from '../shared/types';
+import { PALETTES, type TServerInput, type TSettings, type TTestResult, type TVoiceReport } from '../shared/types';
 import { finishPositioning, isWayland, refreshOverlay, setOverlayHeight, setOverlayVoice, startPositioning } from './overlay';
 import { setStreams } from './popout';
 import { editCustomCss, refreshCustomCss, useExample } from './customcss';
@@ -69,7 +69,13 @@ const pickSettingsPatch = (patch: unknown): Partial<TSettings> => {
   if (typeof p.overlay === 'boolean') out.overlay = p.overlay;
   if (p.theme === 'none' || p.theme === 'jollyboat' || p.theme === 'water' || p.theme === 'retro' || p.theme === 'custom') out.theme = p.theme;
   const pal = (p.palettes ?? null) as Record<string, unknown> | null;
-  if (pal && (PALETTES.retro as readonly unknown[]).includes(pal.retro)) out.palettes = { ...getSettings().palettes, retro: pal.retro as TPalette };
+  if (pal) {
+    const next = { ...getSettings().palettes };
+    for (const k of Object.keys(PALETTES) as (keyof typeof PALETTES)[]) {
+      if ((PALETTES[k] as readonly unknown[]).includes(pal[k])) (next as Record<string, unknown>)[k] = pal[k];
+    }
+    out.palettes = next;
+  }
   if (p.colorMode === 'auto' || p.colorMode === 'dark' || p.colorMode === 'light') out.colorMode = p.colorMode;
   if (p.language === 'system' || p.language === 'en' || p.language === 'de' || p.language === 'pl') out.language = p.language;
   if (typeof p.overlayOpacity === 'number' && Number.isFinite(p.overlayOpacity)) out.overlayOpacity = Math.min(100, Math.max(0, Math.round(p.overlayOpacity)));

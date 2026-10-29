@@ -4,7 +4,7 @@
 import { app, Menu, nativeImage, Tray, type BaseWindow } from 'electron';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { TVoiceState } from '../shared/types';
+import { PALETTES, type TVoiceState } from '../shared/types';
 import { log } from './log';
 import { t, whenLanguageChanges } from './lang';
 import { getSettings } from './settings';
@@ -41,11 +41,15 @@ const icons = new Map<string, Electron.NativeImage>();
 // one set of icons per theme, each from the theme's dark scheme (tools/make-icons.py): the lcd
 // pixel boat for the Jollyboat theme, the same boat in Sharkord's greys for Sharkord itself (and
 // custom css), a glass tile of water for the Water theme, a pink pixel window for Retro, a green one for Retro in green
-type TTraySet = 'lcd' | 'sharkord' | 'water' | 'retro' | 'retro-green';
+type TTraySet = 'lcd' | 'sharkord' | 'water' | 'water-pink' | 'water-mono' | 'retro' | 'retro-green' | 'retro-grey';
 const traySet = (): TTraySet => {
   const theme = getSettings().theme;
-  if (theme === 'retro') return getSettings().palettes.retro === 'green' ? 'retro-green' : 'retro';
-  return theme === 'water' ? 'water' : theme === 'jollyboat' ? 'lcd' : 'sharkord';
+  // tinted themes: the first palette's set has the theme's name, the others theme-palette
+  if (theme === 'retro' || theme === 'water') {
+    const palette = getSettings().palettes[theme];
+    return (palette === PALETTES[theme][0] ? theme : `${theme}-${palette}`) as TTraySet;
+  }
+  return theme === 'jollyboat' ? 'lcd' : 'sharkord';
 };
 
 // windows wants an .ico (several sizes); everywhere else the png is fine

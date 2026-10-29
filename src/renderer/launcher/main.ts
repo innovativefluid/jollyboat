@@ -1,4 +1,4 @@
-import type { TPalette, TServerEntry, TServerInput, TSettings, TUpdateStatus } from '../../shared/types';
+import { isTinted, type TPalette, type TServerEntry, type TServerInput, type TSettings, type TTintedTheme, type TUpdateStatus } from '../../shared/types';
 import { bootTheme, hint, segment, toast } from '../theme/ui';
 import { t, translatePage } from '../i18n';
 
@@ -376,20 +376,31 @@ const renderSettings = async () => {
     { value: 'custom', label: t('Custom') }
   ];
   themeSelect.replaceChildren(...themes.map((o) => new Option(o.label, o.value, false, o.value === settings.theme)));
-  // theme tints: a theme with palettes shows them beside the menu, each a 16 px square of its
-  // colours (title bar, its second colour, the desktop, the night window); a click picks it
+  // theme tints: a theme with palettes shows them beside the menu, each a 16 px square of four
+  // of its colours (retro: title bar, its second colour, the desktop, the night window; water:
+  // the water's two colours, the pool by day and by night); a click picks it
   const tints = $('theme-tints');
   let palettes = settings.palettes;
-  const TINTS: Partial<Record<TSettings['theme'], { value: TPalette; label: string; colours: [string, string, string, string] }[]>> = {
+  type TTint = { value: TPalette; label: string; colours: [string, string, string, string] };
+  const TINTS: { [K in TTintedTheme]: TTint[] } = {
     retro: [
       { value: 'pink', label: t('Pink'), colours: ['#ff5fae', '#a77bff', '#f9c9e4', '#2d1b3d'] },
-      { value: 'green', label: t('Green'), colours: ['#19a974', '#3b78e7', '#9fe0c8', '#133130'] }
+      { value: 'green', label: t('Green'), colours: ['#19a974', '#3b78e7', '#9fe0c8', '#133130'] },
+      { value: 'grey', label: t('Grey'), colours: ['#000080', '#1084d0', '#c0c0c0', '#3a3a3e'] }
+    ],
+    water: [
+      { value: 'blue', label: t('Blue'), colours: ['#5cc0f7', '#0757c2', '#9fd8f6', '#06203c'] },
+      { value: 'pink', label: t('Pink'), colours: ['#ff8cc8', '#c2187a', '#f7b6d8', '#2a0820'] },
+      { value: 'mono', label: t('Black and white'), colours: ['#ffffff', '#a0a0a0', '#3a3a3a', '#000000'] }
     ]
   };
   const showTints = (theme: TSettings['theme']) => {
+    if (!isTinted(theme)) {
+      tints.hidden = true;
+      return tints.replaceChildren();
+    }
     const list = TINTS[theme];
-    tints.hidden = !list;
-    if (!list) return tints.replaceChildren();
+    tints.hidden = false;
     tints.replaceChildren(
       ...list.map((p) => {
         const b = document.createElement('button');
@@ -398,14 +409,14 @@ const renderSettings = async () => {
         b.title = p.label;
         b.setAttribute('role', 'radio');
         b.setAttribute('aria-label', p.label);
-        const on = palettes.retro === p.value;
+        const on = palettes[theme] === p.value;
         b.setAttribute('aria-checked', String(on));
         b.classList.toggle('on', on);
         b.innerHTML = '<span class="sw"><i></i><i></i><i></i><i></i></span>';
         b.querySelectorAll('i').forEach((i, n) => (i.style.background = p.colours[n]));
         b.onclick = async () => {
-          if (palettes.retro === p.value) return;
-          palettes = { ...palettes, retro: p.value };
+          if (palettes[theme] === p.value) return;
+          palettes = { ...palettes, [theme]: p.value };
           showTints(theme);
           await window.shell.saveSettings({ palettes });
           toast(t('saved'));

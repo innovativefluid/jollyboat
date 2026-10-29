@@ -1,0 +1,76 @@
+/* Retro in grey: Jollyboat's retro theme as the classic grey windows, navy to blue title bars on
+   a cool grey desktop; at night charcoal windows. Put after retro.css, it only changes the colours. */
+
+html:root,
+html .light {
+  --background: #c0c0c0;
+  --foreground: #000000;
+  --card: #c0c0c0;
+  --card-foreground: #000000;
+  --popover: #c0c0c0;
+  --popover-foreground: #000000;
+  --primary: #000080;
+  --primary-foreground: #ffffff;
+  --secondary: #dfdfdf;
+  --secondary-foreground: #000000;
+  --muted: #dfdfdf;
+  --muted-foreground: #404040;
+  --accent: #dfdfdf;
+  --accent-foreground: #000000;
+  --destructive: #c4223d;
+  --border: #808080;
+  --input: #808080;
+  --ring: #000080;
+  --sidebar: #c0c0c0;
+  --sidebar-foreground: #000000;
+  --sidebar-primary: #000080;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #dfdfdf;
+  --sidebar-accent-foreground: #000000;
+  --sidebar-border: #808080;
+  --sidebar-ring: #000080;
+  --r-desk: #a8acb4; --r-desk2: #8e96a2; --r-check: rgba(255, 255, 255, 0.12);
+  --r-face: #c0c0c0; --r-light: #ffffff; --r-mid: #dfdfdf; --r-shadow: #808080; --r-dark: #000000;
+  --r-ink: #000000; --r-dim: #404040;
+  --r-title-a: #000080; --r-title-b: #1084d0; --r-title-ink: #ffffff;
+  --r-sel: #000080; --r-sel-ink: #ffffff; --r-field: #ffffff; --r-accent: #10308a; --r-accent-hi: #6a9ad8; --r-warn: #c4223d;
+  --r-tip: #fff6c9;
+  --r-drop: rgba(0, 0, 0, 0.3);
+}
+
+html.dark,
+html .dark {
+  --background: #3a3a3e;
+  --foreground: #ececec;
+  --card: #3a3a3e;
+  --card-foreground: #ececec;
+  --popover: #3a3a3e;
+  --popover-foreground: #ececec;
+  --primary: #6a9ad8;
+  --primary-foreground: #050506;
+  --secondary: #4a4a50;
+  --secondary-foreground: #ececec;
+  --muted: #4a4a50;
+  --muted-foreground: #b0b0b6;
+  --accent: #4a4a50;
+  --accent-foreground: #ececec;
+  --destructive: #ff6f8a;
+  --border: #202024;
+  --input: #202024;
+  --ring: #6a9ad8;
+  --sidebar: #3a3a3e;
+  --sidebar-foreground: #ececec;
+  --sidebar-primary: #6a9ad8;
+  --sidebar-primary-foreground: #050506;
+  --sidebar-accent: #4a4a50;
+  --sidebar-accent-foreground: #ececec;
+  --sidebar-border: #202024;
+  --sidebar-ring: #6a9ad8;
+  --r-desk: #1e1f24; --r-desk2: #2b2e36; --r-check: rgba(255, 255, 255, 0.04);
+  --r-face: #3a3a3e; --r-light: #6e6e74; --r-mid: #4a4a50; --r-shadow: #202024; --r-dark: #050506;
+  --r-ink: #ececec; --r-dim: #b0b0b6;
+  --r-title-a: #0a246a; --r-title-b: #3a6ea5; --r-title-ink: #ffffff;
+  --r-sel: #3a6ea5; --r-sel-ink: #ffffff; --r-field: #1e1e22; --r-accent: #2f5d9a; --r-accent-hi: #8ab4e8; --r-warn: #ff6f8a;
+  --r-tip: #4a4a50;
+  --r-drop: rgba(0, 0, 0, 0.45);
+}

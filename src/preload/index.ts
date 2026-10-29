@@ -4,7 +4,7 @@
 // process decides which kind of page this is from the frame URL.
 
 import { contextBridge, ipcRenderer, webFrame } from 'electron';
-import { LOOKS, type TLook, type TPalette } from '../shared/types';
+import { ALL_PALETTES, LOOKS, type TLook, type TPalette } from '../shared/types';
 import type { TOverlayState, TPickerResult, TServerInput, TSettings, TUpdateStatus, TVoiceMember, TVoiceReport } from '../shared/types';
 import { startPageWater } from './water';
 import { startSaveButtons } from './save-buttons';
@@ -62,7 +62,7 @@ if (boot.ownPage) {
   const lookListeners: ((look: TLook) => void)[] = [];
   ipcRenderer.on('shell:look', (_e, look: TLook, palette: TPalette) => {
     if (!LOOKS.includes(look)) return;
-    markLook(look, palette === 'green' ? 'green' : 'pink');
+    markLook(look, ALL_PALETTES.includes(palette) ? palette : 'blue');
     for (const cb of lookListeners) cb(look);
   });
 
@@ -469,16 +469,19 @@ if (boot.isSavedServer) {
   // --- the water theme: the water behind the page (the theme's css does the rest) ----------
   let pageWater: ReturnType<typeof startPageWater> = null;
   const setWater = (on: boolean) => {
-    if (on && !pageWater && document.body) pageWater = startPageWater(boot.softGl, hasFocus);
+    if (on && !pageWater && document.body) pageWater = startPageWater(boot.softGl, hasFocus, () => waterPalette);
     if (!on && pageWater) {
       pageWater.stop();
       pageWater = null;
     }
   };
   let wantWater = boot.water;
+  // the water's colours (the theme's palette): read by the water every frame
+  let waterPalette: TPalette = boot.palette;
   window.addEventListener('DOMContentLoaded', () => setWater(wantWater), { once: true });
-  ipcRenderer.on('shell:water', (_e, on: unknown) => {
+  ipcRenderer.on('shell:water', (_e, on: unknown, palette: unknown) => {
     wantWater = on === true;
+    if (ALL_PALETTES.includes(palette as TPalette)) waterPalette = palette as TPalette;
     if (document.body) setWater(wantWater);
   });
 

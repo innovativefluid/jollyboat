@@ -104,6 +104,10 @@ PIXEL_SETS = {
                   cut=hexc('#ffe066'), dot=hexc('#ffe066'), ring=hexc('#1c1029'), radius=2),
     # Retro green's dark scheme: a dark teal window with a mint frame, the sail pale mint at rest
     # and bright green while you talk
+    # Retro in grey: a charcoal window with a silver frame, the sail white at rest and blue while
+    # you talk (the classic selection blue)
+    'retro-grey': dict(bg=hexc('#2a2a2e'), ink=hexc('#c8c8cc'), hull=hexc('#6e6e74'), sail=hexc('#f0f0f0'), talk=hexc('#3a8ee6'),
+                       cut=hexc('#ffd84d'), dot=hexc('#ffd84d'), ring=hexc('#0a0a0c'), radius=2),
     'retro-green': dict(bg=hexc('#10292b'), ink=hexc('#6fe3b4'), hull=hexc('#2f7d76'), sail=hexc('#d6fff0'), talk=hexc('#2fd08e'),
                         cut=hexc('#ffd84d'), dot=hexc('#ffd84d'), ring=hexc('#06161a'), radius=2),
     'sharkord': dict(bg=hexc('#171717'), ink=hexc('#e5e5e5'), hull=hexc('#525252'), sail=hexc('#fafafa'), talk=hexc('#86efac'),
@@ -189,15 +193,17 @@ def tray_pixel(out, c):
 # drawn in a 32-unit square (the pixel map's grid), at 8x the target size, then scaled down with
 # lanczos. at 16 px the thin parts (mast, outlines) keep at least one pixel.
 
-W_DEEP_TOP = hexc('#14497d')
-W_DEEP_BOT = hexc('#031428')
-W_EDGE = hexc('#8fd8ff')
-W_LIQ_A = hexc('#4fcfff')
-W_LIQ_B = hexc('#0a48a6')
-W_SPARK = hexc('#e8fbff')
-W_GLOW = hexc('#3fd4ff')
-W_WARM = hexc('#ff6b7d')
-W_DARK = hexc('#020c1a')
+# one set per palette of the water theme, all from its dark scheme: top and bottom of the pool,
+# the glass's rim, the water (light, deep), the white bits, the unread bubble's glow, the mute
+# bars, the dark rings, and the sail full of water while you talk (top, bottom)
+WATER_SETS = {
+    'water': dict(top=hexc('#14497d'), bot=hexc('#031428'), edge=hexc('#8fd8ff'), liq_a=hexc('#4fcfff'), liq_b=hexc('#0a48a6'),
+                  spark=hexc('#e8fbff'), glow=hexc('#3fd4ff'), warm=hexc('#ff6b7d'), dark=hexc('#020c1a'), talk=(hexc('#b8f2ff'), hexc('#16a4ec'))),
+    'water-pink': dict(top=hexc('#7a1a55'), bot=hexc('#1c0414'), edge=hexc('#ff9fd4'), liq_a=hexc('#ff7fc8'), liq_b=hexc('#a8166a'),
+                       spark=hexc('#fff0f8'), glow=hexc('#ff5fbf'), warm=hexc('#ffd84d'), dark=hexc('#14020d'), talk=(hexc('#ffd0ea'), hexc('#e8338d'))),
+    'water-mono': dict(top=hexc('#4a4a4a'), bot=hexc('#050505'), edge=hexc('#e0e0e0'), liq_a=hexc('#d8d8d8'), liq_b=hexc('#6a6a6a'),
+                       spark=hexc('#ffffff'), glow=hexc('#ffffff'), warm=hexc('#ff6b7d'), dark=hexc('#000000'), talk=(hexc('#ffffff'), hexc('#4a4a4a'))),
+}
 
 HULL = [(2.2, 17.0), (26.6, 17.0), (26.2, 19.8), (24.4, 22.6), (7.4, 22.6)]
 SAIL = [(15.2, 2.8), (24.2, 12.6), (23.4, 14.4), (15.2, 14.6)]
@@ -221,7 +227,9 @@ def shape_mask(size, draw_fn):
     return m
 
 
-def water_icon(n, state, unread):
+def water_icon(n, state, unread, C):
+    W_DEEP_TOP, W_DEEP_BOT, W_EDGE, W_LIQ_A, W_LIQ_B = C['top'], C['bot'], C['edge'], C['liq_a'], C['liq_b']
+    W_SPARK, W_GLOW, W_WARM, W_DARK = C['spark'], C['glow'], C['warm'], C['dark']
     ss = 8
     S = n * ss
     u = S / 32.0  # px per unit at the supersampled size
@@ -267,7 +275,7 @@ def water_icon(n, state, unread):
     sail_pts = P(SAIL, 0.6, 0)
     if state == 'talking':
         sm = shape_mask((S, S), lambda m: m.polygon(sail_pts, fill=255))
-        img.paste(vgradient((S, S), hexc('#b8f2ff'), hexc('#16a4ec'), 3 / 32, 14.6 / 32), (0, 0), sm)
+        img.paste(vgradient((S, S), C['talk'][0], C['talk'][1], 3 / 32, 14.6 / 32), (0, 0), sm)
         d = ImageDraw.Draw(img)
         d.polygon(sail_pts, outline=W_SPARK, width=int(W(0.9)))
     elif state == 'normal':
@@ -298,13 +306,14 @@ def water_icon(n, state, unread):
     return img.resize((n, n), Image.LANCZOS)
 
 
-def tray_water(out):
+def tray_water(out, C):
+    W_GLOW, W_SPARK, W_DARK = C['glow'], C['spark'], C['dark']
     out.mkdir(parents=True, exist_ok=True)
     for name in ('normal', 'voice', 'talking', 'muted', 'deafened'):
         for suffix, unread in (('', False), ('-unread', True)):
-            big = water_icon(32, name, unread)
+            big = water_icon(32, name, unread, C)
             big.save(out / f'{name}{suffix}.png')
-            ico([water_icon(16, name, unread), water_icon(24, name, unread), big, water_icon(64, name, unread)], out / f'{name}{suffix}.ico')
+            ico([water_icon(16, name, unread, C), water_icon(24, name, unread, C), big, water_icon(64, name, unread, C)], out / f'{name}{suffix}.ico')
     # the taskbar overlay: the bubble alone
     ss = 8
     S = 16 * ss
@@ -333,7 +342,8 @@ def main():
         old.unlink()
     for name, colours in PIXEL_SETS.items():
         tray_pixel(tray / name, colours)
-    tray_water(tray / 'water')
+    for name, colours in WATER_SETS.items():
+        tray_water(tray / name, colours)
     print('icons written')
 
 

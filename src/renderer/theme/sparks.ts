@@ -36,6 +36,7 @@ const HEART = ['.##.##.', '#######', '#######', '.#####.', '..###..', '...#...']
 const STAR = ['..#..', '..#..', '#####', '..#..', '..#..'];
 const RETRO = { light: ['#ff4fa3', '#ff8cc6', '#b38cff', '#ffffff'], dark: ['#ff3fa4', '#ff8fcf', '#9d7bff', '#ffe3f3'] };
 const RETRO_GREEN = { light: ['#19a974', '#6fdfb2', '#5a9cf0', '#ffffff'], dark: ['#2fd08e', '#6fe3b4', '#4f8ff0', '#dcfff2'] };
+const RETRO_GREY = { light: ['#000080', '#1084d0', '#808080', '#ffffff'], dark: ['#3a6ea5', '#8ab4e8', '#b0b0b6', '#ececec'] };
 
 const water = () => document.documentElement.dataset.look === 'water';
 const retro = () => document.documentElement.dataset.look === 'retro';
@@ -170,7 +171,8 @@ export const createSparks = (canvas: HTMLCanvasElement) => {
 
   const burst = (x: number, y: number, n: number) => {
     if (retro()) {
-      const set = document.documentElement.dataset.palette === 'green' ? RETRO_GREEN : RETRO;
+      const pal = document.documentElement.dataset.palette;
+      const set = pal === 'green' ? RETRO_GREEN : pal === 'grey' ? RETRO_GREY : RETRO;
       const palette = isDark() ? set.dark : set.light;
       for (let i = 0; i < n + 2; i++) {
         const angle = -Math.PI / 2 + (Math.random() * 2 - 1) * 1.3;
