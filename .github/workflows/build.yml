@@ -190,7 +190,9 @@ jobs:
           echo "version=$version" >> "$GITHUB_ENV"
           sed 's/JOLLYBOAT_CHANNEL=flathub/JOLLYBOAT_CHANNEL=github/' flatpak/net.innovativefluid.Jollyboat.yml > flatpak/github.yml
           rc=0
-          flatpak-builder --user --disable-rofiles-fuse --force-clean --repo=flatpak/repo \
+          # flathub's own builder (the runner's flatpak-builder is too old for --device=input)
+          echo "::notice title=flatpak::host $(flatpak --version), builder $(flatpak run --command=flatpak-builder org.flatpak.Builder --version)"
+          flatpak run org.flatpak.Builder --user --disable-rofiles-fuse --force-clean --repo=flatpak/repo \
             --default-branch=stable flatpak/build-dir flatpak/github.yml > build.log 2>&1 || rc=$?
           tail -n 400 build.log
           if [ $rc -ne 0 ]; then
