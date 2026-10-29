@@ -15,6 +15,7 @@ const DEFAULTS: TSettings = {
   overlay: false,
   overlayOpacity: 75,
   theme: 'none',
+  palettes: { retro: 'pink' },
   colorMode: 'auto',
   language: 'system',
   overlayPosition: null,
@@ -64,8 +65,11 @@ const sanitize = (raw: unknown): TSettings => {
     out.autoConnectServerId = r.autoConnectServerId;
   }
   if (r.colorMode === 'auto' || r.colorMode === 'dark' || r.colorMode === 'light') out.colorMode = r.colorMode;
-  if (r.theme === 'none' || r.theme === 'jollyboat' || r.theme === 'water' || r.theme === 'retro' || r.theme === 'retro-green' || r.theme === 'custom') out.theme = r.theme;
+  if (r.theme === 'none' || r.theme === 'jollyboat' || r.theme === 'water' || r.theme === 'retro' || r.theme === 'custom') out.theme = r.theme;
+  else if (r.theme === 'retro-green') out.theme = 'retro'; // 0.3.11/0.3.12: Retro green was a theme of its own
   else if (r.customCss === true) out.theme = 'custom'; // 0.3.2
+  const pal = (r.palettes ?? {}) as Record<string, unknown>;
+  out.palettes = { retro: pal.retro === 'green' || (pal.retro === undefined && r.theme === 'retro-green') ? 'green' : 'pink' };
   if (r.language === 'system' || r.language === 'en' || r.language === 'de' || r.language === 'pl') out.language = r.language;
   if (r.onClose === 'minimize' || r.onClose === 'tray' || r.onClose === 'quit') out.onClose = r.onClose;
   for (const key of ['spellcheck', 'checkUpdates', 'notifyTray', 'autostart', 'overlay'] as const) {

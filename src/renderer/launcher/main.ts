@@ -1,4 +1,4 @@
-import type { TServerEntry, TServerInput, TSettings, TUpdateStatus } from '../../shared/types';
+import type { TPalette, TServerEntry, TServerInput, TSettings, TUpdateStatus } from '../../shared/types';
 import { bootTheme, hint, segment, toast } from '../theme/ui';
 import { t, translatePage } from '../i18n';
 
@@ -372,14 +372,53 @@ const renderSettings = async () => {
     { value: 'none', label: 'Sharkord' },
     { value: 'jollyboat', label: 'Jollyboat' },
     { value: 'water', label: t('Water') },
-    { value: 'retro', label: t('Retro pink') },
-    { value: 'retro-green', label: t('Retro green') },
+    { value: 'retro', label: t('Retro') },
     { value: 'custom', label: t('Custom') }
   ];
   themeSelect.replaceChildren(...themes.map((o) => new Option(o.label, o.value, false, o.value === settings.theme)));
+  // theme tints: a theme with palettes shows them beside the menu, each a 16 px square of its
+  // colours (title bar, its second colour, the desktop, the night window); a click picks it
+  const tints = $('theme-tints');
+  let palettes = settings.palettes;
+  const TINTS: Partial<Record<TSettings['theme'], { value: TPalette; label: string; colours: [string, string, string, string] }[]>> = {
+    retro: [
+      { value: 'pink', label: t('Pink'), colours: ['#ff5fae', '#a77bff', '#f9c9e4', '#2d1b3d'] },
+      { value: 'green', label: t('Green'), colours: ['#19a974', '#3b78e7', '#9fe0c8', '#133130'] }
+    ]
+  };
+  const showTints = (theme: TSettings['theme']) => {
+    const list = TINTS[theme];
+    tints.hidden = !list;
+    if (!list) return tints.replaceChildren();
+    tints.replaceChildren(
+      ...list.map((p) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'tint';
+        b.title = p.label;
+        b.setAttribute('role', 'radio');
+        b.setAttribute('aria-label', p.label);
+        const on = palettes.retro === p.value;
+        b.setAttribute('aria-checked', String(on));
+        b.classList.toggle('on', on);
+        b.innerHTML = '<span class="sw"><i></i><i></i><i></i><i></i></span>';
+        b.querySelectorAll('i').forEach((i, n) => (i.style.background = p.colours[n]));
+        b.onclick = async () => {
+          if (palettes.retro === p.value) return;
+          palettes = { ...palettes, retro: p.value };
+          showTints(theme);
+          await window.shell.saveSettings({ palettes });
+          toast(t('saved'));
+        };
+        return b;
+      })
+    );
+  };
+  showTints(settings.theme);
   themeSelect.onchange = () => {
     const v = themeSelect.value as TSettings['theme'];
     $('css-row').hidden = v !== 'custom';
+    showTints(v);
     window.shell.saveSettings({ theme: v });
     toast(t('saved'));
   };

@@ -319,3 +319,15 @@ canvas.desk { position: fixed; left: 0; top: 0; z-index: 0; image-rendering: pix
 @media (prefers-reduced-motion: reduce) {
   [data-look='retro'] .panel.enter, [data-look='retro'] .page.enter { animation: none; }
 }
+
+/* theme tints: little raised buttons, each holding a 16 px colour square; the picked one pressed
+   in, with the selection colour round it */
+[data-look='retro'] .tint { width: 24px; height: 24px; border: 0; border-radius: 0; background: var(--r-face); box-shadow: var(--r-raised); }
+[data-look='retro'] .tint .sw { box-shadow: 0 0 0 1px var(--r-dark); }
+[data-look='retro'] .tint:hover:not(.on) { filter: brightness(1.05); }
+[data-look='retro'] .tint.on { box-shadow: var(--r-pressed), inset 0 0 0 3px var(--r-sel); }
+[data-look='retro'][data-theme='dark'] .tint.on { box-shadow: var(--r-pressed), inset 0 0 0 3px var(--r-accent-hi); }
+@media (prefers-color-scheme: dark) { [data-look='retro']:not([data-theme]) .tint.on { box-shadow: var(--r-pressed), inset 0 0 0 3px var(--r-accent-hi); } }
+[data-look='retro'] .tint.on .sw { translate: 1px 1px; }
+[data-look='retro'] .tint:focus-visible { outline: 1px dotted var(--r-ink); outline-offset: 2px; }
+[data-look='retro'] .tints { margin-left: 8px; }

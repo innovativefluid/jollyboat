@@ -12,11 +12,11 @@ export type { TLook, TPalette };
 
 export const currentLook = (): TLook => {
   const { theme } = getSettings();
-  return theme === 'water' ? 'water' : theme === 'retro' || theme === 'retro-green' ? 'retro' : 'lcd';
+  return theme === 'water' ? 'water' : theme === 'retro' ? 'retro' : 'lcd';
 };
 
-/** the retro look's colours: green with Retro green, else pink */
-export const currentPalette = (): TPalette => (getSettings().theme === 'retro-green' ? 'green' : 'pink');
+/** the retro look's colours, picked beside the theme */
+export const currentPalette = (): TPalette => getSettings().palettes.retro;
 
 /** what a window shows before its page has painted: the page's own background colour */
 export const windowBackground = (dark = nativeTheme.shouldUseDarkColors) => {

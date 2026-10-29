@@ -400,3 +400,8 @@ canvas.water { position: fixed; left: 0; top: 0; z-index: 0; }
 [data-look='water'].gl :is(.pill:not(.minor), .seg button.on, .chip.fill, .toast) { color: #fff; text-shadow: 0 1px 1px rgba(var(--w-on-liq-shade), 0.95), 0 0 5px rgba(var(--w-on-liq-shade), 0.45); }
 .pearls { display: none; }
 [data-look='water'].gl .pearls { display: block; height: 14px; }
+
+/* theme tints: little glass tiles, the picked one lit */
+[data-look='water'] .tint { border-radius: 8px; border: 1px solid rgba(var(--w-edge), var(--w-edge-a)); background: rgba(var(--w-btn), var(--w-btn-a)); }
+[data-look='water'] .tint .sw { border-radius: 3px; overflow: hidden; box-shadow: none; }
+[data-look='water'] .tint.on { border-color: rgb(var(--w-liq-a)); box-shadow: 0 0 0 2px rgba(var(--w-glow), 0.35), 0 0 10px rgba(var(--w-glow), 0.45); }

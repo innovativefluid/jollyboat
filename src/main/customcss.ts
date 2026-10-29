@@ -53,9 +53,8 @@ const themeCss = () => {
   const { theme } = getSettings();
   if (theme === 'jollyboat') return readFile(themePath('lcd'));
   if (theme === 'water') return readFile(themePath('water'));
-  if (theme === 'retro') return readFile(themePath('retro'));
-  // Retro green: the same theme with green colours over it
-  if (theme === 'retro-green') return `${readFile(themePath('retro'))}\n${readFile(themePath('retro-green'))}`;
+  // the retro theme; in green, its green colours over it
+  if (theme === 'retro') return getSettings().palettes.retro === 'green' ? `${readFile(themePath('retro'))}\n${readFile(themePath('retro-green'))}` : readFile(themePath('retro'));
   if (theme === 'custom') return readFile(cssPath());
   return '';
 };

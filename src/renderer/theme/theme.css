@@ -201,3 +201,17 @@ button.link { background: none; border: 0; padding: 0; margin: 0; font: inherit;
 .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .spacer { flex: 1; }
 [hidden] { display: none !important; }
+
+/* ---- theme tints: a theme's palettes beside its menu, each a 16 px square of its colours ---- */
+
+.tints { display: flex; gap: 4px; align-items: center; margin-left: 2px; }
+.tints[hidden] { display: none; }
+.tint {
+  display: grid; place-items: center; width: 26px; height: 26px; padding: 0; flex: none;
+  background: transparent; border: 2px solid transparent; border-radius: 6px; cursor: pointer;
+}
+.tint .sw { display: grid; grid-template-columns: 8px 8px; grid-template-rows: 8px 8px; width: 16px; height: 16px; box-shadow: 0 0 0 1px var(--fg); }
+.tint .sw i { display: block; }
+.tint:hover:not(.on) { border-color: var(--dim); }
+.tint.on { border-color: var(--fg); }
+.tint:focus-visible { outline: 2px dotted var(--fg); outline-offset: 1px; }

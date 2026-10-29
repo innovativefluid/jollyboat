@@ -1,5 +1,5 @@
 import { BrowserWindow, ipcMain, net, safeStorage, shell, webContents, type BaseWindow, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
-import type { TServerInput, TSettings, TTestResult, TVoiceReport } from '../shared/types';
+import { PALETTES, type TPalette, type TServerInput, type TSettings, type TTestResult, type TVoiceReport } from '../shared/types';
 import { finishPositioning, isWayland, refreshOverlay, setOverlayHeight, setOverlayVoice, startPositioning } from './overlay';
 import { setStreams } from './popout';
 import { editCustomCss, refreshCustomCss, useExample } from './customcss';
@@ -67,7 +67,9 @@ const pickSettingsPatch = (patch: unknown): Partial<TSettings> => {
   if (p.onClose === 'minimize' || p.onClose === 'tray' || p.onClose === 'quit') out.onClose = p.onClose;
   if (typeof p.notifyTray === 'boolean') out.notifyTray = p.notifyTray;
   if (typeof p.overlay === 'boolean') out.overlay = p.overlay;
-  if (p.theme === 'none' || p.theme === 'jollyboat' || p.theme === 'water' || p.theme === 'retro' || p.theme === 'retro-green' || p.theme === 'custom') out.theme = p.theme;
+  if (p.theme === 'none' || p.theme === 'jollyboat' || p.theme === 'water' || p.theme === 'retro' || p.theme === 'custom') out.theme = p.theme;
+  const pal = (p.palettes ?? null) as Record<string, unknown> | null;
+  if (pal && (PALETTES.retro as readonly unknown[]).includes(pal.retro)) out.palettes = { ...getSettings().palettes, retro: pal.retro as TPalette };
   if (p.colorMode === 'auto' || p.colorMode === 'dark' || p.colorMode === 'light') out.colorMode = p.colorMode;
   if (p.language === 'system' || p.language === 'en' || p.language === 'de' || p.language === 'pl') out.language = p.language;
   if (typeof p.overlayOpacity === 'number' && Number.isFinite(p.overlayOpacity)) out.overlayOpacity = Math.min(100, Math.max(0, Math.round(p.overlayOpacity)));
@@ -273,7 +275,7 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart,
     if (picked.spellcheck !== undefined) applySpellcheck(saved.spellcheck);
     if (picked.checkUpdates === true) startUpdater();
     if (picked.overlay !== undefined || picked.overlayOpacity !== undefined) refreshOverlay();
-    if (picked.theme !== undefined) {
+    if (picked.theme !== undefined || picked.palettes !== undefined) {
       refreshCustomCss();
       broadcastLook();
       refreshTrayTheme();

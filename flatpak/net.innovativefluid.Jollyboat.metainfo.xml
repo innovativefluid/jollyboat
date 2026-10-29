@@ -82,6 +82,11 @@
   </keywords>
 
   <releases>
+    <release version="0.3.13" date="2026-10-29">
+      <description>
+        <p>Theme colours: Retro pink and Retro green are one theme again, Retro, and its colours are picked with little colour squares beside the theme menu. Settings with Retro green carry over.</p>
+      </description>
+    </release>
     <release version="0.3.12" date="2026-10-26">
       <description>
         <p>Saving pictures and files without another browser, which doesn't have a server's proxy login: a save button next to "open in new tab" under pictures and videos, on file cards and in the full-screen picture, and a right-click menu on the page (save or copy an image, save or copy a link, cut, copy, paste, spelling suggestions). On a server behind a proxy login, opening one of its files saves it instead of handing it to the browser. Screen sharing on Windows: windows whose preview can't be captured are still offered, and the diagnostics say what the picker found.</p>
