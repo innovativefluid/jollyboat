@@ -8,6 +8,7 @@ import { iconPath, isOwnPageUrl, originOf, pageUrl, preloadPath } from './paths'
 import { windowBackground } from './look';
 import { installDisplayMediaHandler } from './screen-share';
 import { installContextMenu, installDownloads, isServerFile, saveUrl } from './downloads';
+import { allowsHid, installControllers } from './controllers';
 import { findServerByUrl, getSettings, onServersChanged, saveSettings } from './settings';
 import { log } from './log';
 import { diagnostics } from './diagnostics';
@@ -654,15 +655,12 @@ if (!app.requestSingleInstanceLock()) {
     });
     session.defaultSession.setPermissionCheckHandler((wc, permission, origin) => {
       const url = originOf(origin) ?? wc?.getURL() ?? '';
-      return allowedPermissions.includes(permission) && isTrustedOrigin(url);
+      return (allowedPermissions.includes(permission) && isTrustedOrigin(url)) || allowsHid(permission, url);
     });
-    // hardware access (hid, serial, usb, bluetooth): never. electron would otherwise hand a page
-    // the first device in a chooser nobody sees
-    session.defaultSession.setDevicePermissionHandler(() => false);
-    session.defaultSession.on('select-hid-device', (event, _details, callback) => {
-      event.preventDefault();
-      callback();
-    });
+    // hardware access: sony controllers over hid for saved servers (controllers.ts, the light bar
+    // for plugins like jollyplay); serial, usb and any other hid device never. electron would
+    // otherwise hand a page the first device in a chooser nobody sees
+    installControllers();
     session.defaultSession.on('select-serial-port', (event, _ports, _wc, callback) => {
       event.preventDefault();
       callback('');
