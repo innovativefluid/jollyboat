@@ -1,7 +1,7 @@
 // Updates. Windows (installed) and the Linux AppImage: electron-updater against GitHub Releases
 // (latest.yml, latest-linux.yml, latest-linux-arm64.yml), downloads in the background and
 // installs on quit (the AppImage replaces its own file). The portable exe, the .flatpak from
-// GitHub and the experimental mac build: only a notice that a newer release exists (a bundle
+// GitHub and the mac build: only a notice that a newer release exists (a bundle
 // file has no update channel; an unsigned mac app cannot update itself). The Flathub build
 // checks nothing: Flathub delivers its updates. All run only in packaged builds, every six
 // hours, behind the "check for updates" toggle.

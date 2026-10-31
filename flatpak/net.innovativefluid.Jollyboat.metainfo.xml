@@ -86,6 +86,7 @@
       <description>
         <p>Server tabs: every server you open stays open in a tab in the bar, with its logo or initials, unread and mention marks and a speaker while you are in a call there. Stay in a call on one server while you read another; the tray, the overlay and the pop-out follow the call. Ctrl+1 to 9 and ctrl+tab switch, + opens another server, tabs that do not fit go into a menu, and the open tabs come back at the next start.</p>
         <p>Sharkord's desktop mode: servers on Sharkord 0.0.29 and newer run as in Sharkord's own desktop app, with native notifications that open the right message, unread and mention counts, and hotkeys without pairing. Older servers work as before; a switch in the settings turns it off.</p>
+        <p>Hotkeys bound on several servers go to the one you are in a call on, else the one shown. The Water theme rests while a Jollyplay game window is open. The macOS build is no longer marked experimental.</p>
         <p>Linux: an AppImage next to the Flatpak, which updates itself from the releases like the Windows installer (downloads in the background, installs when you quit). It needs no FUSE library, starts on Ubuntu 24.04 and newer, and puts itself into the app menu when it runs (with sharkord:// links), following the file when an update renames it.</p>
       </description>
     </release>

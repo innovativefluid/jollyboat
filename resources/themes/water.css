@@ -144,6 +144,8 @@ html body::before {
   animation: jb-drift 210s steps(420) infinite;
 }
 @keyframes jb-drift { from { transform: translate(0, 0); } to { transform: translate(420px, 420px); } }
+/* Jollyplay's game window is open: the drifting light stands still */
+html[data-jollyplay-playing] body::before { animation-play-state: paused; }
 
 /* the app: frosted sidebars and top bar, the chat a glass panel floating a little apart */
 html .h-dvh.bg-background { background: transparent; }

@@ -33,6 +33,8 @@ type TClient = {
   ws?: WebSocket;
   /** desktop mode: the page's webContents id */
   key?: number;
+  /** the page's origin (websocket clients) */
+  origin?: string;
   serverId: string;
   serverName: string;
   bindings: TBinding[];
@@ -89,12 +91,31 @@ const send = (ws: WebSocket, payload: unknown) => {
   if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(payload));
 };
 
+// several open servers may bind the same keys: only one of them gets a press, the one main
+// ranks first (the server in a call, else the one shown). a release goes where its press went
+let rank: (client: { key?: number; origin?: string }) => number = () => 0;
+export const setHotkeyRanking = (fn: typeof rank) => {
+  rank = fn;
+};
+const pressedBy = new Map<string, TClient>();
+
 const fire = (combo: string, phase: 'down' | 'up') => {
-  for (const client of clients) {
-    for (const binding of client.bindings) {
-      if (binding.combo === combo) client.fire(binding.id, phase);
+  let target = phase === 'up' ? pressedBy.get(combo) : undefined;
+  if (!target || !clients.has(target)) {
+    let best = -Infinity;
+    for (const client of clients) {
+      if (!client.bindings.some((b) => b.combo === combo)) continue;
+      const score = rank(client);
+      if (score > best) {
+        best = score;
+        target = client;
+      }
     }
   }
+  if (!target) return;
+  if (phase === 'down') pressedBy.set(combo, target);
+  else pressedBy.delete(combo);
+  for (const binding of target.bindings) if (binding.combo === combo) target.fire(binding.id, phase);
 };
 
 // every client's bindings go to the key source in one list; several servers may bind the same
@@ -116,7 +137,7 @@ const rebuildShortcuts = async () => {
   if (failed.size) log('hotkeys', `${failed.size} key(s) not registered: ${[...new Set(failed.values())].join(', ')}`);
 };
 
-const handleConnection = (ws: WebSocket) => {
+const handleConnection = (ws: WebSocket, req: { headers: { origin?: string } }) => {
   let client: TClient | null = null;
 
   ws.on('message', async (raw) => {
@@ -145,6 +166,7 @@ const handleConnection = (ws: WebSocket) => {
 
       client = {
         ws,
+        origin: req.headers.origin,
         serverId: msg.serverId,
         serverName: String(msg.serverName ?? ''),
         bindings: [],

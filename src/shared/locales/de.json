@@ -158,7 +158,7 @@
   "share all": "alle teilen",
   "share audio ready": "Ton beim Teilen bereit",
   "share audio unavailable": "Ton beim Teilen nicht verfügbar",
-  "share audio | experimental on mac, others may hear themselves": "Ton beim Teilen | auf dem Mac experimentell, andere hören sich womöglich selbst",
+  "share audio | on mac, others may hear themselves": "Ton beim Teilen | auf dem Mac hören andere sich womöglich selbst",
   "share audio | others may hear themselves (no pipewire)": "Ton beim Teilen | andere hören sich womöglich selbst (kein PipeWire)",
   "share audio | others may hear themselves (windows older than 10 22h2)": "Ton beim Teilen | andere hören sich womöglich selbst (Windows älter als 10 22H2)",
   "share your screen": "Bildschirm teilen",

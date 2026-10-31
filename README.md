@@ -2,54 +2,72 @@
 
 # Jollyboat
 
-A desktop app for [Sharkord](https://sharkord.com) servers, for Windows and Linux on x64 and ARM (macOS experimental). It loads your server's own web app and adds what a browser tab can't: screen sharing with sound, global hotkeys, a tray, a voice overlay and themes. Not affiliated with Sharkord.
+A desktop app for [Sharkord](https://sharkord.com) servers, for Windows, Linux and macOS. It loads your servers' own web app and adds what a browser tab can't: screen sharing with sound, global hotkeys and push-to-talk, servers in tabs, a tray, a voice overlay and themes. Not affiliated with Sharkord.
 
-![The same Sharkord server in Jollyboat, both in dark mode: the Jollyboat theme on the left, Sharkord's own look on the right](docs/jollyboat-theme.png)
+![Jollyboat with three servers in tabs, in a call on one of them: the Jollyboat theme on the left, Sharkord's own look on the right, both dark](docs/jollyboat-theme.png)
 
-<sub>The Jollyboat theme (left) and Sharkord's own look (right), both dark.</sub>
-
-![The same server in the Water theme: light on the left, dark on the right](docs/water-theme.png)
-
-<sub>The Water theme, light (left) and dark (right).</sub>
-
-![The same server in the Retro theme: pink in light mode on the left, green in dark mode on the right](docs/retro-theme.png)
-
-<sub>Retro in pink, light (left), and in green, dark (right).</sub>
+<sub>Three servers in tabs: in a call on Harbor, a mention waiting on Workshop, unread messages on Friends. The Jollyboat theme (left) and Sharkord's own look (right).</sub>
 
 ## What it adds
 
 **In a call**
 - **Screen sharing with sound** — everything you hear except your own call. On Linux the share is encoded on the GPU when it can be.
-- **Global hotkeys and push-to-talk** — mute, deafen and push-to-talk from any window. Set them in Sharkord's user settings (for push-to-talk, pick it as the mic mode). Works on Wayland too (KDE, GNOME 48+), where the desktop asks once.
-- **Voice overlay** (optional) — who is in the call and who is talking, on top of your game or other apps, as see-through as you like. Clicks go through it; place it once with **set position**.
+- **Global hotkeys and push-to-talk** — mute, deafen and push-to-talk from any window, set in Sharkord's user settings. Push-to-talk works on Windows and on Linux desktops with the shortcuts portal (KDE, GNOME 48+), where the desktop asks once.
+- **Voice overlay** (optional) — who is in the call and who is talking, on top of your game or other apps, as see-through as you like. Clicks go through it.
 - **Pop-out stream** — a screen share or camera someone sends, in its own small always-on-top window (ctrl+shift+p, or the button in the bar).
-- **Careful in calls** — asks before a reload or quit would drop you out of a call.
+- **Careful in calls** — asks before a reload, a closed tab or quitting would drop you out of a call.
+
+**Servers**
+- **Tabs** — every server you open stays open in a tab, with its logo, a dot for unread messages (a count when you are mentioned) and a speaker while you are in a call there. Stay in a call on one server while you read another; the tray, the overlay and your hotkeys follow the call. ctrl+1–9 or ctrl+tab to switch, **+** to open another. The tabs come back at the next start.
+- **Sharkord's desktop mode** — servers on Sharkord 0.0.29 and newer run as in Sharkord's own desktop app: native notifications that open the right server and message, unread and mention counts, hotkeys without pairing. Older servers work as before.
+- **Proxy logins** — servers behind a login page of their proxy (basic auth), staying logged in, invite links, and share codes that pass a server on to a friend with its proxy login and an invite.
+- **Saving pictures and files** — a save button and a right-click menu; the app saves them itself, so it works behind a proxy login, where another browser couldn't open them.
+- **sharkord:// links** — the "Add to desktop app" links under a server's login open Jollyboat's setup window with the server filled in.
 
 **Around it**
-- **Tray** — shows when you are in voice, talking, muted or deafened, and when there are new messages; its icon matches your theme. Closing the window minimizes, hides to the tray or quits.
-- **Servers** — several, with proxy logins (basic auth), staying logged in, one that opens at start, and share codes to pass them on.
-- **Controllers for plugins** — game controllers reach the page (on Flatpak too), and plugins like Jollyplay may light up a DualShock 4 or DualSense's light bar. Only saved servers get Sony controllers, picked without a prompt; other devices stay blocked.
-- **sharkord:// links** — the add-server links of Sharkord's official desktop app ("Add to desktop app" under a server's login) open Jollyboat's setup window with the address filled in. On Windows and macOS Jollyboat takes the links when no other app has them, and a switch in the settings hands them over or takes them back; on Linux the desktop picks.
-- **Invites** — paste a Sharkord invite link where a server or a share code goes, and the server opens on its sign-up screen with the invite filled in. Behind a proxy login the app asks for that login first, which a browser would have needed too. A share code can carry an invite along with the proxy login, so a friend needs only that one code.
-- **Saving pictures and files** — a save button under pictures and videos, on file cards and in the full-screen picture, and a right-click menu (save or copy images and links, cut, copy, paste, spelling). The app saves them itself, so it works behind a proxy login, where another browser couldn't open them.
-- **Server tabs** — every server you open stays open in a tab in the bar, with its logo or initials, a dot for unread messages (a count when you are mentioned) and a speaker while you are in a call there. Be in a call on one server while you read another: the tray, the overlay and the pop-out follow the call. ctrl+1–9 or ctrl+tab to switch, + to open another, middle click or right click to close; tabs that do not fit go into a » menu. The tabs from last time come back with the server that opens at start.
-- **Sharkord's desktop mode** — servers on Sharkord 0.0.29 and newer run as in Sharkord's own desktop app: native notifications that open the right server and message, unread and mention counts, hotkeys without pairing, and its server-list and settings buttons in its top bar (they hide the tabs and open the settings). Older servers keep working as before. A switch in the settings turns it off.
-- **One bar on top** — server tabs, zoom (50 to 300 %, the bar grows with it, per server), servers and settings, window buttons.
-- **Light, dark or auto** — for everything: the Sharkord page, its bar, the overlay and the setup window.
-- **Languages** — English, German and Polish.
+- **Tray** — in voice, talking, muted, deafened, new messages; its icon matches your theme.
+- **Controllers for plugins** — game controllers reach the page (Flatpak too), and plugins like Jollyplay may light up a DualShock 4 or DualSense.
+- **Light, dark or auto**, **English, German and Polish**, zoom per server.
 - **Private** — talks to your servers, plus GitHub for update checks (one switch to turn off). No telemetry. On Windows, push-to-talk uses a keyboard hook while a hotkey is set: keys are compared with your hotkeys and never stored or sent.
+
+## Jollyboat and Sharkord Desktop
+
+Sharkord has its own desktop app now. Both load your servers' own web app; they differ around it:
+
+| | Sharkord Desktop | Jollyboat |
+|---|---|---|
+| Made by | the Sharkord developers, in step with Sharkord | an independent project |
+| Several servers | a server rail on the side | tabs in the title bar |
+| Servers behind a proxy login (basic auth) | — | ✓ |
+| Invite links, share codes | — | ✓ |
+| Screen sharing with sound | ✓ | ✓ |
+| Push-to-talk | Linux on Wayland | Windows, Linux with the shortcuts portal |
+| Tray | unread marker | voice state, unread, mute and deafen from the menu |
+| Voice overlay, pop-out stream | — | ✓ |
+| Themes | — | Jollyboat, Water, Retro, your own CSS |
+| Saving files behind a proxy login | — | ✓ |
+| Installs | Windows, macOS, Linux AppImage | Windows (also portable, ARM), Linux Flatpak and AppImage (x64, ARM), macOS |
+| Languages of the app itself | 8 | 3 |
+
+A new Sharkord release can need a Jollyboat release before its desktop mode works there; until then such a server runs as in a browser, with everything above but the native notifications and counts.
 
 ## Themes
 
-Pick one under **servers and settings**; Water and Retro come in a few colours, picked with the little squares beside the theme menu. The app's own windows (the bar above the page, the setup window, the overlay) follow along, in the lcd look, in glass with Water, or as old-desktop windows with Retro; each theme has its own tray icon.
+Pick one under **servers and settings**; Water and Retro come in a few colours, picked with the little squares beside the theme menu. The app's own windows (the bar, the setup window, the overlay) follow along, and each theme has its own tray icon.
 
 - **Sharkord** — Sharkord as it is.
 - **Jollyboat** — an lcd look: pixel type for headings, pill buttons, presence you can tell apart at a glance, a few stepped animations.
-- **Water** — white and blue water under glass; or pink, or black and white (white water by day, black by night). Live water with caustics, ripples and air bubbles runs behind everything; the sidebars, the chat and the bar are frosted glass panels floating on it, the buttons glass bubbles whose water rises and leans toward the pointer, the channel you are on and the voice channel you are in pills of water that fill as you pick them. Sent messages drop into the water, and whoever talks sends rings across it. It runs at 60 frames a second while the window is in front and 30 behind; without hardware graphics it keeps a lighter version drawn in CSS.
-- **Retro** — a nineties desktop, in pink, in mint and sky blue, or in the classic grey with navy title bars. The sidebars, the chat and the member list are windows with gradient title bars (pink to lilac, or green to blue) floating on a pastel desktop (deep purple or deep teal at night); buttons are bevelled, fields sunken, scrollbars the old kind, the type pixel type, and the channel you are on is picked out like a selected file. Whoever talks gets a blinking frame; menus open in a few steps, the way old desktops drew them.
+- **Water** — white and blue water under glass; or pink, or black and white. Live water with caustics, ripples and air bubbles runs behind everything; the sidebars, the chat and the bar are frosted glass floating on it, the buttons glass bubbles whose water leans toward the pointer, the channel you are on a pill of water. Sent messages drop into the water, and whoever talks sends rings across it. 60 frames a second in front, 30 behind, and it rests while a Jollyplay game is open; without hardware graphics a lighter version drawn in CSS.
+- **Retro** — a nineties desktop, in pink, in mint and sky blue, or in the classic grey. The sidebars, the chat and the member list are windows with gradient title bars on a pastel desktop; bevelled buttons, sunken fields, old scrollbars, pixel type. Whoever talks gets a blinking frame.
 - **Custom** — your own CSS for the Sharkord page, read again whenever the file changes.
 
-![The setup window: servers, app settings and privacy](docs/launcher.png)
+![The Water theme: light on the left, dark on the right](docs/water-theme.png)
+
+<sub>Water, light (left) and dark (right).</sub>
+
+![The Retro theme: pink in light mode on the left, green in dark mode on the right](docs/retro-theme.png)
+
+<sub>Retro in pink, light (left), and in green, dark (right).</sub>
 
 ## Install
 
@@ -57,30 +75,25 @@ From [releases](../../releases):
 
 | | |
 |---|---|
-| Windows (x64 or ARM) | `Jollyboat-x.y.z-windows-universal-setup.exe`, or portable: `Jollyboat-x.y.z-windows-x64-portable.exe` (`arm64`), settings in a `Jollyboat-data` folder next to it |
-| Linux (x64 or ARM) | `flatpak install ./Jollyboat-x.y.z-linux-x64.flatpak` (or `linux-arm64`), or the AppImage, which updates itself: `Jollyboat-x.y.z-linux-x86_64.AppImage` (`arm64`), make it executable and run it once; it adds itself to the app menu |
-| macOS 13+ (**experimental**) | `Jollyboat-x.y.z-mac-universal-EXPERIMENTAL.dmg` |
+| Windows (x64 or ARM) | `Jollyboat-x.y.z-windows-universal-setup.exe`, updates itself; or portable: `Jollyboat-x.y.z-windows-x64-portable.exe` (`arm64`), settings in a `Jollyboat-data` folder next to it |
+| Linux (x64 or ARM) | the AppImage, which updates itself: `Jollyboat-x.y.z-linux-x86_64.AppImage` (`arm64`), make it executable and run it once, it adds itself to the app menu; or `flatpak install ./Jollyboat-x.y.z-linux-x64.flatpak` (`arm64`) |
+| macOS 13+ (Intel or Apple silicon) | `Jollyboat-x.y.z-mac-universal.dmg`. It is not signed by Apple: open it the first time with **System Settings → Privacy & Security → Open Anyway**. It tells you about new releases instead of updating itself |
 
-Add your server's address; if a proxy asks for a login first, tick **proxy login / basic auth**. On a server, **servers and settings** in the top bar (or ctrl+shift+s) opens the settings again, and **+** opens another server in a tab.
+Add your server's address; if a proxy asks for a login first, tick **proxy login / basic auth**. **servers and settings** in the bar (or ctrl+shift+s) opens the settings again, and **+** opens another server in a tab.
+
+![The setup window: servers, app settings and privacy](docs/launcher.png)
 
 Tip: for GPU-encoded screen shares, pick H264 (or AV1 on newer GPUs) as the screen codec in Sharkord's settings, with simulcast off.
-
-### macOS is experimental
-
-CI builds it and checks that it starts, but nobody on the project has used it on a real Mac. It
-is not signed by Apple, so the first open needs **System Settings → Privacy & Security → Open
-Anyway**. It does not update itself (it tells you about new releases), asks for permissions again
-after each update, and screen-share sound may include your own call. Reports welcome.
 
 ## Build
 
 ```bash
 npm install
 npm run dev
-npm run dist:win     # on Windows: the installer and both portable exes
-npm run dist:linux   # the unpacked app; the flatpak is built from source:
-                     # flatpak-builder --user --install build-dir flatpak/net.innovativefluid.Jollyboat.yml
-npm run dist:mac     # on a mac (experimental)
+npm run dist:win       # on Windows: the installer and both portable exes
+npm run dist:appimage  # the AppImage; the flatpak is built from source:
+                       # flatpak-builder --user --install build-dir flatpak/net.innovativefluid.Jollyboat.yml
+npm run dist:mac       # on a mac
 python3 tools/make-icons.py   # the app and tray icons, from build/pixel/ (needs Pillow)
 ```
 

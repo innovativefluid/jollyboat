@@ -120,14 +120,19 @@
             <div class="panel-title" data-i18n>app</div>
             <div class="hint" id="bridge-text"></div>
             <div class="hint" id="screen-audio-text" style="margin-top: 4px"></div>
-            <div class="row" style="margin-top: 10px"><span class="meta" data-i18n>closing the window</span><div id="on-close"></div></div>
-            <div class="row" style="margin-top: 8px"><span class="meta" data-i18n>language</span><div id="language"></div></div>
-            <label class="check" id="autostart-row" style="margin-top: 6px"><input type="checkbox" id="autostart" /> <span data-i18n>start with the system</span></label>
-            <label class="check" style="margin-top: 6px"><input type="checkbox" id="notify-tray" /> <span data-i18n>mark new messages</span></label>
-            <label class="check" style="margin-top: 6px" title="sharkord 0.0.29 and newer: its notifications, unread counts and hotkeys go through the app. applies when a server page loads again" data-i18n-title><input type="checkbox" id="desktop-mode" /> <span data-i18n>sharkord desktop mode</span></label>
-            <label class="check" id="links-row" style="margin-top: 6px" hidden><input type="checkbox" id="links" /> <span data-i18n>open sharkord:// links here</span></label>
-            <div class="row" style="margin-top: 8px"><label class="meta" for="theme-kind" data-i18n>theme</label><select id="theme-kind"></select><div class="tints" id="theme-tints" role="radiogroup" hidden></div></div>
-            <div class="row" style="margin-top: 8px"><span class="meta" data-i18n>mode</span><div id="color-mode"></div></div>
+            <div class="row" style="margin-top: 8px"><span class="meta" data-i18n>closing the window</span><div id="on-close"></div></div>
+            <div class="row" style="margin-top: 6px"><span class="meta" data-i18n>language</span><div id="language"></div></div>
+            <!-- two switches a line: the panel has to fit the window's smallest height -->
+            <div class="row" style="margin-top: 6px; gap: 4px 22px">
+              <label class="check" id="autostart-row"><input type="checkbox" id="autostart" /> <span data-i18n>start with the system</span></label>
+              <label class="check"><input type="checkbox" id="notify-tray" /> <span data-i18n>mark new messages</span></label>
+            </div>
+            <div class="row" style="margin-top: 6px; gap: 4px 22px">
+              <label class="check" title="sharkord 0.0.29 and newer: its notifications, unread counts and hotkeys go through the app. applies when a server page loads again" data-i18n-title><input type="checkbox" id="desktop-mode" /> <span data-i18n>sharkord desktop mode</span></label>
+              <label class="check" id="links-row" hidden><input type="checkbox" id="links" /> <span data-i18n>open sharkord:// links here</span></label>
+            </div>
+            <div class="row" style="margin-top: 6px"><label class="meta" for="theme-kind" data-i18n>theme</label><select id="theme-kind"></select><div class="tints" id="theme-tints" role="radiogroup" hidden></div></div>
+            <div class="row" style="margin-top: 6px"><span class="meta" data-i18n>mode</span><div id="color-mode"></div></div>
             <div class="row" id="css-row" style="margin-top: 6px" hidden>
               <button class="pill minor small" id="css-edit" data-i18n>edit custom.css</button>
               <button class="pill minor small alt" id="css-example" data-i18n>start from the lcd theme</button>

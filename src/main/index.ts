@@ -2,7 +2,7 @@ import { app, BaseWindow, BrowserWindow, clipboard, ipcMain, Menu, nativeTheme, 
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { installBasicAuth, refreshBasicAuth } from './basic-auth';
-import { getBridgeStatus, startBridge, stopBridge } from './hotkeys/bridge';
+import { getBridgeStatus, setHotkeyRanking, startBridge, stopBridge } from './hotkeys/bridge';
 import { registerIpc } from './ipc';
 import { iconPath, isOwnPageUrl, originOf, pageUrl, preloadPath } from './paths';
 import { windowBackground } from './look';
@@ -1100,6 +1100,12 @@ if (!app.requestSingleInstanceLock()) {
       ...pageHandlers
     });
     installPageBridge();
+    // keys bound by several servers go to the one in a call, else the one shown
+    setHotkeyRanking(({ key, origin }) => {
+      const v = key !== undefined ? [...views.values()].find((x) => !x.wc.isDestroyed() && x.wc.id === key) : [...views.values()].find((x) => x.id === findServerByUrl(origin ?? '')?.id);
+      if (!v) return 0;
+      return (v === voiceView() ? 2 : 0) + (v.id === activeId ? 1 : 0);
+    });
     // no application menu: the bar above the server page and its shortcuts replace it. a mac
     // needs one anyway (cmd+c / cmd+v in text fields go through the edit menu)
     Menu.setApplicationMenu(

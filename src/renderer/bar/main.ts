@@ -200,7 +200,7 @@ const renderTabs = (list: TTab[]) => {
     } else if (ico.textContent !== initials(tab.name) || ico.querySelector('img')) ico.textContent = initials(tab.name);
     el.querySelector('.tname')!.textContent = tab.name;
     const mark = el.querySelector<HTMLElement>('.mark')!;
-    const markHtml = (tab.voice ? VOICE : '') + (tab.mentioned ? `<span class="count">${tab.unread > 99 ? '99+' : tab.unread || '@'}</span>` : !tab.active && tab.unread ? '<span class="dot"></span>' : '');
+    const markHtml = (tab.voice ? VOICE : '') + (tab.mentioned ? `<span class="count">${tab.unread > 99 ? '99+' : tab.unread || '@'}</span>` : !tab.active && tab.unread ? '<span class="unread"></span>' : '');
     if (mark.innerHTML !== markHtml) mark.innerHTML = markHtml;
     mark.style.display = markHtml ? 'contents' : 'none';
     const key = i < 8 ? `ctrl+${i + 1}` : i === list.length - 1 ? 'ctrl+9' : '';

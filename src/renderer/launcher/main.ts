@@ -547,7 +547,7 @@ const renderSettings = async () => {
     window.shell.onUpdateStatus(showUpdate);
   }
 
-  $('version').textContent = `Jollyboat ${window.shell.version}${platform === 'darwin' ? ' (experimental mac build)' : ''}`;
+  $('version').textContent = `Jollyboat ${window.shell.version}`;
   hint($('keyring'), settings.secureStorage ? '' : t('no keyring | passwords stored unencrypted'), 'bad');
 };
 

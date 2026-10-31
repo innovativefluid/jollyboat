@@ -482,9 +482,22 @@ if (boot.isSavedServer) {
 
   // --- the water theme: the water behind the page (the theme's css does the rest) ----------
   let pageWater: ReturnType<typeof startPageWater> = null;
+  // while Jollyplay's game window is open (it marks <html data-jollyplay-playing>) the water
+  // rests at a frame a second, so the game gets the gpu; it comes back when the mark goes. only
+  // this page: the bar above keeps its water
+  const PLAYING = 'data-jollyplay-playing';
+  const playing = () => document.documentElement?.hasAttribute(PLAYING) ?? false;
+  const watchPlaying = () =>
+    new MutationObserver(() => pageWater?.rest(playing())).observe(document.documentElement, { attributes: true, attributeFilter: [PLAYING] });
+  if (document.documentElement) watchPlaying();
+  else window.addEventListener('DOMContentLoaded', watchPlaying, { once: true });
+
   const setWater = (want: boolean) => {
     const on = want && shown;
-    if (on && !pageWater && document.body) pageWater = startPageWater(boot.softGl, hasFocus, () => waterPalette);
+    if (on && !pageWater && document.body) {
+      pageWater = startPageWater(boot.softGl, hasFocus, () => waterPalette);
+      if (playing()) pageWater?.rest(true);
+    }
     if (!on && pageWater) {
       pageWater.stop();
       pageWater = null;

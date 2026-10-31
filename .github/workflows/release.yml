@@ -53,7 +53,7 @@ jobs:
     uses: ./.github/workflows/build.yml
     with: { targets: main }
 
-  # the experimental mac build on its own: macos runners are sometimes not available for hours,
+  # the mac build on its own: macos runners are sometimes not available for hours,
   # so the release does not wait for it; the dmg is added to the draft when (if) it is done
   mac:
     needs: tag
@@ -77,7 +77,7 @@ jobs:
             **Download one file:**
             - Windows: `Jollyboat-${{ inputs.version }}-windows-universal-setup.exe` (x64 and ARM in one), or without installing: `Jollyboat-${{ inputs.version }}-windows-x64-portable.exe` (`arm64` on ARM), keeps its settings in a `Jollyboat-data` folder next to it
             - Linux: `Jollyboat-${{ inputs.version }}-linux-x64.flatpak`, or `linux-arm64` on ARM; or the AppImage, which updates itself: `Jollyboat-${{ inputs.version }}-linux-x86_64.AppImage` (`arm64` on ARM; make it executable, then run it)
-            - Mac (experimental, untested): `Jollyboat-${{ inputs.version }}-mac-universal-EXPERIMENTAL.dmg`. To open it the first time: System Settings → Privacy & Security → Open Anyway.
+            - Mac (macOS 13+, Intel and Apple silicon): `Jollyboat-${{ inputs.version }}-mac-universal.dmg`. Not signed by Apple: to open it the first time, System Settings → Privacy & Security → Open Anyway.
 
             `latest.yml`, `latest-linux*.yml` and `.blockmap` are read by installed copies when they check for updates; ignore them.
 
@@ -90,7 +90,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v8
-        with: { name: mac-experimental, path: mac }
+        with: { name: mac, path: mac }
       - name: Add the mac dmg to the release
         env: { GH_TOKEN: '${{ github.token }}' }
         run: gh release upload "${{ needs.tag.outputs.tag }}" mac/*.dmg --clobber --repo "${{ github.repository }}"

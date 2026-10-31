@@ -27,7 +27,7 @@ export const diagnostics = () => {
       : '';
 
   return [
-    `Jollyboat ${__APP_VERSION__} (${app.isPackaged ? 'packaged' : 'dev'}${process.platform === 'darwin' ? ', experimental mac build' : ''})`,
+    `Jollyboat ${__APP_VERSION__} (${app.isPackaged ? 'packaged' : 'dev'})`,
     `electron ${process.versions.electron} | chromium ${process.versions.chrome} | node ${process.versions.node}`,
     `${process.platform} ${process.arch} | ${type()} ${release()}${session ? ` | ${session}` : ''}${process.env.PORTABLE_EXECUTABLE_DIR ? ' | portable' : ''}${process.env.FLATPAK_ID ? ` | flatpak${process.env.JOLLYBOAT_CHANNEL ? ` (${process.env.JOLLYBOAT_CHANNEL})` : ''}` : ''}${process.env.XDG_CURRENT_DESKTOP ? ` | ${process.env.XDG_CURRENT_DESKTOP}` : ''}`,
     `screen audio: ${getScreenAudioMode()}`,

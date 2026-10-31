@@ -132,6 +132,9 @@ export type TWaterOptions = {
 
 export type TWater = {
   stop: () => void;
+  /** at rest: a frame a second (the glass still follows the page), no animation frames at all;
+   * false: full speed again */
+  rest: (on: boolean) => void;
   ripple: (x: number, y: number, amp: number, radius?: number) => void;
   popAt: (x: number, y: number) => boolean;
   /** the clock the glass runs on (seconds) */
@@ -677,8 +680,28 @@ export const createWater = (canvas: HTMLCanvasElement, opts: TWaterOptions): TWa
     budget = Math.max(0, budget - interval);
     draw(now);
   };
+  // at rest: a timer instead of animation frames. each frame starts afresh (no time step, no
+  // slow-frame bookkeeping), so the water barely moves and the quality is left alone
+  let restTimer: ReturnType<typeof setInterval> | null = null;
+  const rest = (on: boolean) => {
+    if (on === !!restTimer || !running) return;
+    if (on) {
+      cancelAnimationFrame(raf);
+      restTimer = setInterval(() => {
+        if (document.hidden) return;
+        last = 0;
+        draw(performance.now());
+      }, 1000);
+    } else {
+      clearInterval(restTimer!);
+      restTimer = null;
+      last = 0;
+      prevTick = 0;
+      raf = requestAnimationFrame(loop);
+    }
+  };
   const onVisible = () => {
-    if (!document.hidden && running) {
+    if (!document.hidden && running && !restTimer) {
       cancelAnimationFrame(raf);
       last = 0;
       prevTick = 0;
@@ -700,6 +723,8 @@ export const createWater = (canvas: HTMLCanvasElement, opts: TWaterOptions): TWa
   const stop = () => {
     running = false;
     cancelAnimationFrame(raf);
+    if (restTimer) clearInterval(restTimer);
+    restTimer = null;
     window.removeEventListener('resize', resize);
     window.removeEventListener('pointermove', onMove);
     document.documentElement.removeEventListener('pointerleave', onLeave);
@@ -722,5 +747,5 @@ export const createWater = (canvas: HTMLCanvasElement, opts: TWaterOptions): TWa
     __waterCost: () => ({ frame: +(frameMs / Math.max(1, frames)).toFixed(3), scene: +(sceneMs / Math.max(1, frames)).toFixed(3), frames, size: [cw, ch, ww, wh] })
   });
 
-  return { stop, ripple, popAt, time: () => (reduce.matches ? 12 : clock), pointer: () => ptr, resize };
+  return { stop, rest, ripple, popAt, time: () => (reduce.matches ? 12 : clock), pointer: () => ptr, resize };
 };

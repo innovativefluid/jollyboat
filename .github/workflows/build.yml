@@ -78,8 +78,7 @@ jobs:
         shell: pwsh
         run: ./tools/smoke/smoke-win.ps1 app
 
-  # EXPERIMENTAL mac build: universal dmg, ad-hoc signed; the smoke test runs both slices (arm64
-  # natively, x64 under rosetta) since nobody on the project has a mac
+  # mac build: universal dmg, ad-hoc signed; the smoke test starts the slice this runner's cpu runs
   mac:
     needs: check
     if: ${{ inputs.targets != 'main' }}
@@ -87,7 +86,8 @@ jobs:
     # acquired"). the dmg is universal either way; the smoke test starts whatever this cpu runs
     runs-on: macos-15-intel
     timeout-minutes: 45
-    # experimental: a failing mac build must never hold back a windows / linux release
+    # mac runners are sometimes unavailable for hours: a failing mac build must never hold back a
+    # windows / linux release
     continue-on-error: true
     steps:
       - uses: actions/checkout@v7
@@ -134,7 +134,7 @@ jobs:
           fi
       - uses: actions/upload-artifact@v7
         with:
-          name: mac-experimental
+          name: mac
           path: dist/*.dmg
 
   # built from source with flatpak-builder, from the same manifest Flathub uses; the GitHub copy
