@@ -91,6 +91,8 @@ if (boot.ownPage) {
       bridgeStatus: () => ipcRenderer.invoke('bridge:status'),
       screenAudioInfo: () => ipcRenderer.invoke('screenAudio:info'),
       openWebsite: () => ipcRenderer.invoke('app:website'),
+      linksOwned: () => ipcRenderer.invoke('links:get') as Promise<boolean | null>,
+      setLinksOwned: (on: boolean) => ipcRenderer.invoke('links:set', on) as Promise<boolean | null>,
       editCustomCss: () => ipcRenderer.invoke('css:edit') as Promise<string>,
       positionOverlay: () => ipcRenderer.invoke('overlay:position'),
       useCssExample: () => ipcRenderer.invoke('css:example'),

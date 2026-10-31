@@ -504,6 +504,16 @@ const renderSettings = async () => {
   notify.checked = settings.notifyTray;
   notify.onchange = () => { window.shell.saveSettings({ notifyTray: notify.checked }); toast('saved'); };
 
+  // sharkord:// links (windows, mac): opening here, or in another app (the official one, say)
+  const links = $<HTMLInputElement>('links');
+  const owned = await window.shell.linksOwned();
+  $('links-row').hidden = owned === null;
+  links.checked = owned === true;
+  links.onchange = async () => {
+    links.checked = (await window.shell.setLinksOwned(links.checked)) === true;
+    toast(t('saved'));
+  };
+
   const autostart = $<HTMLInputElement>('autostart');
   const auto = await window.shell.getAutoStart();
   $('autostart-row').hidden = !auto.supported;
@@ -548,6 +558,24 @@ if (failed) {
 }
 
 renderServers().then(() => {
+  // opened by a sharkord:// link: the editor with its address (the saved server if there is one;
+  // saving then updates it, an invite in the address included)
+  const add = query.get('add');
+  if (add) {
+    let origin = '';
+    try {
+      origin = new URL(add).origin;
+    } catch {
+      /* not a url: the field shows what came */
+    }
+    const saved = servers.find((s) => s.url === origin);
+    openEditor(saved);
+    if (!saved || /[?&]invite=/.test(add)) fUrl.value = add;
+    checkUrl();
+    hint(testStatus, saved ? t('already saved | open it, or save to update it') : t('from a sharkord:// link | check it, then save'), 'good');
+    if (!saved) fName.focus();
+  }
+
   // back from a server whose proxy refused the stored login: to its password
   const id = query.get('server');
   if (id && failed === t('proxy login refused | check the proxy login')) void askPassword(id, t('the proxy refused this login | check the user and enter the password again'));

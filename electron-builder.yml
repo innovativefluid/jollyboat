@@ -44,6 +44,13 @@ win:
   files:
     - '!node_modules/uiohook-napi/prebuilds/{linux,darwin}*/**'
     - '!node_modules/uiohook-napi/{src,libuiohook,binding.gyp}'
+# sharkord:// links (the official Sharkord Desktop's add-server links): macos takes the scheme from
+# Info.plist; windows registers it at runtime (src/main/deeplinks.ts), linux in the desktop entry
+protocols:
+  - name: Sharkord
+    schemes:
+      - sharkord
+
 nsis:
   # the guid electron-builder derived from the old app id (io.github.innovativefluid.Jollyboat):
   # pinned, so updates keep replacing the same installation

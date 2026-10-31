@@ -2,7 +2,8 @@
 Type=Application
 Name=Jollyboat
 Comment=Sharkord client
-Exec=jollyboat
+Exec=jollyboat %U
+MimeType=x-scheme-handler/sharkord;
 Icon=net.innovativefluid.Jollyboat
 Terminal=false
 Categories=Network;Chat;InstantMessaging;

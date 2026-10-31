@@ -9,6 +9,7 @@ import { windowBackground } from './look';
 import { installDisplayMediaHandler } from './screen-share';
 import { installContextMenu, installDownloads, isServerFile, saveUrl } from './downloads';
 import { allowsHid, installControllers } from './controllers';
+import { claimLinksIfFree, findDeepLink, parseDeepLink, PROTOCOL } from './deeplinks';
 import { findServerByUrl, getSettings, onServersChanged, saveSettings } from './settings';
 import { log } from './log';
 import { diagnostics } from './diagnostics';
@@ -287,6 +288,10 @@ const createMainWindow = () => {
   // server behind a proxy login are saved here instead (the browser doesn't have the login)
   let lastExternal = 0;
   wc.setWindowOpenHandler(({ url }) => {
+    if (url.toLowerCase().startsWith(`${PROTOCOL}://`)) {
+      handleDeepLink(url);
+      return { action: 'deny' };
+    }
     if (findServerByUrl(wc.getURL())?.basicAuth && isServerFile(url, wc.getURL())) {
       saveUrl(wc, url);
       return { action: 'deny' };
@@ -336,6 +341,8 @@ const createMainWindow = () => {
   // provider, so other https origins are allowed in-window; anything else is not
   wc.on('will-navigate', (event, url) => {
     if (!/^https?:/i.test(url)) event.preventDefault();
+    // sharkord's own "add to desktop app" link, and any other sharkord:// link on the page
+    if (url.toLowerCase().startsWith(`${PROTOCOL}://`)) handleDeepLink(url);
   });
 
   // sharkord guards leaving while in a call (beforeunload). electron would silently stay, which
@@ -475,7 +482,7 @@ const createLauncherWindow = () => {
   return win;
 };
 
-const showLauncher = (error?: string, serverId?: string, show = true) => {
+const showLauncher = (error?: string, serverId?: string, show = true, addUrl?: string) => {
   if (!show && !error && !launcherWindow) return;
 
   const win = launcherWindow ?? createLauncherWindow();
@@ -483,11 +490,13 @@ const showLauncher = (error?: string, serverId?: string, show = true) => {
 
   if (error) query.set('error', error);
   if (error && serverId) query.set('server', serverId);
+  // a sharkord:// link: the editor opens with its address
+  if (addUrl) query.set('add', addUrl);
 
   const fresh = !win.webContents.getURL().startsWith(pageUrl('launcher'));
 
   // an open launcher is only reloaded when there is something new to say
-  if (error || fresh) win.loadURL(query.size ? `${pageUrl('launcher')}?${query}` : pageUrl('launcher'));
+  if (error || addUrl || fresh) win.loadURL(query.size ? `${pageUrl('launcher')}?${query}` : pageUrl('launcher'));
   if (!show) return;
   if (fresh) win.webContents.once('did-finish-load', () => focusWindow(win));
   else focusWindow(win);
@@ -508,6 +517,15 @@ const dropServer = (reason: string, serverId?: string) => {
   setOverlayVoice({ connected: false, inVoice: false, micMuted: false, deafened: false, speaking: false }, '', []);
   setStreams(0);
   showLauncher(reason, serverId, visible);
+};
+
+/** a sharkord:// link (from the system, a second start, or the server page): the setup window
+ * with its server address, ready to save (or the saved server under that address) */
+const handleDeepLink = (link: string) => {
+  const server = parseDeepLink(link);
+  log('links', server ? 'add-server link' : 'a sharkord:// link that is not one we know');
+  if (server) showLauncher(undefined, undefined, true, server);
+  else showWindow();
 };
 
 const WEBSITE = 'https://innovativefluid.net';
@@ -630,10 +648,24 @@ app.on('web-contents-created', (_e, contents) => {
   });
 });
 
+// a sharkord:// link that started the app (windows, linux), or that macos sent before it was ready
+let startLink = findDeepLink(process.argv);
+let ready = false;
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  if (ready) handleDeepLink(url);
+  else startLink = url;
+});
+
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on('second-instance', showWindow);
+  // a second start: a link it was given, else just the window
+  app.on('second-instance', (_e, argv) => {
+    const link = findDeepLink(argv);
+    if (link) handleDeepLink(link);
+    else showWindow();
+  });
 
   app.whenReady().then(async () => {
     // dev only: JOLLYBOAT_NETLOG=/path/log.json records every request; SIGUSR2 writes it out
@@ -651,6 +683,13 @@ if (!app.requestSingleInstanceLock()) {
 
     session.defaultSession.setPermissionRequestHandler((wc, permission, callback, details) => {
       const url = details.requestingUrl || wc.getURL();
+      // a link to another app's scheme asks to open it outside: sharkord:// from a saved server's
+      // page is ours to handle (sharkord's "add to desktop app"); nothing goes to the system
+      if (permission === 'openExternal') {
+        const external = 'externalURL' in details ? String(details.externalURL ?? '') : '';
+        if (external.toLowerCase().startsWith(`${PROTOCOL}://`) && isTrustedOrigin(url)) handleDeepLink(external);
+        return callback(false);
+      }
       callback(allowedPermissions.includes(permission) && isTrustedOrigin(url));
     });
     session.defaultSession.setPermissionCheckHandler((wc, permission, origin) => {
@@ -713,7 +752,11 @@ if (!app.requestSingleInstanceLock()) {
     const { autoConnectServerId, servers } = getSettings();
     const auto = servers.find((s) => s.id === autoConnectServerId) ?? (servers.length === 1 ? servers[0] : undefined);
 
-    if (auto) connectToServer(auto.id, !hidden);
+    claimLinksIfFree();
+    ready = true;
+    // started by a sharkord:// link: the setup window with it, nothing else
+    if (startLink) handleDeepLink(startLink);
+    else if (auto) connectToServer(auto.id, !hidden);
     else showLauncher(undefined, undefined, !hidden);
   });
 

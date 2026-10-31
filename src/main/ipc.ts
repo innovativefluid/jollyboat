@@ -24,6 +24,7 @@ import {
 import { addUnread, refreshTrayTheme, setTitleUnread, setVoiceState } from './tray';
 import { diagnostics } from './diagnostics';
 import { isServerFile, saveUrl } from './downloads';
+import { ownsLinks, setOwnsLinks } from './deeplinks';
 import { log } from './log';
 import { getUpdateStatus, installUpdateNow, onUpdateStatus, openReleasePage, startUpdater, updatesFromStore } from './updater';
 import {
@@ -360,6 +361,9 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart,
   }));
   ipcMain.handle('share:importFile', guard((e) => importFromFile(BrowserWindow.fromWebContents(e.sender))));
   ipcMain.handle('app:website', guard(() => shell.openExternal('https://innovativefluid.net')));
+  // sharkord:// links: whether they open here (null: the system decides), and the switch
+  ipcMain.handle('links:get', guard(() => ownsLinks()));
+  ipcMain.handle('links:set', guard((_e, on: unknown) => setOwnsLinks(on === true)));
   ipcMain.handle('autostart:get', guard(() => ({ supported: isAutoStartSupported(), enabled: getAutoStart() })));
   ipcMain.handle('autostart:set', guard((_e, enabled: unknown) => setAutoStart(enabled === true)));
   ipcMain.handle('update:status', guard(() => getUpdateStatus()));

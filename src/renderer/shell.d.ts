@@ -33,6 +33,8 @@ declare global {
       bridgeStatus: () => Promise<TBridgeStatus>;
       screenAudioInfo: () => Promise<{ ok: boolean; text: string }>;
       openWebsite: () => Promise<void>;
+      linksOwned: () => Promise<boolean | null>;
+      setLinksOwned: (on: boolean) => Promise<boolean | null>;
       shareCode: (ids: string[] | null, withPasswords: boolean, invite?: string) => Promise<string>;
       exportFile: (ids: string[] | null, withPasswords: boolean) => Promise<string | null>;
       importText: (text: string) => Promise<TImported>;
