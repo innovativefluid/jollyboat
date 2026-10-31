@@ -10,6 +10,8 @@ import { app, net, shell } from 'electron';
 import type { TUpdateStatus } from '../shared/types';
 import { log } from './log';
 import { getSettings } from './settings';
+import { integrateAppImage } from './appimage';
+import { refreshAutoStart } from './autostart';
 
 const RELEASES_API = 'https://api.github.com/repos/innovativefluid/jollyboat/releases?per_page=10';
 const RELEASES_PAGE = 'https://github.com/innovativefluid/jollyboat/releases';
@@ -82,6 +84,12 @@ const startSelfUpdate = async () => {
   autoUpdater.on('update-not-available', () => set({ state: 'none' }));
   autoUpdater.on('update-downloaded', (info) => set({ state: 'downloaded', version: info.version }));
   autoUpdater.on('error', (err) => set({ state: 'error', message: err.message.toLowerCase() }));
+  // the appimage's new file got the new version's name: the menu entry and autostart follow it
+  (autoUpdater as unknown as NodeJS.EventEmitter).on('appimage-filename-updated', (path: string) => {
+    process.env.APPIMAGE = path;
+    integrateAppImage();
+    refreshAutoStart();
+  });
 
   return () => autoUpdater.checkForUpdates().catch(() => undefined);
 };

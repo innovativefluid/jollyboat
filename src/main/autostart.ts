@@ -87,3 +87,10 @@ export const setAutoStart = async (enabled: boolean) => {
 };
 
 export const isAutoStartSupported = () => ['win32', 'linux', 'darwin'].includes(process.platform);
+
+/** linux outside flatpak: an existing autostart entry gets the current command (the appimage's
+ * file can move: a self-update renames it to the new version) */
+export const refreshAutoStart = () => {
+  if (process.platform !== 'linux' || process.env.FLATPAK_ID || !getAutoStart()) return;
+  void setAutoStart(true);
+};

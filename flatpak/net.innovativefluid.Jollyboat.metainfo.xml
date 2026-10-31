@@ -84,7 +84,7 @@
   <releases>
     <release version="0.3.18" date="2026-10-31">
       <description>
-        <p>Linux: an AppImage next to the Flatpak, which updates itself from the releases like the Windows installer (downloads in the background, installs when you quit). It needs no FUSE library and starts on Ubuntu 24.04 and newer.</p>
+        <p>Linux: an AppImage next to the Flatpak, which updates itself from the releases like the Windows installer (downloads in the background, installs when you quit). It needs no FUSE library, starts on Ubuntu 24.04 and newer, and puts itself into the app menu when it runs (with sharkord:// links), following the file when an update renames it.</p>
       </description>
     </release>
     <release version="0.3.17" date="2026-10-31">

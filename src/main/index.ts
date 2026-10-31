@@ -9,6 +9,8 @@ import { windowBackground } from './look';
 import { installDisplayMediaHandler } from './screen-share';
 import { installContextMenu, installDownloads, isServerFile, saveUrl } from './downloads';
 import { allowsHid, installControllers } from './controllers';
+import { integrateAppImage } from './appimage';
+import { refreshAutoStart } from './autostart';
 import { claimLinksIfFree, findDeepLink, parseDeepLink, PROTOCOL } from './deeplinks';
 import { findServerByUrl, getSettings, onServersChanged, saveSettings } from './settings';
 import { log } from './log';
@@ -753,6 +755,9 @@ if (!app.requestSingleInstanceLock()) {
     const auto = servers.find((s) => s.id === autoConnectServerId) ?? (servers.length === 1 ? servers[0] : undefined);
 
     claimLinksIfFree();
+    // the appimage: into the app menu, autostart pointing at its current file
+    integrateAppImage();
+    refreshAutoStart();
     ready = true;
     // started by a sharkord:// link: the setup window with it, nothing else
     if (startLink) handleDeepLink(startLink);
