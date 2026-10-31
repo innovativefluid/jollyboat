@@ -85,6 +85,41 @@ export type TSettings = {
   windowBounds: { x: number; y: number; width: number; height: number } | null;
   /** name of the last shared screen/window, preselected in the picker */
   lastSourceName: string | null;
+  /** sharkord's desktop mode on saved servers (window.sharkordDesktop, bridge v1): its own
+   *  notifications, unread and mention counts, hotkeys without pairing. servers from before
+   *  sharkord 0.0.29 never ask for it and stay as they were */
+  desktopMode: boolean;
+  /** the server tabs in the bar (off: the bar names the server shown) */
+  serverTabs: boolean;
+  /** the servers open in tabs, in their order; opened again at start with the auto-connect one */
+  openServers: string[];
+};
+
+/** a server tab in the bar */
+export type TTab = {
+  id: string;
+  name: string;
+  /** the server's logo as a data url, once fetched */
+  logo: string | null;
+  active: boolean;
+  /** unread messages (sharkord's count) and whether one of them mentions us */
+  unread: number;
+  mentioned: boolean;
+  /** in a call there */
+  voice: boolean;
+  /** desktop mode only: what the page says about its connection */
+  connection: 'connecting' | 'connected' | 'signed-out' | 'disconnected' | null;
+  loading: boolean;
+};
+
+export type TBarState = {
+  server: string;
+  zoom: number;
+  theme: 'light' | 'dark' | null;
+  maximized: boolean;
+  streams: number;
+  tabs: TTab[];
+  showTabs: boolean;
 };
 
 export type TVoiceState = { connected: boolean; inVoice: boolean; micMuted: boolean; deafened: boolean; speaking: boolean };

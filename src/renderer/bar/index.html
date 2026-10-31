@@ -42,6 +42,26 @@
       .zoom span { font: 400 13px/1 var(--px); color: var(--dim); min-width: 40px; text-align: center; cursor: pointer; }
       svg.mark-water { display: none; }
 
+      /* the server tabs: logo or initials, name, an unread dot (a count when we are mentioned),
+         a speaker while in a call there. the one shown is filled, like the main button */
+      .bar > :not(.tabs, .name, .spacer) { flex-shrink: 0; }
+      .chip { white-space: nowrap; }
+      .tabs { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 0 1 auto; overflow: hidden; padding: 2px 1px; }
+      .tabs .chip { flex: none; gap: 6px; padding: 0 9px 0 4px; max-width: 190px; }
+      .tabs .chip[hidden], .chip[hidden] { display: none; }
+      .tab .ico { width: 16px; height: 16px; flex: none; border-radius: 50%; display: grid; place-items: center; font-size: 9px; letter-spacing: -0.02em; overflow: hidden; background: var(--faint); color: var(--fg); }
+      .tab .ico img { width: 100%; height: 100%; object-fit: cover; }
+      .tab.fill .ico { background: var(--bg); color: var(--fg); }
+      .tab .tname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+      .tab .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+      .tab .count { min-width: 14px; height: 14px; padding: 0 3px; box-sizing: border-box; border-radius: 7px; font-size: 10px; line-height: 14px; text-align: center; background: var(--fg); color: var(--bg); flex: none; }
+      .tab.fill .count { background: var(--bg); color: var(--fg); }
+      .tab svg.voice { width: 12px; height: 12px; flex: none; }
+      .tab.off { opacity: 0.55; }
+      .toggle, .add, .more-tabs { padding: 0 7px; }
+      body.tabs-on .name { display: none; }
+      body:not(.tabs-on) :is(.tabs, .add, .more-tabs) { display: none; }
+
       /* the water look: a frosted glass bar, glass chips (the way to the settings filled with
          water), the boat smooth, bobbing on a line of water (moved by main.ts, a few times a second) */
       [data-look='water'] body {
@@ -87,6 +107,10 @@
       [data-look='water'] .controls button:hover { background: rgba(var(--w-glow), 0.18); color: rgb(var(--w-fg)); }
       [data-look='water'] .controls button#close:hover { background: rgb(var(--w-warm)); color: #fff; }
       [data-look='water'] .controls svg { shape-rendering: auto; }
+      [data-look='water'] .tabs { padding: 3px 2px; }
+      [data-look='water'] .tab .ico { background: rgba(var(--w-edge), 0.25); color: rgb(var(--w-fg)); }
+      [data-look='water'] .tab.fill .ico { background: rgba(255, 255, 255, 0.35); color: #fff; }
+      [data-look='water'] .tab .count { background: rgb(var(--w-warm)); color: #fff; }
 
       /* the retro look: the bar is an old window's title bar, pink into lilac; the chips small
          raised buttons (the way to the settings hot pink), the window buttons square ones */
@@ -109,6 +133,12 @@
       [data-look='retro'] .controls button#close { margin-left: 2px; }
       [data-look='retro'] .controls button#close:hover { background: var(--r-face); color: var(--r-accent); }
       [data-look='retro'] .controls svg { width: 10px; height: 10px; }
+      [data-look='retro'] .tabs .chip { padding: 0 8px 0 4px; }
+      [data-look='retro'] .tab .ico { border-radius: 0; background: var(--r-accent); color: #fff; }
+      [data-look='retro'] .tab.fill .ico { background: var(--r-face); color: var(--r-ink); }
+      [data-look='retro'] .tab .count { border-radius: 0; background: var(--r-accent); color: #fff; }
+      [data-look='retro'] .tab.fill .count { background: var(--r-face); color: var(--r-accent); }
+      [data-look='retro'] .tab.fill:active { padding: 0 8px 0 4px; }
     </style>
   </head>
   <body>
@@ -126,7 +156,11 @@
         </g>
         <path class="flow" d="M0 24.2q2 -1.6 4 0t4 0t4 0t4 0t4 0t4 0t4 0t4 0t4 0" fill="none" style="stroke: rgb(var(--w-liq-a))" stroke-width="1.4" stroke-linecap="round" />
       </svg>
+      <button class="chip toggle" id="tabs-toggle" aria-label="server tabs" title="server tabs" data-i18n-title>▸</button>
       <div class="name"><span id="server"></span> <span class="app">| Jollyboat</span></div>
+      <div class="tabs" id="tabs"></div>
+      <button class="chip more-tabs" id="more-tabs" hidden>»</button>
+      <button class="chip add" id="add" aria-label="open a server" title="open a server" data-i18n-title>+</button>
       <span class="spacer"></span>
       <div class="zoom" title="zoom (ctrl + / − / 0)" data-i18n-title>
         <button class="chip" id="zoom-out" aria-label="zoom out">−</button>

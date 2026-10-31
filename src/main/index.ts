@@ -15,7 +15,9 @@ import { claimLinksIfFree, findDeepLink, parseDeepLink, PROTOCOL } from './deepl
 import { findServerByUrl, getSettings, onServersChanged, saveSettings } from './settings';
 import { log } from './log';
 import { diagnostics } from './diagnostics';
-import { clearUnread, createTray, hasTray, setServerName } from './tray';
+import { addUnread, clearUnread, createTray, hasTray, setServerName, setTitleUnread, setVoiceState } from './tray';
+import { installDesktopBridge, sendListVisible, type TConnection } from './desktop';
+import type { TBarState, TTab, TVoiceMember, TVoiceState } from '../shared/types';
 import { applySpellcheck, blockDictionaryDownloads } from './privacy';
 import { initScreenAudio, stopPipeWireShare } from './screen-audio';
 import { canSelfUpdate, loadAutoUpdater, startUpdater } from './updater';
@@ -74,22 +76,67 @@ if (PORTABLE) app.setPath('userData', join(process.env.PORTABLE_EXECUTABLE_DIR!,
 const spellcheckAtStart = getSettings().spellcheck;
 if (!spellcheckAtStart) blockDictionaryDownloads();
 
-// two windows. the server window is a frame holding our bar on top and the server page below;
-// the page is never unloaded for settings. the launcher (servers + settings) is its own window
+// two windows. the server window is a frame holding our bar on top and the server pages below,
+// one per open server (a tab in the bar). every open server stays loaded: a call goes on in one
+// while another is shown, and each one reports its unread messages. pages are never unloaded for
+// the settings; the launcher (servers + settings) is its own window
 let mainWindow: BaseWindow | null = null;
-let serverView: WebContentsView | null = null;
 let barView: WebContentsView | null = null;
 let launcherWindow: BrowserWindow | null = null;
 let quitting = false;
-let crashes: number[] = [];
 // the action sharkord's in-call guard interrupted, re-run with the guard waived after "leave"
 let interrupted: (() => void) | null = null;
 let waiveGuard = false;
 
 const BAR_HEIGHT = 34;
 
-// the server page's contents, while there is a server window
-const page = () => (serverView && !serverView.webContents.isDestroyed() ? serverView.webContents : null);
+type TServerView = {
+  id: string;
+  view: WebContentsView;
+  wc: Electron.WebContents;
+  /** the page's light/dark (sharkord has its own switch) */
+  theme: 'light' | 'dark' | null;
+  /** browser mode: the unread total from the page's title */
+  titled: number;
+  /** desktop mode: what the client says */
+  unread: { count: number; mentioned: boolean } | null;
+  connection: TConnection | null;
+  /** read from sharkord's controls (both modes) */
+  voice: TVoiceState;
+  channel: string;
+  members: TVoiceMember[];
+  streams: number;
+  /** desktop mode: the client says it is in a call */
+  desktopVoice: boolean;
+  /** when it joined its call (the latest one leads the tray and overlay) */
+  voiceAt: number;
+  loading: boolean;
+  /** a tab in the background that could not load: loaded again when it is shown */
+  failed: string | null;
+  crashes: number[];
+  /** chromium's background throttling (off while in a call) */
+  throttled: boolean;
+};
+
+const NO_VOICE: TVoiceState = { connected: false, inVoice: false, micMuted: false, deafened: false, speaking: false };
+
+// in tab order
+const views = new Map<string, TServerView>();
+let activeId: string | null = null;
+// logos as data urls, kept while the app runs (a tab opened again does not fetch it again)
+const logos = new Map<string, string>();
+
+const active = () => (activeId ? views.get(activeId) : undefined);
+const alive = (v: TServerView | undefined) => (v && !v.wc.isDestroyed() ? v : undefined);
+// the shown server page's contents, if there is one
+const page = () => alive(active())?.wc ?? null;
+const viewOf = (wc: Electron.WebContents) => [...views.values()].find((v) => v.wc === wc);
+const serverOf = (id: string) => getSettings().servers.find((s) => s.id === id);
+const inCall = (v: TServerView) => v.voice.inVoice || v.desktopVoice;
+// the server we are in a call on (the latest joined, when several)
+const voiceView = () => [...views.values()].filter(inCall).sort((a, b) => b.voiceAt - a.voiceAt)[0];
+// the one the tray, the overlay and the pop-out follow: the call, else the one shown
+const followed = () => alive(voiceView()) ?? alive(active());
 
 // last bounds are reused only when they still land on a display
 const restoredBounds = () => {
@@ -118,7 +165,7 @@ const rememberBounds = () => {
 // the bar grows with the page's zoom (its page scales its contents to match, see bar/main.ts)
 const barHeight = () => Math.round(BAR_HEIGHT * (page()?.getZoomFactor() ?? 1));
 const layout = () => {
-  if (!mainWindow || !serverView || !barView) return;
+  if (!mainWindow || !barView) return;
   const { width, height } = mainWindow.getContentBounds();
   const full = mainWindow.isFullScreen();
   const edge = full || mainWindow.isMaximized() ? 0 : 1;
@@ -126,18 +173,44 @@ const layout = () => {
   // mac: the traffic lights stay in the middle of the bar
   if (process.platform === 'darwin' && !full) mainWindow.setWindowButtonPosition({ x: 12, y: Math.max(4, Math.round((bar - 16) / 2)) });
   barView.setBounds({ x: 0, y: 0, width, height: bar });
-  serverView.setBounds({ x: edge, y: bar, width: Math.max(0, width - 2 * edge), height: Math.max(0, height - bar - edge) });
+  // every page keeps the size it would be shown at; only the active one is visible
+  for (const v of views.values()) {
+    v.view.setBounds({ x: edge, y: bar, width: Math.max(0, width - 2 * edge), height: Math.max(0, height - bar - edge) });
+    v.view.setVisible(v.id === activeId);
+  }
 };
 
-let serverName = '';
 // the bar takes the theme of the sharkord page under it (sharkord has its own light/dark switch);
 // until the page says, the system's
-let pageTheme: 'light' | 'dark' | null = null;
-const barDark = () => (pageTheme ? pageTheme === 'dark' : nativeTheme.shouldUseDarkColors);
+const pageTheme = () => active()?.theme ?? null;
+const barDark = () => (pageTheme() ? pageTheme() === 'dark' : nativeTheme.shouldUseDarkColors);
+
+const tabs = (): TTab[] =>
+  [...views.values()].map((v) => ({
+    id: v.id,
+    name: serverOf(v.id)?.name ?? '',
+    logo: logos.get(v.id) ?? null,
+    active: v.id === activeId,
+    unread: v.unread ? v.unread.count : v.titled,
+    mentioned: !!v.unread?.mentioned,
+    voice: inCall(v),
+    connection: v.connection,
+    loading: v.loading || !!v.failed
+  }));
+
 const sendBarState = () => {
   const wc = barView?.webContents;
   if (!wc || wc.isDestroyed()) return;
-  wc.send('bar:state', { server: serverName, zoom: page()?.getZoomFactor() ?? 1, theme: pageTheme, maximized: !!mainWindow?.isMaximized(), streams: streamCount() });
+  const state: TBarState = {
+    server: serverOf(activeId ?? '')?.name ?? '',
+    zoom: page()?.getZoomFactor() ?? 1,
+    theme: pageTheme(),
+    maximized: !!mainWindow?.isMaximized(),
+    streams: streamCount(),
+    tabs: tabs(),
+    showTabs: getSettings().serverTabs
+  };
+  wc.send('bar:state', state);
   layout();
   setOverlayTheme(barDark() ? 'dark' : 'light');
   const bg = windowBackground(barDark());
@@ -146,14 +219,53 @@ const sendBarState = () => {
   if (launcherWindow && !launcherWindow.isDestroyed()) launcherWindow.setBackgroundColor(windowBackground());
 };
 ipcMain.on('server:theme', (event, theme: unknown) => {
-  if (event.sender !== page() || !findServerByUrl(event.senderFrame?.url ?? '')) return;
+  const v = viewOf(event.sender);
+  if (!v || !findServerByUrl(event.senderFrame?.url ?? '')) return;
   const next = theme === 'dark' || theme === 'light' ? theme : null;
-  if (next === pageTheme) return;
-  pageTheme = next;
-  sendBarState();
+  if (next === v.theme) return;
+  v.theme = next;
+  if (v.id === activeId) sendBarState();
 });
 nativeTheme.on('updated', sendBarState);
 onStreams(sendBarState);
+
+// the tray's unread count: every open server's, together
+const refreshUnread = () => {
+  setTitleUnread(Math.min(999, [...views.values()].reduce((n, v) => n + (v.unread ? v.unread.count : v.titled), 0)));
+  sendBarState();
+};
+
+// the tray, the overlay and the pop-out follow the server we are in a call on, else the one shown.
+// a page in a call runs at full speed in the background (its voice rows, the overlay)
+let followedId: string | null = null;
+const follow = () => {
+  const v = followed();
+  const name = v ? (serverOf(v.id)?.name ?? '') : '';
+  if (followedId !== (v?.id ?? null)) {
+    followedId = v?.id ?? null;
+    setServerName(name);
+  }
+  setVoiceState(v ? v.voice : NO_VOICE);
+  setOverlayVoice(v && inCall(v) ? v.voice : NO_VOICE, v?.channel ?? '', v && inCall(v) ? v.members : []);
+  setStreams(v && inCall(v) ? v.streams : 0);
+  refreshOverlayHost();
+  for (const each of views.values()) {
+    if (each.wc.isDestroyed() || each.throttled === !inCall(each)) continue;
+    each.throttled = !inCall(each);
+    each.wc.setBackgroundThrottling(each.throttled);
+  }
+};
+
+// the overlay stays away while the call's own page is in front: the window has focus and shows
+// the server we are in a call on (another tab in front: the overlay shows the call)
+const refreshOverlayHost = () => {
+  const call = voiceView();
+  setOverlayHostFocused(!!mainWindow?.isFocused() && (!call || call.id === activeId));
+};
+
+const markCall = (v: TServerView, was: boolean) => {
+  if (!was && inCall(v)) v.voiceAt = Date.now();
+};
 
 // the zoom steps of a browser, up to 300 %; in and out go to the next one
 const ZOOM_STEPS = [0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3];
@@ -174,30 +286,47 @@ const zoomReset = () => {
 };
 const toggleFullScreen = () => mainWindow?.setFullScreen(!mainWindow.isFullScreen());
 
-// runs an action that may unload the server page, remembering it for the in-call prompt
+// runs an action that may unload a server page, remembering it for the in-call prompt
 const guarded = (action: () => void) => {
   interrupted = action;
   action();
   setTimeout(() => (interrupted = null), 1000);
 };
-const reloadPage = () => guarded(() => page()?.reload());
+const reloadPage = (id = activeId) => {
+  const v = id ? alive(views.get(id)) : undefined;
+  if (v) guarded(() => v.wc.reload());
+};
 
 const webPreferences = { preload: preloadPath(), sandbox: true, contextIsolation: true, nodeIntegration: false };
 
-// the app's shortcuts, on the server page and the bar (there is no application menu)
+// the tab n places along (wrapping), or tab number n
+const tabAt = (n: number) => [...views.keys()][n];
+const cycleTab = (step: 1 | -1) => {
+  const ids = [...views.keys()];
+  if (ids.length < 2) return;
+  const i = ids.indexOf(activeId ?? '');
+  switchTo(ids[(i + step + ids.length) % ids.length]!);
+};
+
+// the app's shortcuts, on the server pages and the bar (there is no application menu)
 const handleShortcuts = (wc: Electron.WebContents) =>
   wc.on('before-input-event', (event, input) => {
     if (input.type !== 'keyDown') return;
     const ctrl = input.control || input.meta;
     const key = input.key.toLowerCase();
+    // ctrl+1..9: that tab (9: the last), by the key's place, whatever the layout puts on it
+    const digit = ctrl && !input.shift && !input.alt && /^Digit[1-9]$/.test(input.code) ? Number(input.code.slice(5)) : 0;
     const action =
       ctrl && input.shift && key === 's' ? () => showLauncher()
       : ctrl && input.shift && key === 'p' ? () => void popOutStream()
       : ctrl && input.shift && key === 'i' ? () => page()?.toggleDevTools()
-      : (ctrl && !input.shift && key === 'r') || input.key === 'F5' ? reloadPage
+      : (ctrl && !input.shift && key === 'r') || input.key === 'F5' ? () => reloadPage()
       : ctrl && (key === '=' || key === '+') ? () => zoom(1)
       : ctrl && key === '-' ? () => zoom(-1)
       : ctrl && key === '0' ? zoomReset
+      : digit && views.size ? () => switchTo(digit === 9 ? tabAt(views.size - 1)! : (tabAt(digit - 1) ?? activeId!))
+      : ctrl && input.key === 'Tab' ? () => cycleTab(input.shift ? -1 : 1)
+      : ctrl && (input.key === 'PageDown' || input.key === 'PageUp') ? () => cycleTab(input.key === 'PageDown' ? 1 : -1)
       : input.key === 'F11' ? toggleFullScreen
       : ctrl && !input.shift && key === 'q' ? quit
       : null;
@@ -207,6 +336,13 @@ const handleShortcuts = (wc: Electron.WebContents) =>
       action();
     }
   });
+
+// both views of what is shown learn the window's focus (each one's own document focus says only
+// which of them has the keyboard): the water runs at full rate while the window is in front
+const sendFocus = (focused: boolean) => {
+  const all = [barView?.webContents, ...[...views.values()].map((v) => v.wc)];
+  for (const c of all) if (c && !c.isDestroyed()) c.send('shell:focus', focused);
+};
 
 const createMainWindow = () => {
   const dark = barDark();
@@ -225,42 +361,27 @@ const createMainWindow = () => {
     title: 'Jollyboat',
     backgroundColor: windowBackground(dark)
   });
-  const server = new WebContentsView({ webPreferences });
   const barv = new WebContentsView({ webPreferences });
   mainWindow = win;
-  serverView = server;
   barView = barv;
-  server.setBackgroundColor('#0a0a0a');
   barv.setBackgroundColor(windowBackground(dark));
-  win.contentView.addChildView(server);
   win.contentView.addChildView(barv);
   layout();
 
-  const wc = server.webContents;
   const bar = barv.webContents;
 
   bar.loadURL(pageUrl('bar'));
   bar.on('did-finish-load', sendBarState);
-  // a server's zoom is remembered per address: the bar picks it up when the page loads
-  wc.on('did-finish-load', sendBarState);
   bar.setWindowOpenHandler(() => ({ action: 'deny' }));
   bar.on('will-navigate', (event) => event.preventDefault());
-  handleShortcuts(wc);
   handleShortcuts(bar);
-
-  // both views learn the window's focus (each one's own document focus says only which of them
-  // has the keyboard): the water runs at full rate in both while the window is in front
-  const sendFocus = (focused: boolean) => {
-    for (const c of [wc, bar]) if (!c.isDestroyed()) c.send('shell:focus', focused);
-  };
-  wc.on('did-finish-load', () => sendFocus(win.isFocused()));
   bar.on('did-finish-load', () => sendFocus(win.isFocused()));
 
   // reading the window clears the unread marker; typing goes to the page, not the bar
   win.on('focus', () => {
     clearUnread();
-    if (!wc.isDestroyed()) wc.focus();
-    setOverlayHostFocused(true);
+    page()?.focus();
+    refreshOverlayHost();
     sendFocus(true);
   });
   win.on('blur', () => {
@@ -281,10 +402,107 @@ const createMainWindow = () => {
   };
   win.on('maximize', onMaximizeChange);
   win.on('unmaximize', onMaximizeChange);
-  wc.on('zoom-changed', (_e, direction) => zoom(direction === 'in' ? 1 : -1));
-  installCustomCss(page, wc);
+
+  // closing: minimize (default), hide into the tray, or quit. quitting closes the pages first so
+  // sharkord's in-call guard gets its say; the frame follows once they are gone
+  win.on('close', (event) => {
+    if (quitting) {
+      const open = [...views.values()].filter((v) => !v.wc.isDestroyed());
+      if (open.length) {
+        event.preventDefault();
+        for (const v of open) v.wc.close({ waitForBeforeUnload: true });
+      }
+      return;
+    }
+
+    const { onClose } = getSettings();
+    event.preventDefault();
+
+    if (onClose === 'minimize') win.minimize();
+    else if (onClose === 'tray' && hasTray()) win.hide();
+    else quit();
+  });
+
+  win.on('closed', () => {
+    if (!bar.isDestroyed()) bar.close();
+    for (const v of views.values()) if (!v.wc.isDestroyed()) v.wc.close();
+    views.clear();
+    activeId = null;
+    mainWindow = null;
+    barView = null;
+  });
+
+  return win;
+};
+
+// the tabs that are open, for the next start
+const rememberTabs = () => {
+  if (!quitting) saveSettings({ openServers: [...views.keys()] });
+};
+
+// a server's logo for its tab: /info names the file. fetched through the app's session, so a
+// proxy login comes along; small files only
+const fetchLogo = async (id: string) => {
+  const server = serverOf(id);
+  if (!server || logos.has(id)) return;
+  try {
+    const info = (await (await session.defaultSession.fetch(`${server.url}/info`, { signal: AbortSignal.timeout(8000) })).json()) as { logo?: { name?: unknown } | null };
+    const name = info?.logo?.name;
+    if (typeof name !== 'string' || !name) return;
+    const res = await session.defaultSession.fetch(`${server.url}/public/${encodeURIComponent(name)}`, { signal: AbortSignal.timeout(8000) });
+    const type = res.headers.get('content-type') ?? '';
+    if (!res.ok || !/^image\/(png|jpeg|webp|gif|avif)/.test(type)) return;
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length > 512 * 1024) return;
+    logos.set(id, `data:${type.split(';')[0]};base64,${buf.toString('base64')}`);
+    sendBarState();
+  } catch {
+    /* no logo: the tab shows the initials */
+  }
+};
+
+const createServerView = (id: string): TServerView => {
+  const win = mainWindow ?? createMainWindow();
+  const view = new WebContentsView({ webPreferences });
+  const wc = view.webContents;
+  const v: TServerView = {
+    id,
+    view,
+    wc,
+    theme: null,
+    titled: 0,
+    unread: null,
+    connection: null,
+    voice: { ...NO_VOICE },
+    channel: '',
+    members: [],
+    streams: 0,
+    desktopVoice: false,
+    voiceAt: 0,
+    loading: true,
+    failed: null,
+    crashes: [],
+    throttled: true
+  };
+  views.set(id, v);
+  view.setBackgroundColor('#0a0a0a');
+  view.setVisible(false);
+  // under the bar (the bar stays on top for its menus' sake)
+  win.contentView.addChildView(view, 0);
+
+  // a server's zoom is remembered per address: the bar picks it up when the page loads
+  wc.on('did-finish-load', () => {
+    v.loading = false;
+    wc.send('shell:shown', id === activeId);
+    wc.send('shell:focus', win.isFocused());
+    sendBarState();
+    void fetchLogo(id);
+  });
+  handleShortcuts(wc);
+  wc.on('zoom-changed', (_e, direction) => id === activeId && zoom(direction === 'in' ? 1 : -1));
+  installCustomCss(wc);
   installContextMenu(wc, win);
-  wc.on('page-title-updated', (_e, title) => win.setTitle(`${title} — Jollyboat`));
+  wc.on('page-title-updated', (_e, title) => id === activeId && win.setTitle(`${title} — Jollyboat`));
 
   // links Sharkord opens in a new window go to the system browser; the server's own files from a
   // server behind a proxy login are saved here instead (the browser doesn't have the login)
@@ -307,22 +525,26 @@ const createMainWindow = () => {
     return { action: 'deny' };
   });
 
-  // a pipewire share never outlives the page that started it
-  wc.on('did-start-navigation', (details) => details.isMainFrame && !details.isSameDocument && stopPipeWireShare());
+  // a new document: nothing it said before counts (a pipewire share never outlives its page)
+  wc.on('did-start-navigation', (details) => {
+    if (!details.isMainFrame || details.isSameDocument) return;
+    if (inCall(v)) stopPipeWireShare();
+    Object.assign(v, { loading: true, unread: null, titled: 0, connection: null, desktopVoice: false, voice: { ...NO_VOICE }, members: [], streams: 0 });
+    follow();
+    refreshUnread();
+  });
   // a crashed or hung page comes back on its own; three crashes in two minutes go to the launcher
   wc.on('render-process-gone', (_e, details) => {
-    stopPipeWireShare();
+    if (inCall(v)) stopPipeWireShare();
     log('window', 'renderer gone:', details.reason, details.exitCode);
 
     if (details.reason === 'clean-exit' || details.reason === 'killed' || quitting) return;
 
     const now = Date.now();
-    crashes = crashes.filter((t) => now - t < 120_000).concat(now);
+    v.crashes = v.crashes.filter((t) => now - t < 120_000).concat(now);
 
     const url = wc.getURL();
-    const saved = findServerByUrl(url);
-
-    if (crashes.length >= 3 || !saved) dropServer(t('page crashed ({reason})', { reason: details.reason }), saved?.id);
+    if (v.crashes.length >= 3 || !findServerByUrl(url)) failServer(id, t('page crashed ({reason})', { reason: details.reason }));
     else wc.loadURL(url);
   });
 
@@ -349,7 +571,7 @@ const createMainWindow = () => {
 
   // sharkord guards leaving while in a call (beforeunload). electron would silently stay, which
   // looked like a lost click. the page stays for now and our own prompt asks; "leave" re-runs
-  // whatever was interrupted with the guard waived. applies to reload, switching servers, quitting
+  // whatever was interrupted with the guard waived. applies to reload, closing a tab, quitting
   wc.on('will-prevent-unload', (event) => {
     if (waiveGuard) {
       waiveGuard = false;
@@ -359,9 +581,11 @@ const createMainWindow = () => {
 
     log('window', 'page asks to stay (beforeunload)');
     const wasQuitting = quitting;
-    const again = interrupted ?? (wasQuitting ? quit : reloadPage);
+    const again = interrupted ?? (wasQuitting ? quit : () => wc.reload());
     interrupted = null;
     quitting = false;
+    // the prompt is about this server: it is shown while asking
+    switchTo(id);
 
     askPrompt(win, { message: t('still in a call'), detail: wasQuitting ? t('leave it and quit?') : t('leave it?'), yes: t('leave'), no: t('stay') }).then((leave) => {
       if (!leave) return;
@@ -372,58 +596,105 @@ const createMainWindow = () => {
     });
   });
 
-  // a server that cannot be reached bounces back to the launcher with the reason
+  // a server that cannot be reached: the tab goes and the launcher says why (a tab in the
+  // background is tried again when it is shown)
   wc.on('did-fail-load', (_e, code, description, url, isMainFrame) => {
     // no address in the log: diagnostics promise no server names or urls
     log('window', 'load failed', code, description, isMainFrame ? 'main frame' : 'subframe', findServerByUrl(url) ? 'of a saved server' : 'elsewhere');
     if (!isMainFrame || code === -3 /* aborted: a new navigation started */) return;
 
     const text = description.toLowerCase().replace(/^err_/, '').replace(/_/g, ' ');
-    dropServer(text === 'too many retries' ? t('proxy login refused | check the proxy login') : text, findServerByUrl(url)?.id);
+    failServer(id, text === 'too many retries' ? t('proxy login refused | check the proxy login') : text);
   });
 
   // an http error page from the server itself (did-fail-load does not fire for those)
   wc.on('did-navigate', (_e, url, httpResponseCode) => {
-    const saved = findServerByUrl(url);
-    if (!saved || httpResponseCode < 400) return;
+    if (!findServerByUrl(url) || httpResponseCode < 400) return;
     log('window', 'server answered', httpResponseCode, 'for the page');
-    if (httpResponseCode === 401 || httpResponseCode === 407) dropServer(t('proxy login refused | check the proxy login'), saved.id);
-    else if (httpResponseCode >= 500) dropServer(t('server error {code}', { code: httpResponseCode }), saved.id);
+    if (httpResponseCode === 401 || httpResponseCode === 407) failServer(id, t('proxy login refused | check the proxy login'));
+    else if (httpResponseCode >= 500) failServer(id, t('server error {code}', { code: httpResponseCode }));
   });
 
-  // closing: minimize (default), hide into the tray, or quit. quitting closes the page first so
-  // sharkord's in-call guard gets its say; the frame follows once the page is gone
-  win.on('close', (event) => {
-    if (quitting) {
-      if (!wc.isDestroyed()) {
-        event.preventDefault();
-        wc.close({ waitForBeforeUnload: true });
-      }
-      return;
+  wc.on('destroyed', () => removeView(id));
+
+  return v;
+};
+
+/** a page went away (its tab closed, a failure, quitting) */
+const removeView = (id: string, quiet = false) => {
+  const v = views.get(id);
+  if (!v) return;
+  // the tab to show instead: the one after it, else the one before
+  const order = [...views.keys()];
+  const neighbour = order[order.indexOf(id) + 1] ?? order[order.indexOf(id) - 1];
+  views.delete(id);
+  if (!v.wc.isDestroyed()) v.wc.close();
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.contentView.removeChildView(v.view);
+  if (inCall(v)) stopPipeWireShare();
+
+  if (quitting) {
+    if (!views.size && mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.destroy();
+      app.quit();
     }
+    return;
+  }
 
-    const { onClose } = getSettings();
-    event.preventDefault();
+  rememberTabs();
+  if (activeId === id) {
+    activeId = null;
+    if (neighbour) switchTo(neighbour);
+  }
+  follow();
+  refreshUnread();
+  // the last tab: the window goes, the launcher comes
+  if (!views.size && mainWindow) {
+    mainWindow.hide();
+    mainWindow.setTitle('Jollyboat');
+    if (!quiet) showLauncher();
+  }
+};
 
-    if (onClose === 'minimize') win.minimize();
-    else if (onClose === 'tray' && hasTray()) win.hide();
-    else quit();
-  });
-  wc.on('destroyed', () => {
-    if (!quitting || win.isDestroyed()) return;
-    win.destroy();
-    app.quit();
-  });
+/** shows a tab (and with it the window's title, the bar, the zoom) */
+const switchTo = (id: string) => {
+  const v = alive(views.get(id));
+  if (!v) return;
+  const changed = activeId !== id;
+  activeId = id;
+  for (const each of views.values()) if (!each.wc.isDestroyed()) each.wc.send('shell:shown', each.id === id);
+  layout();
+  sendBarState();
+  follow();
+  if (!changed) return;
+  const title = v.wc.getTitle();
+  mainWindow?.setTitle(v.loading || !title || /^https?:/.test(title) ? `${serverOf(id)?.name ?? ''} — Jollyboat` : `${title} — Jollyboat`);
+  if (mainWindow?.isFocused()) v.wc.focus();
+  if (v.failed) {
+    const server = serverOf(id);
+    v.failed = null;
+    if (server) v.wc.loadURL(server.url);
+  }
+};
 
-  win.on('closed', () => {
-    if (!bar.isDestroyed()) bar.close();
-    if (!wc.isDestroyed()) wc.close();
-    mainWindow = null;
-    serverView = null;
-    barView = null;
-  });
+/** a page that could not load: shown, its tab goes and the launcher says why; in the
+ * background, the tab stays and is tried again when shown */
+const failServer = (id: string, reason: string) => {
+  const v = views.get(id);
+  if (!v) return;
+  if (id !== activeId) {
+    v.failed = reason;
+    sendBarState();
+    return;
+  }
+  const visible = !!mainWindow?.isVisible() || !!launcherWindow?.isVisible();
+  log('window', 'server tab closed:', reason);
+  removeView(id, true);
+  showLauncher(reason, id, visible);
+};
 
-  return win;
+const closeServer = (id: string) => {
+  const v = alive(views.get(id));
+  if (v) guarded(() => v.wc.close({ waitForBeforeUnload: true }));
 };
 
 const focusWindow = (win: BaseWindow) => {
@@ -432,10 +703,10 @@ const focusWindow = (win: BaseWindow) => {
   win.focus();
 };
 
-// a server page is loaded (or loading) in the server window
-const hasServer = () => !!findServerByUrl(page()?.getURL() ?? '');
+// a server page is open in the server window
+const hasServer = () => views.size > 0;
 
-// second instance / dock: the server if there is one, otherwise the launcher
+// second instance / dock: the server window if there is a server, otherwise the launcher
 const showWindow = () => {
   if (mainWindow && hasServer()) focusWindow(mainWindow);
   else showLauncher();
@@ -450,6 +721,14 @@ const toggleWindow = () => {
   } else {
     showWindow();
   }
+};
+
+/** a page's tab and the window come up (a notification was clicked) */
+const bringUp = (wc: Electron.WebContents) => {
+  const v = viewOf(wc);
+  if (!v || !mainWindow) return;
+  switchTo(v.id);
+  focusWindow(mainWindow);
 };
 
 const createLauncherWindow = () => {
@@ -504,23 +783,6 @@ const showLauncher = (error?: string, serverId?: string, show = true, addUrl?: s
   else focusWindow(win);
 };
 
-// a server page that failed: the window goes away and the launcher says why (it pops up only
-// when the server window was on screen; a start into the tray stays there)
-const dropServer = (reason: string, serverId?: string) => {
-  const visible = !!mainWindow?.isVisible() || !!launcherWindow?.isVisible();
-
-  if (mainWindow) {
-    mainWindow.hide();
-    mainWindow.setTitle('Jollyboat');
-    page()?.loadURL('about:blank');
-  }
-  serverName = '';
-  setServerName('');
-  setOverlayVoice({ connected: false, inVoice: false, micMuted: false, deafened: false, speaking: false }, '', []);
-  setStreams(0);
-  showLauncher(reason, serverId, visible);
-};
-
 /** a sharkord:// link (from the system, a second start, or the server page): the setup window
  * with its server address, ready to save (or the saved server under that address) */
 const handleDeepLink = (link: string) => {
@@ -535,8 +797,9 @@ const WEBSITE = 'https://innovativefluid.net';
 // the bar's ⋯ menu: everything the old menu bar had that the bar does not show
 const barMenu = () =>
   Menu.buildFromTemplate([
-    { label: t('Reload'), accelerator: 'CommandOrControl+R', click: reloadPage },
+    { label: t('Reload'), accelerator: 'CommandOrControl+R', click: () => reloadPage() },
     { label: t('Full screen'), accelerator: 'F11', click: toggleFullScreen },
+    { label: getSettings().serverTabs ? t('Hide server tabs') : t('Show server tabs'), click: toggleTabs },
     { label: t('Developer tools'), accelerator: 'CommandOrControl+Shift+I', click: () => page()?.toggleDevTools() },
     { type: 'separator' },
     { label: 'Copy diagnostics', click: () => clipboard.writeText(diagnostics()) },
@@ -548,9 +811,48 @@ const barMenu = () =>
     { label: t('Quit'), accelerator: 'CommandOrControl+Q', click: quit }
   ]);
 
-ipcMain.on('bar:action', (event, action: unknown, at: unknown) => {
+// a tab's own menu (right click)
+const tabMenu = (id: string) =>
+  Menu.buildFromTemplate([
+    { label: t('Reload'), click: () => reloadPage(id) },
+    { label: t('Close tab'), click: () => closeServer(id) },
+    { type: 'separator' },
+    { label: t('Hide server tabs'), click: toggleTabs }
+  ]);
+
+// the + chip: the saved servers that are not open, and the way to add one
+const addMenu = () => {
+  const closed = getSettings().servers.filter((s) => !views.has(s.id));
+  return Menu.buildFromTemplate([
+    ...closed.map((s) => ({ label: s.name, click: () => connectToServer(s.id) })),
+    ...(closed.length ? [{ type: 'separator' as const }] : []),
+    { label: t('Add a server…'), click: () => showLauncher() }
+  ]);
+};
+
+// tabs that do not fit the bar
+const overflowMenu = (ids: string[]) =>
+  Menu.buildFromTemplate(
+    ids.flatMap((id) => {
+      const tab = tabs().find((x) => x.id === id);
+      return tab ? [{ label: `${tab.name}${tab.voice ? ' 🔊' : tab.unread ? ` (${tab.unread})` : ''}`, type: 'checkbox' as const, checked: tab.active, click: () => switchTo(id) }] : [];
+    })
+  );
+
+/** the server tabs on or off (sharkord's own "server list" button in desktop mode does this too) */
+const toggleTabs = () => {
+  const visible = !getSettings().serverTabs;
+  saveSettings({ serverTabs: visible });
+  sendListVisible([...views.values()].map((v) => v.wc), visible);
+  sendBarState();
+};
+
+ipcMain.on('bar:action', (event, action: unknown, at: unknown, arg: unknown) => {
   if (!barView || event.sender !== barView.webContents) return;
-  log('bar', String(action));
+  if (action !== 'tab') log('bar', String(action));
+  const p = (at ?? {}) as { x?: unknown; y?: unknown };
+  const pos = { x: typeof p.x === 'number' ? p.x : 0, y: typeof p.y === 'number' ? p.y : barHeight() };
+  const id = typeof arg === 'string' && views.has(arg) ? arg : null;
 
   if (action === 'settings') showLauncher();
   else if (action === 'zoom-in') zoom(1);
@@ -560,33 +862,98 @@ ipcMain.on('bar:action', (event, action: unknown, at: unknown) => {
   else if (action === 'maximize') mainWindow?.isMaximized() ? mainWindow.unmaximize() : mainWindow?.maximize();
   else if (action === 'close') mainWindow?.close();
   else if (action === 'popout') void popOutStream();
-  else if (action === 'menu' && mainWindow) {
-    const p = (at ?? {}) as { x?: unknown; y?: unknown };
-    barMenu().popup({ window: mainWindow, x: typeof p.x === 'number' ? p.x : 0, y: typeof p.y === 'number' ? p.y : barHeight() });
-  }
+  else if (action === 'tab' && id) switchTo(id);
+  else if (action === 'tab-close' && id) closeServer(id);
+  else if (action === 'toggle-tabs') toggleTabs();
+  else if (!mainWindow) return;
+  else if (action === 'menu') barMenu().popup({ window: mainWindow, ...pos });
+  else if (action === 'tab-menu' && id) tabMenu(id).popup({ window: mainWindow, ...pos });
+  else if (action === 'add') addMenu().popup({ window: mainWindow, ...pos });
+  else if (action === 'overflow' && Array.isArray(arg)) overflowMenu(arg.filter((x): x is string => typeof x === 'string')).popup({ window: mainWindow, ...pos });
 });
 
-const connectToServer = (id: string, show = true) => {
-  const server = getSettings().servers.find((s) => s.id === id);
-
+/** opens a server in its tab (or shows its tab when it is open already) */
+const connectToServer = (id: string, show = true, background = false) => {
+  const server = serverOf(id);
   if (!server) return;
-  interrupted = () => connectToServer(id);
-  setTimeout(() => (interrupted = null), 1000);
 
   const win = mainWindow ?? createMainWindow();
+  let v = alive(views.get(id));
 
-  win.setTitle(`${server.name} — Jollyboat`);
-  const loadStart = performance.now();
-  page()?.once('did-finish-load', () => log('start', `server page loaded in ${Math.round(performance.now() - loadStart)} ms (${Math.round(process.uptime() * 1000)} ms since launch)`));
-  serverName = server.name;
-  setServerName(server.name);
-  sendBarState();
-  // with an invite still to use, sharkord's connect screen gets it as ?invite= (it reads it from there)
-  page()?.loadURL(server.invite ? `${server.url}/?invite=${encodeURIComponent(server.invite)}` : server.url);
+  if (!v) {
+    v = createServerView(id);
+    const loadStart = performance.now();
+    v.wc.once('did-finish-load', () => log('start', `server page loaded in ${Math.round(performance.now() - loadStart)} ms (${Math.round(process.uptime() * 1000)} ms since launch)`));
+    // with an invite still to use, sharkord's connect screen gets it as ?invite= (it reads it from there)
+    v.wc.loadURL(server.invite ? `${server.url}/?invite=${encodeURIComponent(server.invite)}` : server.url);
+    rememberTabs();
+  }
+  if (!background || !activeId) switchTo(id);
   if (show) focusWindow(win);
   // the launcher has done its job; it comes back from the bar or the tray
-  launcherWindow?.close();
+  if (!background) launcherWindow?.close();
 };
+
+// what a page says about itself: its voice controls, its title, its notifications
+const pageHandlers = {
+  onVoice: (wc: Electron.WebContents, voice: TVoiceState, channel: string, members: TVoiceMember[], streams: number) => {
+    const v = viewOf(wc);
+    if (!v) return;
+    const was = inCall(v);
+    Object.assign(v, { voice, channel, members, streams });
+    markCall(v, was);
+    if (was !== inCall(v)) sendBarState();
+    follow();
+  },
+  onTitle: (wc: Electron.WebContents, count: number) => {
+    const v = viewOf(wc);
+    if (!v || v.titled === count) return;
+    v.titled = count;
+    refreshUnread();
+  },
+  // the tray's marker: a message while the window is in the background
+  onNotification: (_wc: Electron.WebContents) => {
+    if (!getSettings().notifyTray) return;
+    if (!mainWindow || !mainWindow.isFocused() || !mainWindow.isVisible()) addUnread();
+  },
+  onNotificationClick: bringUp
+};
+
+// sharkord's desktop mode
+const installPageBridge = () => installDesktopBridge({
+  setUnread: (wc, count, mentioned) => {
+    const v = viewOf(wc);
+    if (!v) return;
+    v.unread = { count, mentioned };
+    refreshUnread();
+  },
+  setConnection: (wc, state) => {
+    const v = viewOf(wc);
+    if (!v || v.connection === state) return;
+    v.connection = state;
+    sendBarState();
+  },
+  setVoice: (wc, on) => {
+    const v = viewOf(wc);
+    if (!v) return;
+    const was = inCall(v);
+    v.desktopVoice = on;
+    markCall(v, was);
+    sendBarState();
+    follow();
+  },
+  notified: pageHandlers.onNotification,
+  clicked: bringUp,
+  listVisible: () => getSettings().serverTabs,
+  toggleList: toggleTabs,
+  openSettings: () => showLauncher()
+});
+
+// a server renamed or removed in the launcher: its tab follows
+onServersChanged(() => {
+  for (const id of [...views.keys()]) if (!serverOf(id)) closeServer(id);
+  sendBarState();
+});
 
 const quit = () => {
   quitting = true;
@@ -723,14 +1090,16 @@ if (!app.requestSingleInstanceLock()) {
     installDownloads();
     onServersChanged(refreshBasicAuth);
     installDisplayMediaHandler(() => mainWindow);
-  bindMainPage(page);
+    bindMainPage(() => followed()?.wc ?? null);
     await startBridge();
     registerIpc({
-      connectToServer,
+      connectToServer: (id) => connectToServer(id),
       getMainWindow: () => mainWindow,
       spellcheckAtStart,
-      onLookChange: sendBarState
+      onLookChange: sendBarState,
+      ...pageHandlers
     });
+    installPageBridge();
     // no application menu: the bar above the server page and its shortcuts replace it. a mac
     // needs one anyway (cmd+c / cmd+v in text fields go through the edit menu)
     Menu.setApplicationMenu(
@@ -741,7 +1110,7 @@ if (!app.requestSingleInstanceLock()) {
       show: showWindow,
       showLauncher: () => showLauncher(),
       quit,
-      voiceAction: (action) => page()?.send('shell:voice-action', action),
+      voiceAction: (action) => followed()?.wc.send('shell:voice-action', action),
       getMainWindow: () => mainWindow
     });
     if (process.env.JOLLYBOAT_SMOKE) return runSmokeTest();
@@ -761,8 +1130,11 @@ if (!app.requestSingleInstanceLock()) {
     ready = true;
     // started by a sharkord:// link: the setup window with it, nothing else
     if (startLink) handleDeepLink(startLink);
-    else if (auto) connectToServer(auto.id, !hidden);
-    else showLauncher(undefined, undefined, !hidden);
+    else if (auto) {
+      // the tabs from last time come back with it, in their order
+      for (const id of getSettings().openServers) connectToServer(id, false, true);
+      connectToServer(auto.id, !hidden);
+    } else showLauncher(undefined, undefined, !hidden);
   });
 
   app.on('before-quit', () => {

@@ -48,10 +48,14 @@ declare global {
       onUpdateStatus: (cb: (s: TUpdateStatus) => void) => void;
       onPickerSources: (cb: (sources: TCaptureSource[], lastName: string | null) => void) => void;
       promptAnswer: (answer: boolean) => void;
-      barAction: (action: 'settings' | 'zoom-in' | 'zoom-out' | 'zoom-reset' | 'menu' | 'minimize' | 'maximize' | 'close' | 'popout', at?: { x: number; y: number }) => void;
+      barAction: (
+        action: 'settings' | 'zoom-in' | 'zoom-out' | 'zoom-reset' | 'menu' | 'minimize' | 'maximize' | 'close' | 'popout' | 'tab' | 'tab-close' | 'tab-menu' | 'add' | 'overflow' | 'toggle-tabs',
+        at?: { x: number; y: number },
+        arg?: string | string[]
+      ) => void;
       /** the server window's focus (the bar never holds the keyboard itself for long) */
       windowFocused: () => boolean;
-      onBarState: (cb: (state: { server: string; zoom: number; theme: 'light' | 'dark' | null; maximized: boolean; streams: number }) => void) => void;
+      onBarState: (cb: (state: import('../shared/types').TBarState) => void) => void;
       pickerChoose: (result: TPickerResult) => void;
       onOverlayState: (cb: (state: TOverlayState) => void) => void;
       overlayHeight: (h: number) => void;

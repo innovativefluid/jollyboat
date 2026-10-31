@@ -17,8 +17,8 @@ const cssPath = () => join(app.getPath('userData'), 'custom.css');
 const themePath = (name = 'lcd') => join(__dirname, `../../resources/themes/${name}.css`);
 const assetsDir = () => join(__dirname, '../renderer/assets');
 
-let target: (() => WebContents | null) | null = null;
-let insertedKey: string | null = null;
+// every open server page, with the key of the css we put into it
+const pages = new Map<WebContents, string | null>();
 let watcher: FSWatcher | null = null;
 let applyTimer: NodeJS.Timeout | null = null;
 const fontCache = new Map<string, string>();
@@ -63,23 +63,27 @@ const themeCss = () => {
   return '';
 };
 
-/** (re)applies the theme to the page; removes it when the setting is off */
-const applyTheme = async () => {
-  const wc = target?.();
-  if (!wc || wc.isDestroyed()) return;
-
-  if (insertedKey) {
-    await wc.removeInsertedCSS(insertedKey).catch(() => undefined);
-    insertedKey = null;
+/** (re)applies the theme to a page; removes it when the setting is off */
+const applyTo = async (wc: WebContents, css: string) => {
+  if (wc.isDestroyed()) return;
+  const old = pages.get(wc);
+  if (old) {
+    pages.set(wc, null);
+    await wc.removeInsertedCSS(old).catch(() => undefined);
   }
-  const css = themeCss();
   if (!css.trim()) return;
   try {
-    insertedKey = await wc.insertCSS(withFonts(css));
-    log('theme', `${getSettings().theme}: applied ${css.length} chars`);
+    pages.set(wc, await wc.insertCSS(css));
   } catch (err) {
     log('theme', (err as Error).message);
   }
+};
+
+const applyTheme = async () => {
+  const css = themeCss();
+  const ready = css.trim() ? withFonts(css) : '';
+  await Promise.all([...pages.keys()].map((wc) => applyTo(wc, ready)));
+  if (ready) log('theme', `${getSettings().theme}: applied ${css.length} chars to ${pages.size} page(s)`);
 };
 
 const scheduleApply = () => {
@@ -100,14 +104,15 @@ const startWatching = () => {
   }
 };
 
-/** the server page: applies on each load while a theme is chosen */
-export const installCustomCss = (getPage: () => WebContents | null, wc: WebContents) => {
-  target = getPage;
-  insertedKey = null; // a new document has nothing of ours yet
+/** a server page: applies on each load while a theme is chosen */
+export const installCustomCss = (wc: WebContents) => {
+  pages.set(wc, null);
   wc.on('did-finish-load', () => {
-    insertedKey = null;
-    void applyTheme();
+    pages.set(wc, null); // a new document has nothing of ours yet
+    const css = themeCss();
+    void applyTo(wc, css.trim() ? withFonts(css) : '');
   });
+  wc.once('destroyed', () => pages.delete(wc));
   if (getSettings().theme === 'custom') startWatching();
 };
 

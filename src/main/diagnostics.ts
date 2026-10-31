@@ -38,6 +38,7 @@ export const diagnostics = () => {
     describeCustomCss(),
     `updates: ${getUpdateStatus().state}${getUpdateStatus().version ? ` ${getUpdateStatus().version}` : ''}`,
     `settings: ${s.servers.length} servers | auto-connect ${s.autoConnectServerId ? 'on' : 'off'} | on close ${s.onClose} | notify ${s.notifyTray} | spellcheck ${s.spellcheck} | update checks ${s.checkUpdates}`,
+    `tabs: ${s.openServers.length} open${s.serverTabs ? '' : ', hidden'} | desktop mode ${s.desktopMode ? 'on' : 'off'}`,
     '',
     '--- log',
     ...recentLog()

@@ -6,6 +6,7 @@ import { t, translatePage } from '../i18n';
 import { createWater, type TWater } from '../theme/water/engine';
 import { createGlassDom } from '../theme/water/glass-dom';
 import { waterTokens } from '../theme/water/tokens';
+import type { TBarState, TTab } from '../../shared/types';
 
 const $ = (id: string) => document.getElementById(id)!;
 translatePage();
@@ -159,7 +160,117 @@ $('more').onclick = () => {
   window.shell.barAction('menu', { x: Math.round(r.left), y: Math.round(r.bottom) });
 };
 
-window.shell.onBarState((state) => {
+// --- the server tabs ------------------------------------------------------------------------
+const tabsEl = $('tabs');
+const moreTabs = $('more-tabs');
+const VOICE = '<svg class="voice" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 4h2l3-3v10L3 8H1z M8 3.5q2 2.5 0 5 M9.5 2q3.5 4 0 8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" /></svg>';
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => [...w][0]!.toUpperCase())
+    .join('') || '?';
+
+let tabList: TTab[] = [];
+const at = (el: Element) => {
+  const r = el.getBoundingClientRect();
+  return { x: Math.round(r.left), y: Math.round(r.bottom) };
+};
+
+const renderTabs = (list: TTab[]) => {
+  tabList = list;
+  const els = new Map([...tabsEl.querySelectorAll<HTMLButtonElement>('.tab')].map((el) => [el.dataset.id!, el]));
+  list.forEach((tab, i) => {
+    let el = els.get(tab.id);
+    els.delete(tab.id);
+    if (!el) {
+      el = document.createElement('button');
+      el.className = 'chip tab';
+      el.dataset.id = tab.id;
+      el.innerHTML = '<span class="ico"></span><span class="tname"></span><span class="mark"></span>';
+    }
+    tabsEl.append(el); // in order
+    el.classList.toggle('fill', tab.active);
+    el.classList.toggle('off', tab.loading || tab.connection === 'disconnected' || tab.connection === 'signed-out');
+    const ico = el.querySelector<HTMLElement>('.ico')!;
+    if (tab.logo) {
+      const img = ico.querySelector('img');
+      if (img?.getAttribute('src') !== tab.logo) ico.innerHTML = `<img alt="" src="${tab.logo}">`;
+    } else if (ico.textContent !== initials(tab.name) || ico.querySelector('img')) ico.textContent = initials(tab.name);
+    el.querySelector('.tname')!.textContent = tab.name;
+    const mark = el.querySelector<HTMLElement>('.mark')!;
+    const markHtml = (tab.voice ? VOICE : '') + (tab.mentioned ? `<span class="count">${tab.unread > 99 ? '99+' : tab.unread || '@'}</span>` : !tab.active && tab.unread ? '<span class="dot"></span>' : '');
+    if (mark.innerHTML !== markHtml) mark.innerHTML = markHtml;
+    mark.style.display = markHtml ? 'contents' : 'none';
+    const key = i < 8 ? `ctrl+${i + 1}` : i === list.length - 1 ? 'ctrl+9' : '';
+    el.title = [tab.name, tab.unread ? t('{n} new', { n: tab.unread }) : '', key].filter(Boolean).join(' · ');
+  });
+  for (const el of els.values()) el.remove();
+  fitTabs();
+};
+
+// the tabs that do not fit go into the » menu (the one shown always stays in the bar)
+const fitTabs = () => {
+  const els = [...tabsEl.querySelectorAll<HTMLButtonElement>('.tab')];
+  els.forEach((el) => (el.hidden = false));
+  moreTabs.hidden = true;
+  tabsEl.style.minWidth = '';
+  if (!document.body.classList.contains('tabs-on')) return;
+  // the one shown always has its room
+  const shownTab = els.find((el) => el.classList.contains('fill'));
+  if (shownTab) tabsEl.style.minWidth = `${Math.ceil(shownTab.getBoundingClientRect().width / (parseFloat(document.documentElement.style.zoom) || 1)) + 2}px`;
+  const room = tabsEl.getBoundingClientRect().width;
+  const total = tabsEl.scrollWidth;
+  if (total <= room + 1) return;
+  moreTabs.hidden = false;
+  // the room left with the » chip in the bar
+  const budget = tabsEl.getBoundingClientRect().width;
+  const gap = 6;
+  const widths = els.map((el) => el.getBoundingClientRect().width + gap);
+  const activeIdx = els.findIndex((el) => el.classList.contains('fill'));
+  let used = activeIdx >= 0 ? widths[activeIdx]! : 0;
+  const hidden: string[] = [];
+  els.forEach((el, i) => {
+    if (i === activeIdx) return;
+    if (used + widths[i]! <= budget) used += widths[i]!;
+    else {
+      el.hidden = true;
+      hidden.push(el.dataset.id!);
+    }
+  });
+  moreTabs.dataset.ids = hidden.join(',');
+  moreTabs.textContent = `» ${hidden.length}`;
+};
+window.addEventListener('resize', fitTabs);
+
+tabsEl.addEventListener('click', (e) => {
+  const el = (e.target as HTMLElement).closest<HTMLElement>('.tab');
+  if (el) window.shell.barAction('tab', undefined, el.dataset.id);
+});
+// middle click closes a tab, right click has its menu
+tabsEl.addEventListener('auxclick', (e) => {
+  const el = (e.target as HTMLElement).closest<HTMLElement>('.tab');
+  if (el && e.button === 1) window.shell.barAction('tab-close', undefined, el.dataset.id);
+});
+tabsEl.addEventListener('mousedown', (e) => e.button === 1 && e.preventDefault());
+tabsEl.addEventListener('contextmenu', (e) => {
+  const el = (e.target as HTMLElement).closest<HTMLElement>('.tab');
+  if (!el) return;
+  e.preventDefault();
+  window.shell.barAction('tab-menu', at(el), el.dataset.id);
+});
+moreTabs.onclick = () => window.shell.barAction('overflow', at(moreTabs), (moreTabs.dataset.ids ?? '').split(',').filter(Boolean));
+$('add').onclick = () => window.shell.barAction('add', at($('add')));
+$('tabs-toggle').onclick = () => window.shell.barAction('toggle-tabs');
+
+window.shell.onBarState((state: TBarState) => {
+  document.body.classList.toggle('tabs-on', state.showTabs && state.tabs.length > 0);
+  $('tabs-toggle').textContent = state.showTabs ? '◂' : '▸';
+  $('tabs-toggle').hidden = !state.tabs.length;
+  // with the tabs the shown one is filled; the main button steps back
+  $('settings').classList.toggle('fill', !(state.showTabs && state.tabs.length > 0));
+  renderTabs(state.tabs);
   if (state.theme) document.documentElement.dataset.theme = state.theme;
   else delete document.documentElement.dataset.theme;
   repaint();
@@ -172,4 +283,5 @@ window.shell.onBarState((state) => {
   document.documentElement.style.zoom = String(state.zoom);
   water?.resize();
   $('popout').hidden = !state.streams;
+  fitTabs();
 });

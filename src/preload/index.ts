@@ -5,14 +5,17 @@
 
 import { contextBridge, ipcRenderer, webFrame } from 'electron';
 import { ALL_PALETTES, LOOKS, type TLook, type TPalette } from '../shared/types';
-import type { TOverlayState, TPickerResult, TServerInput, TSettings, TUpdateStatus, TVoiceMember, TVoiceReport } from '../shared/types';
+import type { TBarState, TOverlayState, TPickerResult, TServerInput, TSettings, TUpdateStatus, TVoiceMember, TVoiceReport } from '../shared/types';
 import { startPageWater } from './water';
 import { startSaveButtons } from './save-buttons';
+import { exposeDesktopBridge } from './desktop-bridge';
 import { createT } from '../shared/i18n';
 
 type TBootstrap = {
   ownPage: 'launcher' | 'picker' | 'prompt' | 'bar' | 'overlay' | null;
   isSavedServer: boolean;
+  /** sharkord's desktop mode on this saved server (window.sharkordDesktop) */
+  desktop: boolean;
   platform: NodeJS.Platform;
   version: string;
   /** flathub build: no update checks of our own */
@@ -117,9 +120,9 @@ if (boot.ownPage) {
       pickerChoose: (result: TPickerResult) => ipcRenderer.send('picker:choose', result)
     },
     bar: {
-      barAction: (action: string, at?: { x: number; y: number }) => ipcRenderer.send('bar:action', action, at),
+      barAction: (action: string, at?: { x: number; y: number }, arg?: string | string[]) => ipcRenderer.send('bar:action', action, at, arg),
       windowFocused: hasFocus,
-      onBarState: (cb: (state: { server: string; zoom: number; theme: 'light' | 'dark' | null; maximized: boolean }) => void) => {
+      onBarState: (cb: (state: TBarState) => void) => {
         ipcRenderer.on('bar:state', (_e, state) => cb(state));
       }
     },
@@ -145,6 +148,13 @@ if (boot.ownPage) {
 }
 
 if (boot.isSavedServer) {
+  // --- sharkord's desktop mode: before any of the page's scripts look for it --------------------
+  if (boot.desktop) exposeDesktopBridge(ipcRenderer);
+
+  // whether this server's tab is the one shown (a page in the background still runs, in a call
+  // at full speed: its water rests)
+  let shown = true;
+
   // --- hotkey bridge pairing: Sharkord reads these keys from localStorage ---------------------
   if (boot.bridge?.ownedByUs) {
     try {
@@ -418,10 +428,12 @@ if (boot.isSavedServer) {
     last = key;
     ipcRenderer.send('server:voice', state);
   };
+  // a tab in the background gets no animation frames
   const schedule = () => {
     if (scheduled) return;
     scheduled = true;
-    requestAnimationFrame(report);
+    if (document.hidden) setTimeout(report, 100);
+    else requestAnimationFrame(report);
   };
 
   // --- light / dark: jollyboat's setting decides ------------------------------------------
@@ -470,7 +482,8 @@ if (boot.isSavedServer) {
 
   // --- the water theme: the water behind the page (the theme's css does the rest) ----------
   let pageWater: ReturnType<typeof startPageWater> = null;
-  const setWater = (on: boolean) => {
+  const setWater = (want: boolean) => {
+    const on = want && shown;
     if (on && !pageWater && document.body) pageWater = startPageWater(boot.softGl, hasFocus, () => waterPalette);
     if (!on && pageWater) {
       pageWater.stop();
@@ -484,6 +497,10 @@ if (boot.isSavedServer) {
   ipcRenderer.on('shell:water', (_e, on: unknown, palette: unknown) => {
     wantWater = on === true;
     if (ALL_PALETTES.includes(palette as TPalette)) waterPalette = palette as TPalette;
+    if (document.body) setWater(wantWater);
+  });
+  ipcRenderer.on('shell:shown', (_e, on: unknown) => {
+    shown = on !== false;
     if (document.body) setWater(wantWater);
   });
 

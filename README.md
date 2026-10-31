@@ -32,7 +32,9 @@ A desktop app for [Sharkord](https://sharkord.com) servers, for Windows and Linu
 - **sharkord:// links** — the add-server links of Sharkord's official desktop app ("Add to desktop app" under a server's login) open Jollyboat's setup window with the address filled in. On Windows and macOS Jollyboat takes the links when no other app has them, and a switch in the settings hands them over or takes them back; on Linux the desktop picks.
 - **Invites** — paste a Sharkord invite link where a server or a share code goes, and the server opens on its sign-up screen with the invite filled in. Behind a proxy login the app asks for that login first, which a browser would have needed too. A share code can carry an invite along with the proxy login, so a friend needs only that one code.
 - **Saving pictures and files** — a save button under pictures and videos, on file cards and in the full-screen picture, and a right-click menu (save or copy images and links, cut, copy, paste, spelling). The app saves them itself, so it works behind a proxy login, where another browser couldn't open them.
-- **One bar on top** — server name, zoom (50 to 300 %, the bar grows with it), servers and settings, window buttons.
+- **Server tabs** — every server you open stays open in a tab in the bar, with its logo or initials, a dot for unread messages (a count when you are mentioned) and a speaker while you are in a call there. Be in a call on one server while you read another: the tray, the overlay and the pop-out follow the call. ctrl+1–9 or ctrl+tab to switch, + to open another, middle click or right click to close; tabs that do not fit go into a » menu. The tabs from last time come back with the server that opens at start.
+- **Sharkord's desktop mode** — servers on Sharkord 0.0.29 and newer run as in Sharkord's own desktop app: native notifications that open the right server and message, unread and mention counts, hotkeys without pairing, and its server-list and settings buttons in its top bar (they hide the tabs and open the settings). Older servers keep working as before. A switch in the settings turns it off.
+- **One bar on top** — server tabs, zoom (50 to 300 %, the bar grows with it, per server), servers and settings, window buttons.
 - **Light, dark or auto** — for everything: the Sharkord page, its bar, the overlay and the setup window.
 - **Languages** — English, German and Polish.
 - **Private** — talks to your servers, plus GitHub for update checks (one switch to turn off). No telemetry. On Windows, push-to-talk uses a keyboard hook while a hotkey is set: keys are compared with your hotkeys and never stored or sent.
@@ -59,7 +61,7 @@ From [releases](../../releases):
 | Linux (x64 or ARM) | `flatpak install ./Jollyboat-x.y.z-linux-x64.flatpak` (or `linux-arm64`), or the AppImage, which updates itself: `Jollyboat-x.y.z-linux-x86_64.AppImage` (`arm64`), make it executable and run it once; it adds itself to the app menu |
 | macOS 13+ (**experimental**) | `Jollyboat-x.y.z-mac-universal-EXPERIMENTAL.dmg` |
 
-Add your server's address; if a proxy asks for a login first, tick **proxy login / basic auth**. On a server, **servers and settings** in the top bar (or ctrl+shift+s) opens the settings again.
+Add your server's address; if a proxy asks for a login first, tick **proxy login / basic auth**. On a server, **servers and settings** in the top bar (or ctrl+shift+s) opens the settings again, and **+** opens another server in a tab.
 
 Tip: for GPU-encoded screen shares, pick H264 (or AV1 on newer GPUs) as the screen codec in Sharkord's settings, with simulcast off.
 

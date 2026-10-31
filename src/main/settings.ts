@@ -21,7 +21,10 @@ const DEFAULTS: TSettings = {
   language: 'system',
   overlayPosition: null,
   windowBounds: null,
-  lastSourceName: null
+  lastSourceName: null,
+  desktopMode: true,
+  serverTabs: true,
+  openServers: []
 };
 
 const filePath = () => join(app.getPath('userData'), 'settings.json');
@@ -75,7 +78,7 @@ const sanitize = (raw: unknown): TSettings => {
   out.palettes = { retro: pick('retro', pal.retro ?? (r.theme === 'retro-green' ? 'green' : undefined)), water: pick('water', pal.water) };
   if (r.language === 'system' || r.language === 'en' || r.language === 'de' || r.language === 'pl') out.language = r.language;
   if (r.onClose === 'minimize' || r.onClose === 'tray' || r.onClose === 'quit') out.onClose = r.onClose;
-  for (const key of ['spellcheck', 'checkUpdates', 'notifyTray', 'autostart', 'overlay'] as const) {
+  for (const key of ['spellcheck', 'checkUpdates', 'notifyTray', 'autostart', 'overlay', 'desktopMode', 'serverTabs'] as const) {
     if (typeof r[key] === 'boolean') out[key] = r[key] as boolean;
   }
   const b = r.windowBounds as Record<string, unknown> | undefined;
@@ -86,6 +89,9 @@ const sanitize = (raw: unknown): TSettings => {
   const op = r.overlayPosition as Record<string, unknown> | undefined;
   if (op && Number.isFinite(op.x) && Number.isFinite(op.y)) out.overlayPosition = { x: op.x as number, y: op.y as number };
   if (typeof r.lastSourceName === 'string') out.lastSourceName = r.lastSourceName.slice(0, 200);
+  if (Array.isArray(r.openServers)) {
+    out.openServers = [...new Set(r.openServers.filter((id): id is string => typeof id === 'string' && out.servers.some((s) => s.id === id)))];
+  }
 
   return out;
 };
@@ -190,7 +196,8 @@ export const removeServer = (id: string) => {
 
   saveSettings({
     servers: settings.servers.filter((s) => s.id !== id),
-    autoConnectServerId: settings.autoConnectServerId === id ? null : settings.autoConnectServerId
+    autoConnectServerId: settings.autoConnectServerId === id ? null : settings.autoConnectServerId,
+    openServers: settings.openServers.filter((o) => o !== id)
   });
   serverListeners.forEach((l) => l());
 };
@@ -204,6 +211,7 @@ export const recordTest = (id: string, result: { ok: boolean; status?: number },
   saveSettings({
     servers: settings.servers.map((s) => (s.id === id ? { ...s, ...named(s), lastTest: { ...result, at: Date.now() } } : s))
   });
+  serverListeners.forEach((l) => l());
 };
 
 export const findServerByUrl = (url: string) => {

@@ -1,7 +1,6 @@
-import { BrowserWindow, ipcMain, net, safeStorage, shell, webContents, type BaseWindow, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
-import { PALETTES, type TServerInput, type TSettings, type TTestResult, type TVoiceReport } from '../shared/types';
-import { finishPositioning, isWayland, refreshOverlay, setOverlayHeight, setOverlayVoice, startPositioning } from './overlay';
-import { setStreams } from './popout';
+import { BrowserWindow, ipcMain, net, safeStorage, shell, webContents, type BaseWindow, type IpcMainEvent, type IpcMainInvokeEvent, type WebContents } from 'electron';
+import { PALETTES, type TServerInput, type TSettings, type TTestResult, type TVoiceMember, type TVoiceReport, type TVoiceState } from '../shared/types';
+import { finishPositioning, isWayland, refreshOverlay, setOverlayHeight, startPositioning } from './overlay';
 import { editCustomCss, refreshCustomCss, useExample } from './customcss';
 import { currentLang, onLanguageChange, t } from './lang';
 import { applyColorMode } from './colormode';
@@ -21,7 +20,7 @@ import {
   unmutePipeWireShare,
   VIRTUAL_MIC_LABEL
 } from './screen-audio';
-import { addUnread, refreshTrayTheme, setTitleUnread, setVoiceState } from './tray';
+import { refreshTrayTheme } from './tray';
 import { diagnostics } from './diagnostics';
 import { isServerFile, saveUrl } from './downloads';
 import { ownsLinks, setOwnsLinks } from './deeplinks';
@@ -43,7 +42,20 @@ import {
   upsertServer
 } from './settings';
 
-type THandlers = { connectToServer: (id: string) => void; getMainWindow: () => BaseWindow | null; spellcheckAtStart: boolean; /** the theme changed: window colours */ onLookChange: () => void };
+type THandlers = {
+  connectToServer: (id: string) => void;
+  getMainWindow: () => BaseWindow | null;
+  spellcheckAtStart: boolean;
+  /** the theme changed: window colours */
+  onLookChange: () => void;
+  /** a server page's voice state (each tab reports; main follows the one in a call) */
+  onVoice: (wc: WebContents, voice: TVoiceState, channel: string, members: TVoiceMember[], streams: number) => void;
+  /** sharkord's unread total from a page's title */
+  onTitle: (wc: WebContents, count: number) => void;
+  /** a notification from a page (browser mode), and a click on one */
+  onNotification: (wc: WebContents) => void;
+  onNotificationClick: (wc: WebContents) => void;
+};
 
 let spellcheckAtStartup = false;
 
@@ -69,6 +81,8 @@ const pickSettingsPatch = (patch: unknown): Partial<TSettings> => {
   if (p.onClose === 'minimize' || p.onClose === 'tray' || p.onClose === 'quit') out.onClose = p.onClose;
   if (typeof p.notifyTray === 'boolean') out.notifyTray = p.notifyTray;
   if (typeof p.overlay === 'boolean') out.overlay = p.overlay;
+  if (typeof p.desktopMode === 'boolean') out.desktopMode = p.desktopMode;
+  if (typeof p.serverTabs === 'boolean') out.serverTabs = p.serverTabs;
   if (p.theme === 'none' || p.theme === 'jollyboat' || p.theme === 'water' || p.theme === 'retro' || p.theme === 'custom') out.theme = p.theme;
   const pal = (p.palettes ?? null) as Record<string, unknown> | null;
   if (pal) {
@@ -170,7 +184,7 @@ const fromSavedServer = (event: IpcMainEvent) => !!findServerByUrl(event.senderF
 const idList = (ids: unknown): string[] | null =>
   Array.isArray(ids) ? ids.filter((i): i is string => typeof i === 'string') : null;
 
-export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart, onLookChange }: THandlers) => {
+export const registerIpc = ({ connectToServer, spellcheckAtStart, onLookChange, onVoice, onTitle, onNotification, onNotificationClick }: THandlers) => {
   spellcheckAtStartup = spellcheckAtStart;
 
   // sync bootstrap for the preload. the bridge token and the capture patch go only to pages
@@ -184,6 +198,7 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart,
     event.returnValue = {
       ownPage: ownPageOf(url),
       isSavedServer: !!server,
+      desktop: !!server && getSettings().desktopMode,
       platform: process.platform,
       version: __APP_VERSION__,
       storeUpdates: updatesFromStore(),
@@ -229,8 +244,6 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart,
       deafened: state?.deafened === true,
       speaking: state?.speaking === true
     };
-    setVoiceState(voice);
-
     // the page is not trusted with shapes: names are cut short, a call has at most 50 rows here
     const members = (Array.isArray(state?.members) ? state.members : []).slice(0, 50).map((m) => ({
       name: String(m?.name ?? '').slice(0, 64),
@@ -241,14 +254,10 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart,
       sharing: m?.sharing === true,
       video: m?.video === true
     }));
-    setOverlayVoice(voice, String(state?.channel ?? '').slice(0, 64), members);
-    setStreams(voice.inVoice ? Math.max(0, Math.min(99, Number(state?.streams) || 0)) : 0);
+    onVoice(event.sender, voice, String(state?.channel ?? '').slice(0, 64), members, voice.inVoice ? Math.max(0, Math.min(99, Number(state?.streams) || 0)) : 0);
   });
   ipcMain.on('server:notification', (event) => {
-    if (!fromSavedServer(event) || !getSettings().notifyTray) return;
-
-    const win = getMainWindow();
-    if (!win || !win.isFocused() || !win.isVisible()) addUnread();
+    if (fromSavedServer(event)) onNotification(event.sender);
   });
   // pipewire screen-share audio, driven by the page's getDisplayMedia wrapper
   ipcMain.handle('server:screen-audio', (event, step: unknown) => {
@@ -274,7 +283,7 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart,
   ipcMain.on('server:title', (event, title: unknown) => {
     if (!fromSavedServer(event) || typeof title !== 'string') return;
     const m = /\((\d+)\)\s*$/.exec(title);
-    setTitleUnread(m ? Math.min(999, Number(m[1])) : 0);
+    onTitle(event.sender, m ? Math.min(999, Number(m[1])) : 0);
   });
 
   // warnings from the page side, for diagnostics
@@ -290,13 +299,7 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart,
   });
 
   ipcMain.on('server:notification-click', (event) => {
-    if (!fromSavedServer(event)) return;
-
-    const win = getMainWindow();
-    if (!win) return;
-    if (win.isMinimized()) win.restore();
-    win.show();
-    win.focus();
+    if (fromSavedServer(event)) onNotificationClick(event.sender);
   });
 
   ipcMain.handle('settings:get', guard(() => ({ ...getSettings(), secureStorage: safeStorage.isEncryptionAvailable(), spellcheckAtStart: spellcheckAtStartup })));
@@ -313,6 +316,7 @@ export const registerIpc = ({ connectToServer, getMainWindow, spellcheckAtStart,
       onLookChange();
     }
     if (picked.colorMode !== undefined) applyColorMode();
+    if (picked.serverTabs !== undefined) onLookChange();
     if (picked.language !== undefined) onLanguageChange();
     return saved;
   }));

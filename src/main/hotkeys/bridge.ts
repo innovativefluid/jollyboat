@@ -5,6 +5,9 @@
 // sources.ts); when it reports releases we announce keyUp:true and Sharkord offers push-to-talk.
 //
 // If the port is already taken (the user runs the official bridge), we stay out of the way.
+//
+// Pages in desktop mode (desktop.ts, Sharkord's desktop bridge) bind their keys here too, without
+// the websocket: every page's bindings go to the one key source together.
 
 import { app } from 'electron';
 import { randomBytes } from 'node:crypto';
@@ -25,7 +28,27 @@ const describe = (id: string) =>
   id === 'core:push-to-talk' ? t('Push to talk') : id === 'core:toggle-mic' ? t('Mute or unmute the microphone') : id === 'core:toggle-sound' ? t('Deafen or undeafen') : id.slice(0, 64);
 
 type TBinding = { id: string; combo: string };
-type TClient = { ws: WebSocket; serverId: string; serverName: string; bindings: TBinding[] };
+type TClient = {
+  /** the websocket of a page in web mode; none for a page in desktop mode */
+  ws?: WebSocket;
+  /** desktop mode: the page's webContents id */
+  key?: number;
+  serverId: string;
+  serverName: string;
+  bindings: TBinding[];
+  fire: (id: string, phase: 'down' | 'up') => void;
+  /** the bindings that did not register, all of them, after every change */
+  failed: (errors: { id: string; reason: string }[]) => void;
+};
+
+export type TDesktopHotkeyReason = 'unsupported' | 'needs-modifier' | 'taken' | 'declined';
+
+/** a key source's reason in the words of sharkord's desktop bridge */
+export const desktopReason = (reason: string): TDesktopHotkeyReason =>
+  /modifier alone/.test(reason) ? 'needs-modifier'
+  : /refused this key/.test(reason) ? 'taken'
+  : /desktop|dialog|assigned/.test(reason) ? 'declined'
+  : 'unsupported';
 
 let httpServer: Server | null = null;
 let token = '';
@@ -69,7 +92,7 @@ const send = (ws: WebSocket, payload: unknown) => {
 const fire = (combo: string, phase: 'down' | 'up') => {
   for (const client of clients) {
     for (const binding of client.bindings) {
-      if (binding.combo === combo) send(client.ws, { type: 'event', id: binding.id, phase });
+      if (binding.combo === combo) client.fire(binding.id, phase);
     }
   }
 };
@@ -80,6 +103,7 @@ let applying = 0;
 const rebuildShortcuts = async () => {
   if (!keys) return;
   const round = ++applying;
+  // (desktop clients hear about their failed keys every round: the list is the whole of them)
   // the description shows up in the desktop's shortcut dialog (linux): a page's own action
   // ids are cut short there
   const list = [...clients].flatMap((c) => c.bindings.map((b) => ({ combo: b.combo, description: describe(b.id) })));
@@ -87,10 +111,7 @@ const rebuildShortcuts = async () => {
   if (round !== applying) return; // a newer list is on its way
 
   for (const client of clients) {
-    for (const binding of client.bindings) {
-      const reason = failed.get(binding.combo);
-      if (reason) send(client.ws, { type: 'error', id: binding.id, reason });
-    }
+    client.failed(client.bindings.flatMap((b) => (failed.has(b.combo) ? [{ id: b.id, reason: failed.get(b.combo)! }] : [])));
   }
   if (failed.size) log('hotkeys', `${failed.size} key(s) not registered: ${[...new Set(failed.values())].join(', ')}`);
 };
@@ -115,14 +136,21 @@ const handleConnection = (ws: WebSocket) => {
 
       // one tab per server: a newer hello for the same server takes over
       for (const other of clients) {
-        if (other.serverId === msg.serverId) {
+        if (other.ws && other.serverId === msg.serverId) {
           send(other.ws, { type: 'replaced' });
           other.ws.close();
           clients.delete(other);
         }
       }
 
-      client = { ws, serverId: msg.serverId, serverName: String(msg.serverName ?? ''), bindings: [] };
+      client = {
+        ws,
+        serverId: msg.serverId,
+        serverName: String(msg.serverName ?? ''),
+        bindings: [],
+        fire: (id, phase) => send(ws, { type: 'event', id, phase }),
+        failed: (errors) => errors.forEach(({ id, reason }) => send(ws, { type: 'error', id, reason }))
+      };
       clients.add(client);
 
       await keysReady;
@@ -132,13 +160,7 @@ const handleConnection = (ws: WebSocket) => {
 
     if (msg.type === 'bindings' && client && Array.isArray(msg.bindings)) {
       // a page binds a handful of keys; more than that is not a page we want keys from
-      client.bindings = (msg.bindings as unknown[])
-        .slice(0, 32)
-        .filter((b): b is TBinding => {
-          const x = b as Record<string, unknown>;
-          return typeof x?.id === 'string' && typeof x?.combo === 'string' && x.id.length <= 128 && x.combo.length <= 64;
-        })
-        .map(({ id, combo }) => ({ id, combo }));
+      client.bindings = pickBindings(msg.bindings as unknown[], (b) => b.id);
 
       void rebuildShortcuts();
     }
@@ -193,11 +215,63 @@ export const startBridge = async (): Promise<TBridgeStatus> => {
   return getBridgeStatus();
 };
 
+const pickBindings = (list: unknown[], id: (b: Record<string, unknown>) => unknown) =>
+  list
+    .slice(0, 32)
+    .map((b) => (b ?? {}) as Record<string, unknown>)
+    .filter((b) => typeof id(b) === 'string' && typeof b.combo === 'string' && (id(b) as string).length <= 128 && (b.combo as string).length <= 64 && b.combo !== '')
+    .map((b) => ({ id: id(b) as string, combo: b.combo as string }));
+
+/** a page in desktop mode binds its keys (an empty list lets them go). resolves with the ones
+ * that did not register; later changes reach it through onErrors */
+export const setDesktopHotkeys = async (
+  key: number,
+  serverId: string,
+  raw: unknown,
+  onKey: (actionId: string, phase: 'down' | 'up') => void,
+  onErrors: (errors: { actionId: string; reason: TDesktopHotkeyReason }[]) => void
+) => {
+  const bindings = pickBindings(Array.isArray(raw) ? raw : [], (b) => b.actionId);
+  for (const c of clients) if (c.key === key) clients.delete(c);
+  if (!bindings.length) {
+    void rebuildShortcuts();
+    return [];
+  }
+  let last: { actionId: string; reason: TDesktopHotkeyReason }[] = [];
+  const client: TClient = {
+    key,
+    serverId,
+    serverName: '',
+    bindings,
+    fire: onKey,
+    failed: (errors) => {
+      last = errors.map(({ id, reason }) => ({ actionId: id, reason: desktopReason(reason) }));
+      onErrors(last);
+    }
+  };
+  clients.add(client);
+  await keysReady;
+  await rebuildShortcuts();
+  return last;
+};
+
+export const clearDesktopHotkeys = (key: number) => {
+  let had = false;
+  for (const c of clients) if (c.key === key) had = clients.delete(c);
+  if (had) void rebuildShortcuts();
+};
+
+/** what sharkord's desktop bridge asks: releases too, and whether the desktop owns the keys */
+export const hotkeyCapabilities = async () => {
+  await keysReady;
+  return { keyUp: keys?.keyUp ?? false, systemManaged: keys?.name === 'GlobalShortcuts portal' };
+};
+
 export const stopBridge = () => {
   keys?.stop();
   keys = null;
   keysReady = null;
-  for (const client of clients) client.ws.close();
+  for (const client of clients) client.ws?.close();
   clients.clear();
   httpServer?.close();
   httpServer = null;

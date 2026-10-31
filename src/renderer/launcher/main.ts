@@ -503,6 +503,9 @@ const renderSettings = async () => {
   const notify = $<HTMLInputElement>('notify-tray');
   notify.checked = settings.notifyTray;
   notify.onchange = () => { window.shell.saveSettings({ notifyTray: notify.checked }); toast('saved'); };
+  const desktop = $<HTMLInputElement>('desktop-mode');
+  desktop.checked = settings.desktopMode;
+  desktop.onchange = () => { window.shell.saveSettings({ desktopMode: desktop.checked }); toast(t('on when a server page loads again')); };
 
   // sharkord:// links (windows, mac): opening here, or in another app (the official one, say)
   const links = $<HTMLInputElement>('links');
