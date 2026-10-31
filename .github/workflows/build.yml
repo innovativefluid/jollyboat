@@ -221,3 +221,41 @@ jobs:
         with:
           name: linux-${{ matrix.arch }}
           path: Jollyboat-*.flatpak
+
+  # the self-updating linux build: an AppImage (static runtime, no libfuse2) plus the
+  # latest-linux*.yml electron-updater reads from the release
+  linux-appimage:
+    needs: check
+    if: ${{ inputs.targets != 'mac' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x64, runner: ubuntu-24.04 }
+          - { arch: arm64, runner: ubuntu-24.04-arm }
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run dist:appimage -- --${{ matrix.arch }}
+      # the packaged app starts, renders the setup window and the bar, and exits. as a normal user
+      # on ubuntu 24.04, where apparmor blocks user namespaces: AppRun has to add --no-sandbox
+      - name: Smoke test
+        shell: bash
+        run: |
+          timeout -k 10 120 sudo apt-get install -y xvfb > /dev/null || echo "::warning::xvfb install stalled"
+          echo "::notice title=userns::apparmor_restrict_unprivileged_userns=$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null || echo n/a)"
+          image=$(ls dist/*.AppImage | head -1)
+          rc=0
+          JOLLYBOAT_SMOKE=1 APPIMAGE_EXTRACT_AND_RUN=1 timeout 180 xvfb-run -a "$image" > smoke.log 2>&1 || rc=$?
+          echo "::notice title=smoke (exit $rc)::$(grep -v '^\s*$' smoke.log | tail -n 30 | cut -c1-300 | sed ':a;N;$!ba;s/\n/%0A/g')"
+          grep -q '^\[smoke\] linux .*updater ok .*appimage' smoke.log
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-appimage-${{ matrix.arch }}
+          path: |
+            dist/*.AppImage
+            dist/latest-linux*.yml

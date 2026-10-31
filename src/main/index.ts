@@ -16,7 +16,7 @@ import { diagnostics } from './diagnostics';
 import { clearUnread, createTray, hasTray, setServerName } from './tray';
 import { applySpellcheck, blockDictionaryDownloads } from './privacy';
 import { initScreenAudio, stopPipeWireShare } from './screen-audio';
-import { loadAutoUpdater, startUpdater } from './updater';
+import { canSelfUpdate, loadAutoUpdater, startUpdater } from './updater';
 import { askPrompt } from './prompt';
 import { t } from './lang';
 import { setOverlayHostFocused, setOverlayTheme, setOverlayVoice } from './overlay';
@@ -620,8 +620,8 @@ const runSmokeTest = async () => {
     const keys = getBridgeStatus().keyUp ? 'push-to-talk' : 'presses only';
     // the installed windows build updates itself: its updater has to load (0.3.1–0.3.8 shipped
     // one that did not)
-    const updater = process.platform === 'win32' && !PORTABLE ? await loadAutoUpdater().then(() => 'ok', (err: Error) => `failed: ${err.message}`) : 'n/a';
-    const line = `[smoke] ${process.platform} ${process.arch} | electron ${process.versions.electron} | jollyboat ${__APP_VERSION__} | setup panels ${panels} | bar ${bar} | keys ${keys} | updater ${updater}${PORTABLE ? ' | portable' : ''}`;
+    const updater = canSelfUpdate() ? await loadAutoUpdater().then(() => 'ok', (err: Error) => `failed: ${err.message}`) : 'n/a';
+    const line = `[smoke] ${process.platform} ${process.arch} | electron ${process.versions.electron} | jollyboat ${__APP_VERSION__} | setup panels ${panels} | bar ${bar} | keys ${keys} | updater ${updater}${PORTABLE ? ' | portable' : ''}${process.env.APPIMAGE ? ' | appimage' : ''}`;
     console.log(line);
     // the portable launcher does not pass the app's output on: the line also goes next to the data
     if (PORTABLE) writeFileSync(join(app.getPath('userData'), 'smoke.log'), `${line}\n`);

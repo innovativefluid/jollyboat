@@ -76,10 +76,10 @@ jobs:
           body: |
             **Download one file:**
             - Windows: `Jollyboat-${{ inputs.version }}-windows-universal-setup.exe` (x64 and ARM in one), or without installing: `Jollyboat-${{ inputs.version }}-windows-x64-portable.exe` (`arm64` on ARM), keeps its settings in a `Jollyboat-data` folder next to it
-            - Linux: `Jollyboat-${{ inputs.version }}-linux-x64.flatpak`, or `linux-arm64` on ARM
+            - Linux: `Jollyboat-${{ inputs.version }}-linux-x64.flatpak`, or `linux-arm64` on ARM; or the AppImage, which updates itself: `Jollyboat-${{ inputs.version }}-linux-x86_64.AppImage` (`arm64` on ARM; make it executable, then run it)
             - Mac (experimental, untested): `Jollyboat-${{ inputs.version }}-mac-universal-EXPERIMENTAL.dmg`. To open it the first time: System Settings → Privacy & Security → Open Anyway.
 
-            `latest.yml` and `.blockmap` are read by installed copies when they check for updates; ignore them.
+            `latest.yml`, `latest-linux*.yml` and `.blockmap` are read by installed copies when they check for updates; ignore them.
 
           generate_release_notes: true
           draft: true

@@ -82,6 +82,11 @@
   </keywords>
 
   <releases>
+    <release version="0.3.18" date="2026-10-31">
+      <description>
+        <p>Linux: an AppImage next to the Flatpak, which updates itself from the releases like the Windows installer (downloads in the background, installs when you quit). It needs no FUSE library and starts on Ubuntu 24.04 and newer.</p>
+      </description>
+    </release>
     <release version="0.3.17" date="2026-10-31">
       <description>
         <p>sharkord:// links: the add-server links of Sharkord's official desktop app ("Add to desktop app" under a server's login, or handed out by a server owner) open Jollyboat's setup window with the server's address filled in, or the saved server under that address. On Windows and macOS Jollyboat takes these links when no other app has them; a switch in the settings takes them over or gives them back.</p>

@@ -1,8 +1,10 @@
-// Updates. Windows (installed): electron-updater against GitHub Releases, downloads in the
-// background and installs on quit. The portable exe gets the notice described next. The .flatpak from GitHub and the experimental mac build: only a notice that a
-// newer release exists (a bundle file has no update channel; an unsigned mac app cannot update
-// itself). The Flathub build checks nothing: Flathub delivers its updates. All run only in
-// packaged builds, every six hours, behind the "check for updates" toggle.
+// Updates. Windows (installed) and the Linux AppImage: electron-updater against GitHub Releases
+// (latest.yml, latest-linux.yml, latest-linux-arm64.yml), downloads in the background and
+// installs on quit (the AppImage replaces its own file). The portable exe, the .flatpak from
+// GitHub and the experimental mac build: only a notice that a newer release exists (a bundle
+// file has no update channel; an unsigned mac app cannot update itself). The Flathub build
+// checks nothing: Flathub delivers its updates. All run only in packaged builds, every six
+// hours, behind the "check for updates" toggle.
 
 import { app, net, shell } from 'electron';
 import type { TUpdateStatus } from '../shared/types';
@@ -63,7 +65,11 @@ export const loadAutoUpdater = async () => {
   return autoUpdater;
 };
 
-const startWindows = async () => {
+/** builds that replace themselves: the installed windows app and the appimage */
+export const canSelfUpdate = () =>
+  (process.platform === 'win32' && !process.env.PORTABLE_EXECUTABLE_DIR) || (process.platform === 'linux' && !!process.env.APPIMAGE);
+
+const startSelfUpdate = async () => {
   const autoUpdater = await loadAutoUpdater();
 
   autoUpdater.autoDownload = true;
@@ -90,10 +96,9 @@ export const startUpdater = async () => {
   started = true;
 
   try {
-    // the portable exe cannot replace itself: like linux and mac it gets the notice
-    const portable = !!process.env.PORTABLE_EXECUTABLE_DIR;
+    // the portable exe and the flatpak cannot replace themselves: like mac they get the notice
     // (if the updater itself fails to load, at least the notice still comes)
-    const run = process.platform === 'win32' && !portable ? await startWindows().catch(() => checkGitHub) : checkGitHub;
+    const run = canSelfUpdate() ? await startSelfUpdate().catch(() => checkGitHub) : checkGitHub;
     // the toggle is read on every round, so turning it off stops the next check
     const check = () => (getSettings().checkUpdates ? run() : undefined);
 

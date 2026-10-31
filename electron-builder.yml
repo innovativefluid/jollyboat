@@ -96,6 +96,22 @@ linux:
   # linux takes keys from the desktop's shortcut portal, not the keyboard hook
   files:
     - '!node_modules/uiohook-napi/**'
+  # dir for the flatpak (built from it, see flatpak/); the appimage with `npm run dist:appimage`
   target:
     - dir
   executableName: jollyboat
+  category: Network
+  synopsis: Sharkord client
+  desktop:
+    entry:
+      Name: Jollyboat
+      Comment: Sharkord client
+      StartupWMClass: net.innovativefluid.Jollyboat
+
+# the self-updating linux build (electron-updater replaces the file from latest-linux*.yml). the
+# static-runtime toolset: no libfuse2 needed, and its AppRun adds --no-sandbox only where user
+# namespaces are blocked (ubuntu 24.04+'s apparmor rule), where electron could not start otherwise
+toolsets:
+  appimage: '1.0.3'
+appImage:
+  artifactName: ${productName}-${version}-linux-${arch}.${ext}

@@ -1,6 +1,6 @@
 // Start with the system. Windows and mac: the login item API. Flatpak: the Background portal
 // writes the autostart entry for us (the sandbox cannot reach ~/.config/autostart). Linux
-// outside Flatpak (dev runs): an XDG autostart desktop entry.
+// outside Flatpak (the AppImage, dev runs): an XDG autostart desktop entry.
 // The app is started with --hidden so it only shows up in the tray.
 
 import { app } from 'electron';
@@ -17,8 +17,9 @@ const portableExe = () => process.env.PORTABLE_EXECUTABLE_FILE || undefined;
 const autostartDir = () => join(process.env.XDG_CONFIG_HOME || join(app.getPath('home'), '.config'), 'autostart');
 
 const linuxExec = () => {
-  // packaged: the binary; dev: electron + the main script
-  const parts = app.isPackaged ? [process.execPath] : [process.execPath, process.argv[1] ?? ''];
+  // the appimage: its file (what runs is a temporary mount); packaged: the binary; dev: electron
+  // + the main script
+  const parts = process.env.APPIMAGE ? [process.env.APPIMAGE] : app.isPackaged ? [process.execPath] : [process.execPath, process.argv[1] ?? ''];
 
   return [...parts.map((p) => `"${p}"`), '--hidden'].join(' ');
 };
