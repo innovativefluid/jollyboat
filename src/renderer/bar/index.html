@@ -58,6 +58,14 @@
       .tab.fill .count { background: var(--bg); color: var(--fg); }
       .tab svg.voice { width: 12px; height: 12px; flex: none; }
       .tab.off { opacity: 0.55; }
+      /* the close cross: its place is kept, it shows on the tab shown and under the pointer */
+      .tab .x { width: 14px; height: 14px; margin-right: -4px; flex: none; display: grid; place-items: center; border-radius: 50%; visibility: hidden; color: inherit; }
+      .tab .x svg { width: 9px; height: 9px; }
+      .tab:hover .x, .tab.fill .x { visibility: visible; }
+      .tab .x:hover { background: rgba(127, 127, 127, 0.35); }
+      .tabs.dragging .x { visibility: hidden; }
+      .tab { transition: transform 140ms ease; }
+      .tab.dragging { transition: none; z-index: 2; position: relative; }
       .toggle, .add, .more-tabs { padding: 0 7px; }
       body.tabs-on .name { display: none; }
       body:not(.tabs-on) :is(.tabs, .add, .more-tabs) { display: none; }

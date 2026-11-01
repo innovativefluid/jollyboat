@@ -85,6 +85,8 @@ export type TSettings = {
   windowBounds: { x: number; y: number; width: number; height: number } | null;
   /** name of the last shared screen/window, preselected in the picker */
   lastSourceName: string | null;
+  /** the sound picked for the last share ('all', 'none', 'app:<id>'), preselected when it is there again */
+  lastSound: string;
   /** sharkord's desktop mode on saved servers (window.sharkordDesktop, bridge v1): its own
    *  notifications, unread and mention counts, hotkeys without pairing. servers from before
    *  sharkord 0.0.29 never ask for it and stay as they were */
@@ -160,7 +162,11 @@ export type TCaptureSource = {
   appIcon?: string;
 };
 
-export type TPickerResult = { sourceId: string } | null;
+/** the picker's answer: what to share, and its sound ('all' but our call, 'none', 'app:<id>') */
+export type TPickerResult = { sourceId: string; sound?: string } | null;
+
+/** the picker's sound menu: shown when the page asked for sound */
+export type TPickerSound = { apps: { id: string; name: string }[]; perApp: boolean; last: string; only?: boolean };
 
 export type TBridgeStatus = {
   running: boolean;

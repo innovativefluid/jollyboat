@@ -22,6 +22,7 @@ const DEFAULTS: TSettings = {
   overlayPosition: null,
   windowBounds: null,
   lastSourceName: null,
+  lastSound: 'all',
   desktopMode: true,
   serverTabs: true,
   openServers: []
@@ -89,6 +90,7 @@ const sanitize = (raw: unknown): TSettings => {
   const op = r.overlayPosition as Record<string, unknown> | undefined;
   if (op && Number.isFinite(op.x) && Number.isFinite(op.y)) out.overlayPosition = { x: op.x as number, y: op.y as number };
   if (typeof r.lastSourceName === 'string') out.lastSourceName = r.lastSourceName.slice(0, 200);
+  if (typeof r.lastSound === 'string') out.lastSound = r.lastSound.slice(0, 200);
   if (Array.isArray(r.openServers)) {
     out.openServers = [...new Set(r.openServers.filter((id): id is string => typeof id === 'string' && out.servers.some((s) => s.id === id)))];
   }

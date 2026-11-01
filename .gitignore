@@ -8,3 +8,5 @@ flatpak/repo/
 flatpak/github.yml
 .flatpak-builder/
 *.flatpak
+build/win-audio/
+build/obj-*/

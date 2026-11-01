@@ -197,7 +197,14 @@ const at = (el: Element) => {
   return { x: Math.round(r.left), y: Math.round(r.bottom) };
 };
 
+// a tab being dragged: the bar's state waits until it is dropped
+let dragging: { el: HTMLElement; id: string; x0: number; moved: boolean; pending: TTab[] | null } | null = null;
+
 const renderTabs = (list: TTab[]) => {
+  if (dragging) {
+    dragging.pending = list;
+    return;
+  }
   tabList = list;
   const els = new Map([...tabsEl.querySelectorAll<HTMLButtonElement>('.tab')].map((el) => [el.dataset.id!, el]));
   list.forEach((tab, i) => {
@@ -207,7 +214,7 @@ const renderTabs = (list: TTab[]) => {
       el = document.createElement('button');
       el.className = 'chip tab';
       el.dataset.id = tab.id;
-      el.innerHTML = '<span class="ico"></span><span class="tname"></span><span class="mark"></span>';
+      el.innerHTML = `<span class="ico"></span><span class="tname"></span><span class="mark"></span><span class="x" role="button" aria-label="${t('Close tab')}" title="${t('Close tab')}"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 2l6 6M8 2l-6 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /></svg></span>`;
     }
     tabsEl.append(el); // in order
     el.classList.toggle('fill', tab.active);
@@ -296,10 +303,88 @@ const reportSize = () => {
   window.shell.barSize(need);
 };
 
+// a click that ended a drag is not a click
+let swallowClick = false;
 tabsEl.addEventListener('click', (e) => {
+  if (swallowClick) {
+    swallowClick = false;
+    return;
+  }
   const el = (e.target as HTMLElement).closest<HTMLElement>('.tab');
-  if (el) window.shell.barAction('tab', undefined, el.dataset.id);
+  if (!el) return;
+  if ((e.target as HTMLElement).closest('.x')) window.shell.barAction('tab-close', undefined, el.dataset.id);
+  else window.shell.barAction('tab', undefined, el.dataset.id);
 });
+
+// dragging a tab along the bar puts it elsewhere: the others make room as it passes; dropped,
+// main takes the new order (and keeps it for the next start)
+const shownTabs = () => [...tabsEl.querySelectorAll<HTMLElement>('.tab')].filter((el) => !el.hidden);
+tabsEl.addEventListener('pointerdown', (e) => {
+  const el = (e.target as HTMLElement).closest<HTMLElement>('.tab');
+  if (!el || e.button !== 0 || (e.target as HTMLElement).closest('.x')) return;
+  dragging = { el, id: el.dataset.id!, x0: e.clientX, moved: false, pending: null };
+});
+// the new order while dragging: the others by their resting place, the dragged one by where it is now
+const orderNow = () => {
+  if (!dragging) return [];
+  const d = dragging;
+  const els = shownTabs();
+  const centre = (el: HTMLElement) => {
+    const r = el.getBoundingClientRect();
+    const shift = el === d.el ? 0 : new DOMMatrixReadOnly(getComputedStyle(el).transform).m41 * (r.width / (el.offsetWidth || 1));
+    return r.left - shift + r.width / 2;
+  };
+  return els.map((el) => ({ el, c: centre(el) })).sort((a, b) => a.c - b.c).map((x) => x.el);
+};
+tabsEl.addEventListener('pointermove', (e) => {
+  const d = dragging;
+  if (!d) return;
+  const dx = e.clientX - d.x0;
+  if (!d.moved) {
+    if (Math.abs(dx) < 6) return;
+    d.moved = true;
+    d.el.setPointerCapture(e.pointerId);
+    d.el.classList.add('dragging');
+    tabsEl.classList.add('dragging');
+  }
+  // (transforms are css px, the pointer is zoomed)
+  const z = parseFloat(document.documentElement.style.zoom) || 1;
+  d.el.style.transform = `translateX(${dx / z}px)`;
+  // the others slide to their places in the new order
+  const els = shownTabs();
+  const lefts = els.map((el) => el.offsetLeft);
+  const order = orderNow();
+  let x = Math.min(...lefts);
+  for (const el of order) {
+    if (el !== d.el) el.style.transform = `translateX(${x - el.offsetLeft}px)`;
+    x += el.offsetWidth + 6;
+  }
+});
+const endDrag = () => {
+  const d = dragging;
+  if (!d) return;
+  if (d.moved) {
+    const order = orderNow().map((el) => el.dataset.id!);
+    swallowClick = true;
+    setTimeout(() => (swallowClick = false), 0);
+    // the tabs that are in the » menu keep their places among the rest
+    const all = tabList.map((t) => t.id);
+    const shownIds = new Set(order);
+    let i = 0;
+    const next = all.map((id) => (shownIds.has(id) ? order[i++]! : id));
+    window.shell.barAction('tab-move', undefined, next);
+  }
+  for (const el of tabsEl.querySelectorAll<HTMLElement>('.tab')) el.style.transform = '';
+  d.el.classList.remove('dragging');
+  tabsEl.classList.remove('dragging');
+  dragging = null;
+  if (d.pending) renderTabs(d.pending);
+};
+tabsEl.addEventListener('pointerup', endDrag);
+tabsEl.addEventListener('pointercancel', endDrag);
+tabsEl.addEventListener('lostpointercapture', endDrag);
+// (a press that never became a drag may be let go anywhere)
+window.addEventListener('pointerup', endDrag);
 // middle click closes a tab, right click has its menu
 tabsEl.addEventListener('auxclick', (e) => {
   const el = (e.target as HTMLElement).closest<HTMLElement>('.tab');

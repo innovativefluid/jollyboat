@@ -19,7 +19,7 @@ import { addUnread, clearUnread, createTray, hasTray, setServerName, setTitleUnr
 import { installDesktopBridge, sendListVisible, type TConnection } from './desktop';
 import type { TBarState, TTab, TVoiceMember, TVoiceState } from '../shared/types';
 import { applySpellcheck, blockDictionaryDownloads } from './privacy';
-import { initScreenAudio, stopPipeWireShare } from './screen-audio';
+import { initScreenAudio, soundAppsSupported, stopPipeWireShare } from './screen-audio';
 import { canSelfUpdate, loadAutoUpdater, startUpdater } from './updater';
 import { askPrompt } from './prompt';
 import { t } from './lang';
@@ -909,6 +909,17 @@ const barMenu = () =>
     { label: t('Quit'), accelerator: 'CommandOrControl+Q', click: quit }
   ]);
 
+/** a tab dragged elsewhere: the bar sends the whole new order */
+const moveTabs = (order: unknown[]) => {
+  const ids = order.filter((x): x is string => typeof x === 'string');
+  if (ids.length !== views.size || !ids.every((id) => views.has(id)) || new Set(ids).size !== ids.length) return;
+  const entries = ids.map((id) => [id, views.get(id)!] as const);
+  views.clear();
+  for (const [id, v] of entries) views.set(id, v);
+  rememberTabs();
+  sendBarState();
+};
+
 // a tab's own menu (right click)
 const tabMenu = (id: string) =>
   Menu.buildFromTemplate([
@@ -964,6 +975,7 @@ ipcMain.on('bar:action', (event, action: unknown, at: unknown, arg: unknown) => 
   else if (action === 'popout') void popOutStream();
   else if (action === 'tab' && id) switchTo(id);
   else if (action === 'tab-close' && id) closeServer(id);
+  else if (action === 'tab-move' && Array.isArray(arg)) moveTabs(arg);
   else if (action === 'toggle-tabs') toggleTabs();
   else if (!mainWindow) return;
   else if (action === 'menu') barMenu().popup({ window: mainWindow, ...pos });
@@ -1090,7 +1102,7 @@ const runSmokeTest = async () => {
     // the installed windows build updates itself: its updater has to load (0.3.1–0.3.8 shipped
     // one that did not)
     const updater = canSelfUpdate() ? await loadAutoUpdater().then(() => 'ok', (err: Error) => `failed: ${err.message}`) : 'n/a';
-    const line = `[smoke] ${process.platform} ${process.arch} | electron ${process.versions.electron} | jollyboat ${__APP_VERSION__} | setup panels ${panels} | bar ${bar} | keys ${keys} | updater ${updater}${PORTABLE ? ' | portable' : ''}${process.env.APPIMAGE ? ' | appimage' : ''}`;
+    const line = `[smoke] ${process.platform} ${process.arch} | electron ${process.versions.electron} | jollyboat ${__APP_VERSION__} | setup panels ${panels} | bar ${bar} | keys ${keys} | updater ${updater}${PORTABLE ? ' | portable' : ''}${process.env.APPIMAGE ? ' | appimage' : ''}${process.platform === 'win32' ? ` | app sound ${soundAppsSupported() ? 'ok' : 'n/a'}` : ''}`;
     console.log(line);
     // the portable launcher does not pass the app's output on: the line also goes next to the data
     if (PORTABLE) writeFileSync(join(app.getPath('userData'), 'smoke.log'), `${line}\n`);

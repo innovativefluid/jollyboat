@@ -30,6 +30,28 @@ jobs:
       - uses: actions/setup-node@v6
         with: { node-version: 22, cache: npm }
       - run: npm ci
+      # the helper that records one app's sound for a screen share (native/win-audio), for both
+      # architectures; electron-builder puts the matching one next to the app (extraResources)
+      - uses: ilammy/msvc-dev-cmd@v1
+        with: { arch: x64 }
+      - name: Build the app-sound helper (x64)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force build/win-audio/x64, build/obj-x64 | Out-Null
+          cl /nologo /O2 /EHsc /std:c++17 /W3 /MT /DUNICODE /D_UNICODE native/win-audio/jollyboat-audio.cpp /Fobuild/obj-x64/ /Fe:build/win-audio/x64/jollyboat-audio.exe /link ole32.lib mmdevapi.lib
+          if ($LASTEXITCODE) { throw 'helper build failed' }
+          build/win-audio/x64/jollyboat-audio.exe version
+          build/win-audio/x64/jollyboat-audio.exe sessions
+          Write-Output "sessions exit $LASTEXITCODE (3 = no audio device on the runner)"
+          $global:LASTEXITCODE = 0
+      - uses: ilammy/msvc-dev-cmd@v1
+        with: { arch: amd64_arm64 }
+      - name: Build the app-sound helper (arm64)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force build/win-audio/arm64, build/obj-arm64 | Out-Null
+          cl /nologo /O2 /EHsc /std:c++17 /W3 /MT /DUNICODE /D_UNICODE native/win-audio/jollyboat-audio.cpp /Fobuild/obj-arm64/ /Fe:build/win-audio/arm64/jollyboat-audio.exe /link ole32.lib mmdevapi.lib
+          if ($LASTEXITCODE) { throw 'helper build failed' }
       - run: npm run dist:win
       # the packaged app starts, renders the setup window and the bar, and exits (see runSmokeTest)
       - name: Smoke test (x64)
@@ -77,6 +99,11 @@ jobs:
       - name: Smoke test (arm64)
         shell: pwsh
         run: ./tools/smoke/smoke-win.ps1 app
+      - name: App-sound helper (arm64)
+        shell: pwsh
+        run: |
+          app/resources/jollyboat-audio.exe version
+          if ($LASTEXITCODE) { throw 'helper did not run' }
 
   # mac build: universal dmg, ad-hoc signed; the smoke test starts the slice this runner's cpu runs
   mac:

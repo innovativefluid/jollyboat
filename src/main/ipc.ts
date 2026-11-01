@@ -15,7 +15,7 @@ import {
   canExcludeOwnAudioOnWindows,
   describeScreenAudio,
   getScreenAudioMode,
-  startPipeWireShare,
+  startShareSound,
   stopPipeWireShare,
   unmutePipeWireShare,
   VIRTUAL_MIC_LABEL
@@ -262,7 +262,7 @@ export const registerIpc = ({ connectToServer, spellcheckAtStart, onLookChange, 
   // pipewire screen-share audio, driven by the page's getDisplayMedia wrapper
   ipcMain.handle('server:screen-audio', (event, step: unknown) => {
     if (!findServerByUrl(event.senderFrame?.url ?? '')) return false;
-    if (step === 'start') return startPipeWireShare();
+    if (step === 'start') return startShareSound(event.sender);
     if (step === 'unmute') return unmutePipeWireShare(), true;
     if (step === 'stop') return stopPipeWireShare(), true;
     return false;

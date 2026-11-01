@@ -114,8 +114,8 @@ if (boot.ownPage) {
       }
     },
     picker: {
-      onPickerSources: (cb: (sources: unknown[], lastName: string | null) => void) => {
-        ipcRenderer.on('picker:sources', (_e, sources, lastName) => cb(sources, lastName));
+      onPickerSources: (cb: (sources: unknown[], lastName: string | null, sound: unknown) => void) => {
+        ipcRenderer.on('picker:sources', (_e, sources, lastName, sound) => cb(sources, lastName, sound));
       },
       pickerChoose: (result: TPickerResult) => ipcRenderer.send('picker:choose', result)
     },
@@ -227,8 +227,60 @@ if (boot.isSavedServer) {
 
     // pipewire: the page gets a video-only capture plus the virtual mic that carries every app's
     // sound except ours; the link is undone when the share stops
+    // the share's own sound: after a capture without any, main says where it comes from
+    const attachSound = async (stream) => {
+      const how = await shell.screenAudio('start');
+      if (how === 'pcm') return attachPcm(stream);
+      if (how) return attachPipeWire(stream);
+    };
+
+    // sharkord stops shares with track.stop(), which fires no 'ended'; catch both ways
+    const onStop = (stream, end) => {
+      for (const t of stream.getTracks()) {
+        const stop = t.stop.bind(t);
+        t.stop = () => { stop(); end(); };
+        t.addEventListener('ended', end, { once: true });
+      }
+    };
+
+    // one app's sound (windows): main sends its pcm (48 khz stereo s16) and a track is made of it
+    const attachPcm = (stream) => {
+      if (typeof MediaStreamTrackGenerator !== 'function' || typeof AudioData !== 'function') {
+        shell.screenAudio('stop');
+        warn('no MediaStreamTrackGenerator: the app sound cannot be shared');
+        return;
+      }
+      const track = new MediaStreamTrackGenerator({ kind: 'audio' });
+      const writer = track.writable.getWriter();
+      let at = 0;
+      const onPcm = (e) => {
+        if (e.source !== window || !e.data || e.data.__jollyboatPcm !== nonce) return;
+        const buf = e.data.buf;
+        const frames = (buf && buf.byteLength / 4) | 0;
+        if (!frames) return;
+        // nothing reads the track yet (or it lags): dropped, not piled up
+        if (writer.desiredSize !== null && writer.desiredSize <= 0) { at += Math.round(frames * 1e6 / 48000); return; }
+        try {
+          writer.write(new AudioData({ format: 's16', sampleRate: 48000, numberOfFrames: frames, numberOfChannels: 2, timestamp: at, data: buf })).catch(() => {});
+        } catch (err) {
+          warn('app sound frame', err);
+        }
+        at += Math.round(frames * 1e6 / 48000);
+      };
+      window.addEventListener('message', onPcm);
+      stream.addTrack(track);
+      let done = false;
+      onStop(stream, () => {
+        if (done) return;
+        done = true;
+        window.removeEventListener('message', onPcm);
+        try { writer.close().catch(() => {}); } catch {}
+        try { track.stop(); } catch {}
+        shell.screenAudio('stop');
+      });
+    };
+
     const attachPipeWire = async (stream) => {
-      if (!(await shell.screenAudio('start'))) return;
       let device;
       for (let i = 0; i < 25 && !device; i++) {
         device = (await md.enumerateDevices()).find((d) => d.kind === 'audioinput' && d.label.toLowerCase().includes(cfg.virtualMic));
@@ -245,14 +297,8 @@ if (boot.isSavedServer) {
       stream.addTrack(track);
       shell.screenAudio('unmute');
 
-      // sharkord stops shares with track.stop(), which fires no 'ended'; catch both ways
       let done = false;
-      const end = () => { if (done) return; done = true; try { track.stop(); } catch {} shell.screenAudio('stop'); };
-      for (const t of stream.getTracks()) {
-        const stop = t.stop.bind(t);
-        t.stop = () => { stop(); end(); };
-        t.addEventListener('ended', end, { once: true });
-      }
+      onStop(stream, () => { if (done) return; done = true; try { track.stop(); } catch {} shell.screenAudio('stop'); });
     };
 
     if (md && !md.__jollyboatPatched) {
@@ -269,14 +315,23 @@ if (boot.isSavedServer) {
           c.audio = rest;
         }
 
+        // pipewire: the request still says it wants sound (the picker then offers its sound
+        // menu); the capture comes back video-only and the sound is attached from the virtual mic
         if (cfg && cfg.pipewire && wantsAudio) {
-          const stream = await original({ ...c, audio: false });
-          try { await attachPipeWire(stream); } catch (err) { shell.screenAudio('stop'); warn('pipewire audio failed', err); }
+          const stream = await original(c);
+          if (!stream.getAudioTracks().length) {
+            try { await attachSound(stream); } catch (err) { shell.screenAudio('stop'); warn('share sound failed', err); }
+          }
           return stream;
         }
 
         try {
-          return await original(c);
+          const stream = await original(c);
+          // a sound picked in the picker that chromium does not capture itself (one app's)
+          if (wantsAudio && !stream.getAudioTracks().length) {
+            try { await attachSound(stream); } catch (err) { shell.screenAudio('stop'); warn('share sound failed', err); }
+          }
+          return stream;
         } catch (err) {
           // a loopback device that cannot open must not cost the whole share: first without the
           // own-audio exclusion (some systems cannot do it), then without audio at all
@@ -315,6 +370,13 @@ if (boot.isSavedServer) {
       window.Notification = Wrapped;
     }
   })();`);
+
+  // one app's sound for a share (windows): the chunks go on to the page's track (attachPcm)
+  ipcRenderer.on('share:pcm', (_e, chunk: Uint8Array) => {
+    if (!(chunk instanceof Uint8Array) || !chunk.byteLength) return;
+    const buf = chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength);
+    window.postMessage({ __jollyboatPcm: nonce, buf }, '*', [buf]);
+  });
 
   let lastClick = 0;
   window.addEventListener('message', (e) => {

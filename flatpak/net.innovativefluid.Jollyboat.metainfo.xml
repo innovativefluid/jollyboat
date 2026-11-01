@@ -82,6 +82,12 @@
   </keywords>
 
   <releases>
+    <release version="0.4.3" date="2026-11-01">
+      <description>
+        <p>Screen sharing: the share picker asks which sound goes along: everything except the call, only one app that is playing (Windows 10 2004 and newer, Linux with PipeWire), or none. On Wayland, where the desktop picks the screen or window, a small sound picker comes first.</p>
+        <p>Server tabs: drag them to reorder, close them with the × on the tab shown or under the pointer.</p>
+      </description>
+    </release>
     <release version="0.4.2" date="2026-11-01">
       <description>
         <p>Water theme: the bar's buttons and server tabs keep their glass and water while the bar is merged with Sharkord's top bar, and after full screen, instead of falling back to the plain look. Each water releases its graphics context when it stops, so switching tabs, full screen or the merged bar no longer uses them up.</p>

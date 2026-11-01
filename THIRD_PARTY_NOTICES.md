@@ -10,6 +10,7 @@ Jollyboat is MIT licensed (`LICENSE`). It ships with the following third-party w
 | [electron-updater](https://github.com/electron-userland/electron-builder) | MIT | update checks on Windows |
 | [ws](https://github.com/websockets/ws) | MIT | the WebSocket server of the built-in hotkey bridge |
 | [venmic](https://github.com/Vencord/venmic) (Linux only) | MPL-2.0 | screen-share audio on PipeWire; unmodified, compiled from source in the flatpak build, source at the link (MPL §3.2) |
+| [ApplicationLoopback sample](https://github.com/microsoft/Windows-classic-samples/tree/main/Samples/ApplicationLoopback) (Windows only) | MIT | how `jollyboat-audio.exe` (`native/win-audio`, Jollyboat's own code) records one app's sound for a screen share |
 | [uiohook-napi](https://github.com/SnosMe/uiohook-napi) (Windows only) | MIT | keyboard hook for push-to-talk |
 | [libuiohook](https://github.com/kwhat/libuiohook) (Windows only, inside uiohook-napi) | LGPL-3.0-or-later | the hook itself; unmodified, loaded at runtime from `resources/app.asar.unpacked/node_modules/uiohook-napi/prebuilds/` (that file can be replaced with your own build), source at the link |
 | [Pixelify Sans](https://github.com/eifetx/Pixelify-Sans) | SIL OFL 1.1 (`src/renderer/fonts/OFL-PixelifySans.txt`) | pixel typeface of the setup pages |

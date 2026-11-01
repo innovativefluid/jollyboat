@@ -11,14 +11,14 @@ A desktop app for [Sharkord](https://sharkord.com) servers, for Windows, Linux a
 ## What it adds
 
 **In a call**
-- **Screen sharing with sound** — everything you hear except your own call. On Linux the share is encoded on the GPU when it can be.
+- **Screen sharing with sound** — everything you hear except your own call, just one app's sound (Windows 10 2004 and newer, Linux with PipeWire), or none: the share picker asks. On Linux the share is encoded on the GPU when it can be.
 - **Global hotkeys and push-to-talk** — mute, deafen and push-to-talk from any window, set in Sharkord's user settings. Push-to-talk works on Windows and on Linux desktops with the shortcuts portal (KDE, GNOME 48+), where the desktop asks once.
 - **Voice overlay** (optional) — who is in the call and who is talking, on top of your game or other apps, as see-through as you like. Clicks go through it.
 - **Pop-out stream** — a screen share or camera someone sends, in its own small always-on-top window (ctrl+shift+p, or the button in the bar).
 - **Careful in calls** — asks before a reload, a closed tab or quitting would drop you out of a call.
 
 **Servers**
-- **Tabs** — every server you open stays open in a tab, with its logo, a dot for unread messages (a count when you are mentioned) and a speaker while you are in a call there. Stay in a call on one server while you read another; the tray, the overlay and your hotkeys follow the call. ctrl+1–9 or ctrl+tab to switch, **+** to open another. The tabs come back at the next start.
+- **Tabs** — every server you open stays open in a tab, with its logo, a dot for unread messages (a count when you are mentioned) and a speaker while you are in a call there. Stay in a call on one server while you read another; the tray, the overlay and your hotkeys follow the call. ctrl+1–9 or ctrl+tab to switch, drag to reorder, **+** to open another, × to close. The tabs come back at the next start.
 - **Sharkord's desktop mode** — servers on Sharkord 0.0.29 and newer run as in Sharkord's own desktop app: native notifications that open the right server and message, unread and mention counts, hotkeys without pairing. Older servers work as before.
 - **Proxy logins** — servers behind a login page of their proxy (basic auth), staying logged in, invite links, and share codes that pass a server on to a friend with its proxy login and an invite.
 - **Saving pictures and files** — a save button and a right-click menu; the app saves them itself, so it works behind a proxy login, where another browser couldn't open them.
@@ -41,7 +41,7 @@ Sharkord has its own desktop app now. Both load your servers' own web app; they 
 | Several servers | a server rail on the side | tabs in the title bar |
 | Servers behind a proxy login (basic auth) | — | ✓ |
 | Invite links, share codes | — | ✓ |
-| Screen sharing with sound | ✓ | ✓ |
+| Screen sharing with sound | ✓ | ✓, also one app's sound |
 | Push-to-talk | Linux on Wayland | Windows, Linux with the shortcuts portal |
 | Tray | unread marker | voice state, unread, mute and deafen from the menu |
 | Voice overlay, pop-out stream | — | ✓ |

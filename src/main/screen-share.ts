@@ -5,10 +5,10 @@
 //         track from the virtual mic in the preload.
 
 import { BrowserWindow, desktopCapturer, ipcMain, session, type BaseWindow } from 'electron';
-import type { TCaptureSource, TPickerResult } from '../shared/types';
+import type { TCaptureSource, TPickerResult, TPickerSound } from '../shared/types';
 import { log } from './log';
 import { t } from './lang';
-import { loopbackForRequest, markShareGranted } from './screen-audio';
+import { getScreenAudioMode, listSoundApps, loopbackForRequest, markShareGranted, setShareSound, soundAppsSupported } from './screen-audio';
 import { getSettings, saveSettings } from './settings';
 import { pageUrl, preloadPath, iconPath } from './paths';
 import { windowBackground } from './look';
@@ -19,13 +19,16 @@ const isWaylandSession = () =>
 let pickerWindow: BrowserWindow | null = null;
 let resolvePick: ((r: TPickerResult) => void) | null = null;
 
-const openPicker = (parent: BaseWindow | undefined, sources: TCaptureSource[]) =>
+const openPicker = (parent: BaseWindow | undefined, sources: TCaptureSource[], sound: TPickerSound | null) =>
   new Promise<TPickerResult>((resolve) => {
     resolvePick = resolve;
 
+    // (only the sound: the desktop's own dialog picks the screen or window afterwards)
+    const only = !!sound?.only;
     pickerWindow = new BrowserWindow({
-      width: 760,
-      height: 560,
+      width: only ? 460 : 760,
+      height: only ? 170 : 560,
+      useContentSize: only,
       parent,
       modal: !!parent,
       show: false,
@@ -38,7 +41,7 @@ const openPicker = (parent: BaseWindow | undefined, sources: TCaptureSource[]) =
 
     pickerWindow.once('ready-to-show', () => pickerWindow?.show());
     pickerWindow.webContents.once('did-finish-load', () => {
-      pickerWindow?.webContents.send('picker:sources', sources, getSettings().lastSourceName);
+      pickerWindow?.webContents.send('picker:sources', sources, getSettings().lastSourceName, sound);
     });
     pickerWindow.on('closed', () => {
       pickerWindow = null;
@@ -92,11 +95,46 @@ const listSources = async (): Promise<TCaptureSource[]> => {
   return out;
 };
 
+// the picker's sound menu when the page wants sound: everything but our call, nothing, or (where
+// the system lets us) one of the apps playing right now; the last choice comes preselected
+const soundMenu = async (audioRequested: boolean, only = false): Promise<TPickerSound | null> => {
+  if (!audioRequested || getScreenAudioMode() === 'none') return null;
+  const perApp = soundAppsSupported();
+  const apps = perApp ? await listSoundApps() : [];
+  const last = getSettings().lastSound;
+  const known = last === 'all' || last === 'none' || apps.some((a) => `app:${a.id}` === last);
+  return { apps, perApp, last: known ? last : 'all', only };
+};
+
+const pickedSound = (sound: string | undefined, menu: TPickerSound | null) => {
+  if (!menu) return 'all';
+  const ok = sound === 'all' || sound === 'none' || (typeof sound === 'string' && menu.apps.some((a) => `app:${a.id}` === sound));
+  const out = ok ? sound! : 'all';
+  saveSettings({ lastSound: out });
+  log('screen-share', `sound: ${out.startsWith('app:') ? 'one app' : out}`);
+  return out;
+};
+
+// electron refuses an audio key that is there but undefined: it is left out unless loopback
+const withAudio = (source: Electron.DesktopCapturerSource, audioRequested: boolean) => {
+  const audio = loopbackForRequest(audioRequested);
+  return audio ? { video: source, audio } : { video: source };
+};
+
 export const installDisplayMediaHandler = (getMainWindow: () => BaseWindow | null) => {
   session.defaultSession.setDisplayMediaRequestHandler(async (request, callback) => {
     log('screen-share', `request (audio ${request.audioRequested ? 'asked' : 'not asked'}, ${isWaylandSession() ? 'portal' : 'own picker'})`);
+    setShareSound('all');
     try {
       if (isWaylandSession()) {
+        // the sound first, in a small picker of its own (the portal cannot ask): only where
+        // there is a choice beyond everything or nothing
+        const menu = soundAppsSupported() ? await soundMenu(request.audioRequested, true) : null;
+        if (menu) {
+          const pick = await openPicker(getMainWindow() ?? undefined, [], menu);
+          if (!pick) return callback({});
+          setShareSound(pickedSound(pick.sound, menu));
+        }
         // wayland / pipewire: the portal dialog is shown by getSources itself and the user's
         // pick comes back as the only entry (none if they cancelled). on x11 every screen and
         // window comes back instead, so that path falls through to our own picker.
@@ -104,13 +142,14 @@ export const installDisplayMediaHandler = (getMainWindow: () => BaseWindow | nul
         const [source] = await desktopCapturer.getSources({ types: ['screen', 'window'], thumbnailSize: { width: 0, height: 0 } });
 
         if (source) markShareGranted();
-        return callback(source ? { video: source, audio: loopbackForRequest(request.audioRequested) } : {});
+        return callback(source ? withAudio(source, request.audioRequested) : {});
       }
 
-      const sources = await listSources();
-      const pick = await openPicker(getMainWindow() ?? undefined, sources);
+      const [sources, menu] = await Promise.all([listSources(), soundMenu(request.audioRequested)]);
+      const pick = await openPicker(getMainWindow() ?? undefined, sources, menu);
 
       if (!pick) return callback({});
+      setShareSound(pickedSound(pick.sound, menu));
 
       // only the id is needed now: no thumbnails, which would capture every window again
       const raw = await desktopCapturer.getSources({ types: ['screen', 'window'], thumbnailSize: { width: 0, height: 0 } });
@@ -122,7 +161,7 @@ export const installDisplayMediaHandler = (getMainWindow: () => BaseWindow | nul
       saveSettings({ lastSourceName: source.name });
       markShareGranted();
 
-      callback({ video: source, audio: loopbackForRequest(request.audioRequested) });
+      callback(withAudio(source, request.audioRequested));
     } catch (err) {
       log('screen-share', 'failed', String(err));
       callback({});

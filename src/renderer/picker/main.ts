@@ -1,4 +1,4 @@
-import type { TCaptureSource } from '../../shared/types';
+import type { TCaptureSource, TPickerSound } from '../../shared/types';
 import { segment, bootTheme } from '../theme/ui';
 import { t, translatePage } from '../i18n';
 
@@ -11,6 +11,9 @@ const shareBtn = document.getElementById('share') as HTMLButtonElement;
 let sources: TCaptureSource[] = [];
 let kind: 'screen' | 'window' = 'screen';
 let selected: string | null = null;
+let soundOnly = false;
+const soundRow = document.getElementById('sound-row')!;
+const soundSelect = document.getElementById('sound') as HTMLSelectElement;
 
 const render = () => {
   grid.innerHTML = '';
@@ -41,7 +44,31 @@ const render = () => {
 };
 
 const share = () => {
-  if (selected) window.shell.pickerChoose({ sourceId: selected });
+  const sound = soundRow.hidden ? undefined : soundSelect.value;
+  if (soundOnly) window.shell.pickerChoose({ sourceId: '', sound });
+  else if (selected) window.shell.pickerChoose({ sourceId: selected, sound });
+};
+
+// the sound that goes with the share: everything but the call, nothing, or one app playing now
+const showSound = (sound: TPickerSound | null) => {
+  soundRow.hidden = !sound;
+  if (!sound) return;
+  const opt = (value: string, label: string) => {
+    const o = document.createElement('option');
+    o.value = value;
+    o.textContent = label;
+    return o;
+  };
+  soundSelect.replaceChildren(opt('all', t('everything except the call')), ...sound.apps.map((a) => opt(`app:${a.id}`, t('only {app}', { app: a.name }))), opt('none', t('no sound')));
+  soundSelect.value = sound.last;
+  if (soundSelect.value !== sound.last) soundSelect.value = 'all';
+  if (sound.only) {
+    soundOnly = true;
+    document.body.classList.add('only');
+    document.querySelector('.panel-title')!.textContent = document.title = t('sound for the share');
+    shareBtn.textContent = t('next');
+    shareBtn.disabled = false;
+  }
 };
 
 const showKind = segment(document.getElementById('kind')!, [{ value: 'screen', label: t('screens') }, { value: 'window', label: t('windows') }], kind, (v) => {
@@ -60,7 +87,8 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-window.shell.onPickerSources((list, lastName) => {
+window.shell.onPickerSources((list, lastName, sound) => {
+  showSound(sound);
   sources = list;
   const last = lastName ? list.find((s) => s.name === lastName) : undefined;
   if (last) {

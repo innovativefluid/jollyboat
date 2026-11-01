@@ -18,6 +18,14 @@
       .source .label { display: flex; gap: 6px; align-items: center; margin-top: 6px; font: 400 12px/1.1 var(--px); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
       .source .label img { width: 14px; height: 14px; }
       .foot { display: flex; align-items: center; gap: 12px; padding-top: 8px; }
+      .sound { display: flex; align-items: center; gap: 10px; min-width: 0; }
+      .sound select { max-width: 300px; }
+      /* only the sound (wayland: the desktop's dialog picks the screen or window next) */
+      body.only #kind, body.only #grid { display: none; }
+      body.only .panel.grow { flex: none; }
+      body.only .foot { flex-wrap: wrap; padding-top: 14px; }
+      body.only .sound { flex-basis: 100%; }
+      body.only .sound select { max-width: none; flex: 1; }
     </style>
   </head>
   <body>
@@ -30,6 +38,7 @@
         </div>
         <div class="grid" id="grid"></div>
         <div class="foot">
+          <label class="sound" id="sound-row" hidden><span class="meta" data-i18n>sound</span><select id="sound"></select></label>
           <span class="spacer"></span>
           <button class="pill minor small" id="cancel" data-i18n>cancel</button>
           <button class="pill small alt" id="share" disabled data-i18n>share</button>
