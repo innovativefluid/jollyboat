@@ -409,8 +409,6 @@ window.shell.onBarState((state: TBarState) => {
   }
   document.body.classList.toggle('dim', state.dim);
   document.body.classList.toggle('tabs-on', state.showTabs && state.tabs.length > 0);
-  // with the tabs the shown one is filled; the main button steps back
-  $('settings').classList.toggle('fill', !(state.showTabs && state.tabs.length > 0));
   renderTabs(state.tabs);
   if (state.theme) document.documentElement.dataset.theme = state.theme;
   else delete document.documentElement.dataset.theme;

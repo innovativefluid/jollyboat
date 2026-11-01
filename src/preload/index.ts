@@ -485,8 +485,20 @@ if (boot.isSavedServer) {
   // a dialog's dark backdrop over the page: the bar's ends darken with it (merged, they would
   // stay bright beside its darkened middle)
   let lastModal = false;
+  // covered by something of its own (a plugin's full-window view, like Jollyplay's games, or the
+  // picture viewer): our bar's ends would show that through, so the bar goes back to its own row.
+  // a dialog's backdrop does not count (the bar dims with it instead)
+  const covered = (bar: Element) => {
+    const r = bar.getBoundingClientRect();
+    if (r.height < 4) return false;
+    return [r.left + 4, r.left + r.width / 2, r.right - 4].some((x) => {
+      const el = document.elementFromPoint(x, r.top + r.height / 2);
+      return !!el && !bar.contains(el) && !el.closest('[data-slot$="-overlay"]');
+    });
+  };
   const reportTopbar = () => {
-    const on = !!document.querySelector(TOPBAR) && !document.querySelector('div:not(.relative) > .h-dvh.bg-background');
+    const bar = document.querySelector(TOPBAR);
+    const on = !!bar && !document.querySelector('div:not(.relative) > .h-dvh.bg-background') && !covered(bar);
     const modal = !!document.querySelector('[data-slot$="-overlay"][data-state="open"]');
     if (modal !== lastModal) {
       lastModal = modal;
@@ -536,6 +548,9 @@ html.dark[data-jb-bar='lcd'] ${TOPBAR} { background: #18201c !important; border-
     root.style.setProperty('--jb-bar-r', px(bar.r));
     root.setAttribute('data-jb-bar', bar.look === 'water' || bar.look === 'retro' ? bar.look : 'lcd');
   });
+
+  // (a view shown by a class change brings no new nodes: looked at once a second as well)
+  setInterval(() => document.body && reportTopbar(), 1000);
 
   let scheduled = false;
   const report = () => {
