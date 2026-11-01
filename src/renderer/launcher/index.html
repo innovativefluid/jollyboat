@@ -44,12 +44,10 @@
             <div class="row" style="margin-top: 8px">
               <button class="pill" id="add-server" data-i18n>add server</button>
               <button class="pill minor small alt" id="import-toggle" data-i18n>import</button>
-              <button class="pill minor small" id="export-all" data-i18n>share all</button>
             </div>
             <div class="row" id="import-row" style="margin-top: 10px" hidden>
               <input type="text" id="import-code" placeholder="paste a share code or an invite link" data-i18n-placeholder style="flex: 1" spellcheck="false" />
               <button class="pill small" id="import-go" data-i18n>import</button>
-              <button class="pill minor small alt" id="import-file" data-i18n>from file</button>
             </div>
             <div class="hint" id="list-status" style="margin-top: 6px"></div>
           </section>
@@ -90,10 +88,6 @@
                   <div class="control"><input type="password" id="f-pass" autocomplete="off" /></div>
                 </div>
               </div>
-              <label class="check" style="margin-top: 6px; display: flex">
-                <input type="checkbox" id="keep-login" checked /> <span data-i18n>stay logged in</span></label>
-              <label class="check" id="auto-connect-row" style="margin-top: 6px; display: flex" hidden>
-                <input type="checkbox" id="auto-connect" /> <span data-i18n>open at start</span></label>
               <div class="hint" id="test-status" style="margin-top: 6px"></div>
               <div class="row" style="margin-top: 10px">
                 <button class="pill small" id="save" data-i18n>save</button>
@@ -105,7 +99,6 @@
                 <div class="panel-title" style="margin-top: 12px" data-i18n>share</div>
                 <div class="row">
                   <button class="pill minor small" id="share-copy" data-i18n>copy code</button>
-                  <button class="pill minor small alt" id="share-file" data-i18n>save file</button>
                   <label class="check"><input type="checkbox" id="share-passwords" /> <span data-i18n>include proxy password</span></label>
                 </div>
                 <div class="row" style="margin-top: 6px">
@@ -118,8 +111,9 @@
 
           <section class="panel alt settings">
             <div class="panel-title" data-i18n>app</div>
-            <div class="hint" id="bridge-text"></div>
-            <div class="hint" id="screen-audio-text" style="margin-top: 4px"></div>
+            <!-- (only when something is wrong) -->
+            <div class="hint" id="bridge-text" hidden></div>
+            <div class="hint" id="screen-audio-text" style="margin-top: 4px" hidden></div>
             <div class="row" style="margin-top: 8px"><span class="meta" data-i18n>closing the window</span><div id="on-close"></div></div>
             <div class="row" style="margin-top: 6px"><span class="meta" data-i18n>language</span><div id="language"></div></div>
             <!-- two switches a line: the panel has to fit the window's smallest height -->
@@ -128,14 +122,13 @@
               <label class="check"><input type="checkbox" id="notify-tray" /> <span data-i18n>mark new messages</span></label>
             </div>
             <div class="row" style="margin-top: 6px; gap: 4px 22px">
-              <label class="check" title="sharkord 0.0.29 and newer: its notifications, unread counts and hotkeys go through the app. applies when a server page loads again" data-i18n-title><input type="checkbox" id="desktop-mode" /> <span data-i18n>sharkord desktop mode</span></label>
+              <label class="check"><input type="checkbox" id="reopen-tabs" /> <span data-i18n>open my tabs from last time</span></label>
               <label class="check" id="links-row" hidden><input type="checkbox" id="links" /> <span data-i18n>open sharkord:// links here</span></label>
             </div>
             <div class="row" style="margin-top: 6px"><label class="meta" for="theme-kind" data-i18n>theme</label><select id="theme-kind"></select><div class="tints" id="theme-tints" role="radiogroup" hidden></div></div>
             <div class="row" style="margin-top: 6px"><span class="meta" data-i18n>mode</span><div id="color-mode"></div></div>
             <div class="row" id="css-row" style="margin-top: 6px" hidden>
               <button class="pill minor small" id="css-edit" data-i18n>edit custom.css</button>
-              <button class="pill minor small alt" id="css-example" data-i18n>start from the lcd theme</button>
             </div>
             <label class="check" style="margin-top: 6px"><input type="checkbox" id="overlay" /> <span data-i18n>voice overlay</span></label>
             <div id="overlay-options" hidden>

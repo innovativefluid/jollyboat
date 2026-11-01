@@ -28,7 +28,6 @@ declare global {
       listServers: () => Promise<TServerEntry[]>;
       saveServer: (input: TServerInput) => Promise<{ server: TServerEntry; test: TTestResult }>;
       removeServer: (id: string) => Promise<void>;
-      setKeepLogin: (id: string, keep: boolean) => Promise<void>;
       connect: (id: string) => Promise<void>;
       bridgeStatus: () => Promise<TBridgeStatus>;
       screenAudioInfo: () => Promise<{ ok: boolean; text: string }>;
@@ -36,9 +35,7 @@ declare global {
       linksOwned: () => Promise<boolean | null>;
       setLinksOwned: (on: boolean) => Promise<boolean | null>;
       shareCode: (ids: string[] | null, withPasswords: boolean, invite?: string) => Promise<string>;
-      exportFile: (ids: string[] | null, withPasswords: boolean) => Promise<string | null>;
       importText: (text: string) => Promise<TImported>;
-      importFile: () => Promise<TImported | null>;
       getAutoStart: () => Promise<{ supported: boolean; enabled: boolean }>;
       setAutoStart: (enabled: boolean) => Promise<boolean>;
       updateStatus: () => Promise<TUpdateStatus>;
@@ -51,7 +48,7 @@ declare global {
       /** what this end of the bar needs, in window px */
       barSize: (need: number) => void;
       barAction: (
-        action: 'settings' | 'zoom-in' | 'zoom-out' | 'zoom-reset' | 'menu' | 'minimize' | 'maximize' | 'close' | 'popout' | 'tab' | 'tab-close' | 'tab-move' | 'tab-menu' | 'add' | 'overflow' | 'toggle-tabs',
+        action: 'settings' | 'zoom-in' | 'zoom-out' | 'zoom-reset' | 'menu' | 'minimize' | 'maximize' | 'close' | 'popout' | 'tab' | 'tab-close' | 'tab-move' | 'tab-menu' | 'add' | 'overflow',
         at?: { x: number; y: number },
         arg?: string | string[]
       ) => void;
@@ -62,7 +59,6 @@ declare global {
       onOverlayState: (cb: (state: TOverlayState) => void) => void;
       overlayHeight: (h: number) => void;
       editCustomCss: () => Promise<string>;
-      useCssExample: () => Promise<void>;
       overlayDone: () => void;
       positionOverlay: () => Promise<void>;
     };

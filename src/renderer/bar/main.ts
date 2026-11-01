@@ -399,7 +399,6 @@ tabsEl.addEventListener('contextmenu', (e) => {
 });
 moreTabs.onclick = () => window.shell.barAction('overflow', at(moreTabs), (moreTabs.dataset.ids ?? '').split(',').filter(Boolean));
 $('add').onclick = () => window.shell.barAction('add', at($('add')));
-$('tabs-toggle').onclick = () => window.shell.barAction('toggle-tabs');
 
 window.shell.onBarState((state: TBarState) => {
   const merge = part === 'right' || state.merged;
@@ -410,8 +409,6 @@ window.shell.onBarState((state: TBarState) => {
   }
   document.body.classList.toggle('dim', state.dim);
   document.body.classList.toggle('tabs-on', state.showTabs && state.tabs.length > 0);
-  $('tabs-toggle').textContent = state.showTabs ? '◂' : '▸';
-  $('tabs-toggle').hidden = !state.tabs.length;
   // with the tabs the shown one is filled; the main button steps back
   $('settings').classList.toggle('fill', !(state.showTabs && state.tabs.length > 0));
   renderTabs(state.tabs);

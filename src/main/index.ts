@@ -1,4 +1,4 @@
-import { app, BaseWindow, BrowserWindow, clipboard, ipcMain, Menu, nativeTheme, screen, session, shell, WebContentsView } from 'electron';
+import { app, BaseWindow, BrowserWindow, ipcMain, Menu, nativeTheme, screen, session, shell, WebContentsView } from 'electron';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { installBasicAuth, refreshBasicAuth } from './basic-auth';
@@ -14,7 +14,6 @@ import { refreshAutoStart } from './autostart';
 import { claimLinksIfFree, findDeepLink, parseDeepLink, PROTOCOL } from './deeplinks';
 import { findServerByUrl, getSettings, onServersChanged, saveSettings } from './settings';
 import { log } from './log';
-import { diagnostics } from './diagnostics';
 import { addUnread, clearUnread, createTray, hasTray, setServerName, setTitleUnread, setVoiceState } from './tray';
 import { installDesktopBridge, sendListVisible, type TConnection } from './desktop';
 import type { TBarState, TTab, TVoiceMember, TVoiceState } from '../shared/types';
@@ -759,6 +758,7 @@ const switchTo = (id: string) => {
   if (!v) return;
   const changed = activeId !== id;
   activeId = id;
+  if (changed && !quitting && getSettings().lastActiveServerId !== id) saveSettings({ lastActiveServerId: id });
   for (const each of views.values()) if (!each.wc.isDestroyed()) each.wc.send('shell:shown', each.id === id);
   layout();
   sendBarState();
@@ -898,9 +898,7 @@ const barMenu = () =>
     { label: t('Reload'), accelerator: 'CommandOrControl+R', click: () => reloadPage() },
     { label: t('Full screen'), accelerator: 'F11', click: toggleFullScreen },
     { label: getSettings().serverTabs ? t('Hide server tabs') : t('Show server tabs'), click: toggleTabs },
-    { label: t('Developer tools'), accelerator: 'CommandOrControl+Shift+I', click: () => page()?.toggleDevTools() },
     { type: 'separator' },
-    { label: 'Copy diagnostics', click: () => clipboard.writeText(diagnostics()) },
     { label: t('Jollyboat on GitHub'), click: () => shell.openExternal('https://github.com/innovativefluid/jollyboat') },
     { label: t('Releases'), click: () => shell.openExternal('https://github.com/innovativefluid/jollyboat/releases') },
     { label: 'innovativefluid.net', click: () => shell.openExternal(WEBSITE) },
@@ -924,9 +922,7 @@ const moveTabs = (order: unknown[]) => {
 const tabMenu = (id: string) =>
   Menu.buildFromTemplate([
     { label: t('Reload'), click: () => reloadPage(id) },
-    { label: t('Close tab'), click: () => closeServer(id) },
-    { type: 'separator' },
-    { label: t('Hide server tabs'), click: toggleTabs }
+    { label: t('Close tab'), click: () => closeServer(id) }
   ]);
 
 // the + chip: the saved servers that are not open, and the way to add one
@@ -976,7 +972,6 @@ ipcMain.on('bar:action', (event, action: unknown, at: unknown, arg: unknown) => 
   else if (action === 'tab' && id) switchTo(id);
   else if (action === 'tab-close' && id) closeServer(id);
   else if (action === 'tab-move' && Array.isArray(arg)) moveTabs(arg);
-  else if (action === 'toggle-tabs') toggleTabs();
   else if (!mainWindow) return;
   else if (action === 'menu') barMenu().popup({ window: mainWindow, ...pos });
   else if (action === 'tab-menu' && id) tabMenu(id).popup({ window: mainWindow, ...pos });
@@ -1235,11 +1230,11 @@ if (!app.requestSingleInstanceLock()) {
 
     startUpdater();
 
-    // auto-connect is chosen in the launcher; a lone server opens without being asked.
-    // --hidden (autostart): stay in the tray until the user asks for a window
+    // the tabs from last time come back (a setting), the one shown last in front; with none, the
+    // setup window. --hidden (autostart): stay in the tray until the user asks for a window
     const hidden = process.argv.includes('--hidden');
-    const { autoConnectServerId, servers } = getSettings();
-    const auto = servers.find((s) => s.id === autoConnectServerId) ?? (servers.length === 1 ? servers[0] : undefined);
+    const { reopenTabs, openServers, lastActiveServerId } = getSettings();
+    const reopen = reopenTabs ? openServers : [];
 
     claimLinksIfFree();
     // the appimage: into the app menu, autostart pointing at its current file
@@ -1248,10 +1243,9 @@ if (!app.requestSingleInstanceLock()) {
     ready = true;
     // started by a sharkord:// link: the setup window with it, nothing else
     if (startLink) handleDeepLink(startLink);
-    else if (auto) {
-      // the tabs from last time come back with it, in their order
-      for (const id of getSettings().openServers) connectToServer(id, false, true);
-      connectToServer(auto.id, !hidden);
+    else if (reopen.length) {
+      for (const id of reopen) connectToServer(id, false, true);
+      connectToServer(reopen.includes(lastActiveServerId ?? '') ? lastActiveServerId! : reopen[0]!, !hidden);
     } else showLauncher(undefined, undefined, !hidden);
   });
 

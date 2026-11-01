@@ -31,7 +31,7 @@ type THandlers = {
 };
 
 /** a call from a saved server's page in desktop mode */
-const allowed = (event: IpcMainEvent | IpcMainInvokeEvent) => getSettings().desktopMode && !!findServerByUrl(event.senderFrame?.url ?? '');
+const allowed = (event: IpcMainEvent | IpcMainInvokeEvent) => !!findServerByUrl(event.senderFrame?.url ?? '');
 
 const MAX_ICON = 2 * 1024 * 1024;
 const DATA_ICON = /^data:image\/(png|jpeg|webp|gif);base64,[a-z0-9+/=]+$/i;
@@ -171,7 +171,7 @@ export const installDesktopBridge = (h: THandlers) => {
   // more to start
   ipcMain.handle('desktop:system-audio', () => false);
 
-  log('desktop', `desktop mode ${getSettings().desktopMode ? 'on' : 'off'} (bridge v${DESKTOP_BRIDGE_VERSION})`);
+  log('desktop', `desktop bridge v${DESKTOP_BRIDGE_VERSION}`);
 };
 
 /** every server page in desktop mode hears whether the server list (our tabs) shows */

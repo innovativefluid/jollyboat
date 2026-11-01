@@ -18,9 +18,6 @@ const listStatus = $('list-status');
 const shareStatus = $('share-status');
 const deleteBtn = $<HTMLButtonElement>('delete');
 const openBtn = $<HTMLButtonElement>('open-now');
-const autoRow = $('auto-connect-row');
-const autoBox = $<HTMLInputElement>('auto-connect');
-const keepBox = $<HTMLInputElement>('keep-login');
 const shareRow = $('share-row');
 const authBox = $<HTMLInputElement>('use-auth');
 const authFields = $('auth-fields');
@@ -28,7 +25,6 @@ const right = $('right');
 
 let editingId: string | undefined;
 let servers: TServerEntry[] = [];
-let autoConnectId: string | null = null;
 let confirmingRemove = false;
 
 // a server that failed to open comes back here with its id and the reason; the row shows it
@@ -43,20 +39,14 @@ const testLabel = (s: TServerEntry) => {
   return ` | ${s.lastTest.status === 401 ? t('auth problem') : t('unreachable')}`;
 };
 
-// a lone server opens at start without being asked
-const startsInto = (s: TServerEntry) => s.id === autoConnectId || servers.length === 1;
-
 const renderStartup = () => {
-  const auto = servers.find(startsInto);
-  $('startup-line').textContent = `${auto ? `| ${t('opens {name} at start', { name: auto.name })} ` : ''}| ${t('{keys} opens this window', { keys: `${window.shell.platform === 'darwin' ? 'cmd' : 'ctrl'}+shift+s` })}`;
+  $('startup-line').textContent = `| ${t('{keys} opens this window', { keys: `${window.shell.platform === 'darwin' ? 'cmd' : 'ctrl'}+shift+s` })}`;
 };
 
 const renderServers = async () => {
   servers = await window.shell.listServers();
-  autoConnectId = (await window.shell.getSettings()).autoConnectServerId;
   renderStartup();
   list.innerHTML = '';
-  $<HTMLButtonElement>('export-all').hidden = servers.length === 0;
 
   $('intro').hidden = servers.length > 0;
   if (servers.length === 0) {
@@ -76,7 +66,7 @@ const renderServers = async () => {
     row.querySelector('.name')!.textContent = server.name;
     row.querySelector('.meta')!.textContent = failure
       ? `! ${failure}`
-      : `${server.url.replace(/^https?:\/\//, '')}${server.basicAuth ? ` | ${t('proxy login')}` : ''}${server.invite ? ` | ${t('invite')}` : ''}${startsInto(server) ? ` | ${t('opens at start')}` : ''}${testLabel(server)}`;
+      : `${server.url.replace(/^https?:\/\//, '')}${server.basicAuth ? ` | ${t('proxy login')}` : ''}${server.invite ? ` | ${t('invite')}` : ''}${testLabel(server)}`;
     row.querySelector<HTMLButtonElement>('.connect')!.onclick = (e) => {
       e.stopPropagation();
       // behind a proxy login without its password (a share code without it): ask for it first
@@ -94,8 +84,7 @@ const formInput = (): TServerInput => ({
   id: editingId,
   url: fUrl.value,
   name: fName.value,
-  basicAuth: authBox.checked && fUser.value ? { username: fUser.value, password: fPass.value } : null,
-  keepLogin: keepBox.checked
+  basicAuth: authBox.checked && fUser.value ? { username: fUser.value, password: fPass.value } : null
 });
 
 const resetRemove = () => {
@@ -116,12 +105,7 @@ const openEditor = (server?: TServerEntry) => {
   checkUrl();
   deleteBtn.hidden = !server;
   openBtn.hidden = !server;
-  autoRow.hidden = !server;
   shareRow.hidden = !server;
-  autoBox.checked = !!server && startsInto(server);
-  autoBox.disabled = !!server && servers.length === 1;
-  autoRow.title = autoBox.disabled ? t('the only server opens at start') : '';
-  keepBox.checked = !server || server.keepLogin !== false;
   resetRemove();
   hint(testStatus, '');
   hint(shareStatus, '');
@@ -210,20 +194,6 @@ deleteBtn.onclick = async () => {
   closeEditor();
 };
 
-autoBox.onchange = async () => {
-  if (!editingId) return;
-  autoConnectId = autoBox.checked ? editingId : null;
-  await window.shell.saveSettings({ autoConnectServerId: autoConnectId });
-  toast(t('saved'));
-  renderServers();
-};
-
-keepBox.onchange = async () => {
-  if (!editingId) return;
-  await window.shell.setKeepLogin(editingId, keepBox.checked);
-  toast(keepBox.checked ? t('saved') : t('login forgotten'));
-};
-
 window.addEventListener('keydown', (e) => {
   if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); save(); }
   if (e.key === 'Escape' && !editorPanel.hidden) closeEditor();
@@ -245,25 +215,6 @@ $('share-copy').onclick = async () => {
     hint(shareStatus, invite ? `${what} | ${t('with the invite')}` : what, 'good');
   } catch (err) {
     hint(shareStatus, (err as Error).message, 'bad');
-  }
-};
-
-$('share-file').onclick = async () => {
-  if (!editingId) return;
-  try {
-    const path = await window.shell.exportFile([editingId], withPasswords());
-    if (path) hint(shareStatus, `saved | ${path}`, 'good');
-  } catch (err) {
-    hint(shareStatus, (err as Error).message, 'bad');
-  }
-};
-
-$('export-all').onclick = async () => {
-  try {
-    const path = await window.shell.exportFile(null, false);
-    if (path) hint(listStatus, `${t('saved')} | ${path}${servers.some((s) => s.basicAuth) ? ` | ${t('without proxy passwords')}` : ''}`, 'good');
-  } catch (err) {
-    hint(listStatus, (err as Error).message, 'bad');
   }
 };
 
@@ -324,23 +275,16 @@ $('import-toggle').onclick = () => {
 };
 $('import-go').onclick = importText;
 $<HTMLInputElement>('import-code').addEventListener('keydown', (e) => e.key === 'Enter' && importText());
-$('import-file').onclick = async () => {
-  try {
-    afterImport(await window.shell.importFile());
-  } catch (err) {
-    hint(listStatus, (err as Error).message.replace(/^.*Error: /, ''), 'bad');
-  }
-};
 
 // ---- app panel -------------------------------------------------------------------------------
 
 const renderBridge = async () => {
   const status = await window.shell.bridgeStatus();
-  if (status.ownedByUs) {
-    hint($('bridge-text'), status.keyUp ? t('hotkeys and push-to-talk ready') : t('hotkeys ready | no push-to-talk on this system'), 'good');
-  } else {
-    hint($('bridge-text'), t('hotkeys | port {port} taken, using the sharkord bridge', { port: status.port }), '');
-  }
+  // only what is not as it should be: no push-to-talk here, or another bridge on the port
+  const el = $('bridge-text');
+  if (status.ownedByUs && !status.keyUp) hint(el, t('hotkeys ready | no push-to-talk on this system'), '');
+  else if (!status.ownedByUs) hint(el, t('hotkeys | port {port} taken, using the sharkord bridge', { port: status.port }), '');
+  el.hidden = status.ownedByUs && status.keyUp;
 };
 
 const renderSettings = async () => {
@@ -349,6 +293,7 @@ const renderSettings = async () => {
 
   const audio = await window.shell.screenAudioInfo();
   hint($('screen-audio-text'), audio.text, audio.ok ? 'good' : 'bad');
+  $('screen-audio-text').hidden = audio.ok;
 
   const spell = $<HTMLInputElement>('spellcheck');
   spell.checked = settings.spellcheck;
@@ -457,7 +402,6 @@ const renderSettings = async () => {
     toast(t('saved'));
   };
   $('css-edit').onclick = async () => { await window.shell.editCustomCss(); toast(t('opened in your editor')); };
-  $('css-example').onclick = async () => { await window.shell.useCssExample(); toast(t('lcd theme in custom.css')); };
 
   // voice overlay: on/off and its transparency; the slider saves as it moves (a little later)
   const overlay = $<HTMLInputElement>('overlay');
@@ -503,9 +447,9 @@ const renderSettings = async () => {
   const notify = $<HTMLInputElement>('notify-tray');
   notify.checked = settings.notifyTray;
   notify.onchange = () => { window.shell.saveSettings({ notifyTray: notify.checked }); toast('saved'); };
-  const desktop = $<HTMLInputElement>('desktop-mode');
-  desktop.checked = settings.desktopMode;
-  desktop.onchange = () => { window.shell.saveSettings({ desktopMode: desktop.checked }); toast(t('on when a server page loads again')); };
+  const reopen = $<HTMLInputElement>('reopen-tabs');
+  reopen.checked = settings.reopenTabs;
+  reopen.onchange = () => { window.shell.saveSettings({ reopenTabs: reopen.checked }); toast(t('saved')); };
 
   // sharkord:// links (windows, mac): opening here, or in another app (the official one, say)
   const links = $<HTMLInputElement>('links');

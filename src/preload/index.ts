@@ -89,7 +89,6 @@ if (boot.ownPage) {
       listServers: () => ipcRenderer.invoke('servers:list'),
       saveServer: (input: TServerInput) => ipcRenderer.invoke('servers:save', input),
       removeServer: (id: string) => ipcRenderer.invoke('servers:remove', id),
-      setKeepLogin: (id: string, keep: boolean) => ipcRenderer.invoke('servers:keepLogin', id, keep),
       connect: (id: string) => ipcRenderer.invoke('servers:connect', id),
       bridgeStatus: () => ipcRenderer.invoke('bridge:status'),
       screenAudioInfo: () => ipcRenderer.invoke('screenAudio:info'),
@@ -98,11 +97,8 @@ if (boot.ownPage) {
       setLinksOwned: (on: boolean) => ipcRenderer.invoke('links:set', on) as Promise<boolean | null>,
       editCustomCss: () => ipcRenderer.invoke('css:edit') as Promise<string>,
       positionOverlay: () => ipcRenderer.invoke('overlay:position'),
-      useCssExample: () => ipcRenderer.invoke('css:example'),
       shareCode: (ids: string[] | null, withPasswords: boolean, invite?: string) => ipcRenderer.invoke('share:code', ids, withPasswords, invite ?? ''),
-      exportFile: (ids: string[] | null, withPasswords: boolean) => ipcRenderer.invoke('share:exportFile', ids, withPasswords),
       importText: (text: string) => ipcRenderer.invoke('share:importText', text),
-      importFile: () => ipcRenderer.invoke('share:importFile'),
       getAutoStart: () => ipcRenderer.invoke('autostart:get'),
       setAutoStart: (enabled: boolean) => ipcRenderer.invoke('autostart:set', enabled),
       updateStatus: () => ipcRenderer.invoke('update:status'),
@@ -505,12 +501,13 @@ if (boot.isSavedServer) {
   // its own server-list and settings buttons go (the bar has them), the rest stays sharkord's
   const BAR_CSS = `
 html[data-jb-bar] ${TOPBAR} {
-  display: grid !important; grid-template-columns: minmax(0, 1fr) auto !important; column-gap: 8px !important;
+  display: grid !important; grid-template-columns: auto minmax(0, 1fr) auto !important; column-gap: 8px !important;
   height: var(--jb-bar-h) !important; min-height: 0 !important; box-sizing: border-box !important;
   margin: 0 !important; width: 100% !important; border-radius: 0 !important;
   padding: 0 var(--jb-bar-r) 0 var(--jb-bar-l) !important;
 }
-html[data-jb-bar] ${TOPBAR} > :first-child { display: none !important; }
+/* its server-list button stays (it hides or shows our tabs); its settings button is ours already */
+html[data-jb-bar] ${TOPBAR} > :first-child > :not(:first-child) { display: none !important; }
 /* the window is dragged by the free space of the middle only: a drag region anywhere under the
    bar's own ends would take their clicks (the window's drag regions ignore which view is on top) */
 html[data-jb-bar] ${TOPBAR} > * { min-width: 0; -webkit-app-region: drag; }

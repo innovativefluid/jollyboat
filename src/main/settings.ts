@@ -7,7 +7,8 @@ import { INVITE_CODE, parseInvite } from '../shared/invite';
 
 const DEFAULTS: TSettings = {
   servers: [],
-  autoConnectServerId: null,
+  reopenTabs: true,
+  lastActiveServerId: null,
   onClose: 'minimize',
   spellcheck: false,
   checkUpdates: true,
@@ -23,7 +24,6 @@ const DEFAULTS: TSettings = {
   windowBounds: null,
   lastSourceName: null,
   lastSound: 'all',
-  desktopMode: true,
   serverTabs: true,
   openServers: []
 };
@@ -59,27 +59,21 @@ const sanitize = (raw: unknown): TSettings => {
           ...(test && typeof test.ok === 'boolean' && typeof test.at === 'number'
             ? { lastTest: { ok: test.ok, at: test.at, ...(typeof test.status === 'number' ? { status: test.status } : {}) } }
             : {}),
-          ...(e.keepLogin === false ? { keepLogin: false } : {}),
-          ...(e.keepLogin !== false && typeof e.loginEnc === 'string' ? { loginEnc: e.loginEnc } : {}),
+          ...(typeof e.loginEnc === 'string' ? { loginEnc: e.loginEnc } : {}),
           ...(typeof e.invite === 'string' && INVITE_CODE.test(e.invite) ? { invite: e.invite } : {})
         }
       ];
     });
   }
 
-  if (typeof r.autoConnectServerId === 'string' && out.servers.some((s) => s.id === r.autoConnectServerId)) {
-    out.autoConnectServerId = r.autoConnectServerId;
-  }
   if (r.colorMode === 'auto' || r.colorMode === 'dark' || r.colorMode === 'light') out.colorMode = r.colorMode;
   if (r.theme === 'none' || r.theme === 'jollyboat' || r.theme === 'water' || r.theme === 'retro' || r.theme === 'custom') out.theme = r.theme;
-  else if (r.theme === 'retro-green') out.theme = 'retro'; // 0.3.11/0.3.12: Retro green was a theme of its own
-  else if (r.customCss === true) out.theme = 'custom'; // 0.3.2
   const pal = (r.palettes ?? {}) as Record<string, unknown>;
   const pick = <K extends keyof typeof PALETTES>(k: K, v: unknown): TPalettes[K] => ((PALETTES[k] as readonly unknown[]).includes(v) ? (v as TPalettes[K]) : (PALETTES[k][0] as TPalettes[K]));
-  out.palettes = { retro: pick('retro', pal.retro ?? (r.theme === 'retro-green' ? 'green' : undefined)), water: pick('water', pal.water) };
+  out.palettes = { retro: pick('retro', pal.retro), water: pick('water', pal.water) };
   if (r.language === 'system' || r.language === 'en' || r.language === 'de' || r.language === 'pl') out.language = r.language;
   if (r.onClose === 'minimize' || r.onClose === 'tray' || r.onClose === 'quit') out.onClose = r.onClose;
-  for (const key of ['spellcheck', 'checkUpdates', 'notifyTray', 'autostart', 'overlay', 'desktopMode', 'serverTabs'] as const) {
+  for (const key of ['spellcheck', 'checkUpdates', 'notifyTray', 'autostart', 'overlay', 'serverTabs', 'reopenTabs'] as const) {
     if (typeof r[key] === 'boolean') out[key] = r[key] as boolean;
   }
   const b = r.windowBounds as Record<string, unknown> | undefined;
@@ -93,6 +87,16 @@ const sanitize = (raw: unknown): TSettings => {
   if (typeof r.lastSound === 'string') out.lastSound = r.lastSound.slice(0, 200);
   if (Array.isArray(r.openServers)) {
     out.openServers = [...new Set(r.openServers.filter((id): id is string => typeof id === 'string' && out.servers.some((s) => s.id === id)))];
+  }
+  if (typeof r.lastActiveServerId === 'string' && out.servers.some((s) => s.id === r.lastActiveServerId)) out.lastActiveServerId = r.lastActiveServerId;
+  // up to 0.4.3 a server opened at start when marked (autoConnectServerId) or when it was the only
+  // one; now the tabs from last time come back. the first start after that keeps what opened then
+  if (typeof r.reopenTabs !== 'boolean') {
+    const auto = out.servers.find((s) => s.id === r.autoConnectServerId) ?? (out.servers.length === 1 ? out.servers[0] : undefined);
+    if (auto) {
+      if (!out.openServers.includes(auto.id)) out.openServers = [auto.id, ...out.openServers];
+      out.lastActiveServerId = auto.id;
+    } else if ('autoConnectServerId' in r) out.openServers = []; // the setup window opened at start
   }
 
   return out;
@@ -162,15 +166,13 @@ export const upsertServer = (input: TServerInput): TServerEntry => {
     url: normalizeUrl(input.url),
     ...(existing?.lastTest && existing.url === normalizeUrl(input.url) ? { lastTest: existing.lastTest } : {})
   };
-  const keepLogin = input.keepLogin ?? existing?.keepLogin ?? true;
   // an invite: given, or in the address (an invite link pasted as the url), or kept from before
   const invite =
     input.invite === null ? undefined : (input.invite && INVITE_CODE.test(input.invite) ? input.invite : undefined) ?? parseInvite(input.url)?.code ?? (existing?.url === entry.url ? existing?.invite : undefined);
   if (invite) entry.invite = invite;
 
-  if (!keepLogin) entry.keepLogin = false;
   // the login token belongs to one origin
-  if (keepLogin && existing?.loginEnc && existing.url === entry.url) entry.loginEnc = existing.loginEnc;
+  if (existing?.loginEnc && existing.url === entry.url) entry.loginEnc = existing.loginEnc;
 
   if (input.basicAuth && input.basicAuth.username) {
     entry.basicAuth = {
@@ -198,7 +200,7 @@ export const removeServer = (id: string) => {
 
   saveSettings({
     servers: settings.servers.filter((s) => s.id !== id),
-    autoConnectServerId: settings.autoConnectServerId === id ? null : settings.autoConnectServerId,
+    lastActiveServerId: settings.lastActiveServerId === id ? null : settings.lastActiveServerId,
     openServers: settings.openServers.filter((o) => o !== id)
   });
   serverListeners.forEach((l) => l());
@@ -229,9 +231,8 @@ export const findServerByUrl = (url: string) => {
 };
 
 /** Servers as shown to the renderer: no secrets, only whether auth is set. */
-// sharkord's login token for a server page (null when none is held or keeping is off)
-export const loginTokenFor = (server: TServerEntry) =>
-  server.keepLogin !== false && server.loginEnc ? decryptPassword(server.loginEnc) : null;
+// sharkord's login token for a server page (null when none is held)
+export const loginTokenFor = (server: TServerEntry) => (server.loginEnc ? decryptPassword(server.loginEnc) : null);
 
 /** an invite is done with once someone logged in on that server */
 export const clearInvite = (id: string) => {
@@ -244,25 +245,13 @@ export const setLoginToken = (id: string, token: string | null) => {
   const settings = getSettings();
   const server = settings.servers.find((s) => s.id === id);
 
-  if (!server || server.keepLogin === false) return;
+  if (!server) return;
   if (token ? server.loginEnc && decryptPassword(server.loginEnc) === token : !server.loginEnc) return;
   saveSettings({
     servers: settings.servers.map((s) => {
       if (s.id !== id) return s;
       const { loginEnc, ...rest } = s;
       return token ? { ...rest, loginEnc: encrypt(token) } : rest;
-    })
-  });
-};
-
-export const setKeepLogin = (id: string, keep: boolean) => {
-  const settings = getSettings();
-
-  saveSettings({
-    servers: settings.servers.map((s) => {
-      if (s.id !== id) return s;
-      const { keepLogin, loginEnc, ...rest } = s;
-      return keep ? { ...rest, ...(loginEnc ? { loginEnc } : {}) } : { ...rest, keepLogin: false };
     })
   });
 };

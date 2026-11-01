@@ -1,7 +1,7 @@
 import { BrowserWindow, ipcMain, net, safeStorage, shell, webContents, type BaseWindow, type IpcMainEvent, type IpcMainInvokeEvent, type WebContents } from 'electron';
 import { PALETTES, type TServerInput, type TSettings, type TTestResult, type TVoiceMember, type TVoiceReport, type TVoiceState } from '../shared/types';
 import { finishPositioning, isWayland, refreshOverlay, setOverlayHeight, startPositioning } from './overlay';
-import { editCustomCss, refreshCustomCss, useExample } from './customcss';
+import { editCustomCss, refreshCustomCss } from './customcss';
 import { currentLang, onLanguageChange, t } from './lang';
 import { applyColorMode } from './colormode';
 import { broadcastLook, currentLook, currentPalette } from './look';
@@ -10,7 +10,7 @@ import { basicHeaderFor } from './basic-auth';
 import { getBridgeStatus, getBridgeToken } from './hotkeys/bridge';
 import { isOwnPageUrl, ownPageOf } from './paths';
 import { applySpellcheck } from './privacy';
-import { buildExport, exportToFile, importFromFile, importInvite, importShared, parseShared, shareInvite, toCode } from './share';
+import { buildExport, importInvite, importShared, parseShared, shareInvite, toCode } from './share';
 import {
   canExcludeOwnAudioOnWindows,
   describeScreenAudio,
@@ -36,7 +36,6 @@ import {
   recordTest,
   removeServer,
   saveSettings,
-  setKeepLogin,
   setLoginToken,
   clearInvite,
   upsertServer
@@ -81,7 +80,7 @@ const pickSettingsPatch = (patch: unknown): Partial<TSettings> => {
   if (p.onClose === 'minimize' || p.onClose === 'tray' || p.onClose === 'quit') out.onClose = p.onClose;
   if (typeof p.notifyTray === 'boolean') out.notifyTray = p.notifyTray;
   if (typeof p.overlay === 'boolean') out.overlay = p.overlay;
-  if (typeof p.desktopMode === 'boolean') out.desktopMode = p.desktopMode;
+  if (typeof p.reopenTabs === 'boolean') out.reopenTabs = p.reopenTabs;
   if (typeof p.serverTabs === 'boolean') out.serverTabs = p.serverTabs;
   if (p.theme === 'none' || p.theme === 'jollyboat' || p.theme === 'water' || p.theme === 'retro' || p.theme === 'custom') out.theme = p.theme;
   const pal = (p.palettes ?? null) as Record<string, unknown> | null;
@@ -95,10 +94,6 @@ const pickSettingsPatch = (patch: unknown): Partial<TSettings> => {
   if (p.colorMode === 'auto' || p.colorMode === 'dark' || p.colorMode === 'light') out.colorMode = p.colorMode;
   if (p.language === 'system' || p.language === 'en' || p.language === 'de' || p.language === 'pl') out.language = p.language;
   if (typeof p.overlayOpacity === 'number' && Number.isFinite(p.overlayOpacity)) out.overlayOpacity = Math.min(100, Math.max(0, Math.round(p.overlayOpacity)));
-  if (p.autoConnectServerId === null) out.autoConnectServerId = null;
-  if (typeof p.autoConnectServerId === 'string' && getSettings().servers.some((s) => s.id === p.autoConnectServerId)) {
-    out.autoConnectServerId = p.autoConnectServerId;
-  }
 
   return out;
 };
@@ -134,8 +129,7 @@ const pickServerInput = (input: unknown): TServerInput => {
     basicAuth:
       auth && typeof auth.username === 'string'
         ? { username: auth.username.slice(0, 200), password: String(auth.password ?? '').slice(0, 500) }
-        : null,
-    ...(typeof i.keepLogin === 'boolean' ? { keepLogin: i.keepLogin } : {})
+        : null
   };
 };
 
@@ -198,7 +192,7 @@ export const registerIpc = ({ connectToServer, spellcheckAtStart, onLookChange, 
     event.returnValue = {
       ownPage: ownPageOf(url),
       isSavedServer: !!server,
-      desktop: !!server && getSettings().desktopMode,
+      desktop: !!server,
       platform: process.platform,
       version: __APP_VERSION__,
       storeUpdates: updatesFromStore(),
@@ -206,7 +200,7 @@ export const registerIpc = ({ connectToServer, spellcheckAtStart, onLookChange, 
       wayland: isWayland(),
       bridge: server && bridge.ownedByUs ? { ownedByUs: true, token: getBridgeToken() } : null,
       // sharkord's own login, kept across launches (the page would hold it in localStorage anyway)
-      login: server && server.keepLogin !== false ? { token: loginTokenFor(server) } : null,
+      login: server ? { token: loginTokenFor(server) } : null,
       colorMode: getSettings().colorMode,
       look: currentLook(),
       palette: currentPalette(),
@@ -335,12 +329,10 @@ export const registerIpc = ({ connectToServer, spellcheckAtStart, onLookChange, 
     return { server: { ...safe, basicAuth: basicAuth ? { username: basicAuth.username, passwordEnc: '', hasPassword: decryptPassword(basicAuth.passwordEnc) !== '' } : undefined }, test };
   }));
   ipcMain.handle('servers:remove', guard((_e, id: unknown) => removeServer(String(id))));
-  ipcMain.handle('servers:keepLogin', guard((_e, id: unknown, keep: unknown) => setKeepLogin(String(id), keep === true)));
   ipcMain.handle('servers:connect', guard((_e, id: unknown) => connectToServer(String(id))));
   ipcMain.handle('bridge:status', guard(() => getBridgeStatus()));
   ipcMain.handle('css:edit', guard(() => editCustomCss()));
   ipcMain.handle('overlay:position', guard(() => startPositioning()));
-  ipcMain.handle('css:example', guard(() => useExample()));
   ipcMain.handle('screenAudio:info', guard(() => describeScreenAudio()));
 
   // sharing: ids null = every server; passwords only when asked
@@ -349,8 +341,6 @@ export const registerIpc = ({ connectToServer, spellcheckAtStart, onLookChange, 
     const one = list?.length === 1 ? getSettings().servers.find((s) => s.id === list[0]) : undefined;
     return toCode(buildExport(list, withPasswords === true, one ? shareInvite(invite, one.url) : undefined));
   }));
-  // file dialogs belong to the window that asked (the launcher)
-  ipcMain.handle('share:exportFile', guard((e, ids: unknown, withPasswords: unknown) => exportToFile(BrowserWindow.fromWebContents(e.sender), buildExport(idList(ids), withPasswords === true))));
   // a share code, or a plain sharkord invite link
   ipcMain.handle('share:importText', guard(async (_e, text: unknown) => {
     const s = String(text ?? '').slice(0, 200_000);
@@ -363,7 +353,6 @@ export const registerIpc = ({ connectToServer, spellcheckAtStart, onLookChange, 
     });
     return invited ?? importShared(parseShared(s));
   }));
-  ipcMain.handle('share:importFile', guard((e) => importFromFile(BrowserWindow.fromWebContents(e.sender))));
   ipcMain.handle('app:website', guard(() => shell.openExternal('https://innovativefluid.net')));
   // sharkord:// links: whether they open here (null: the system decides), and the switch
   ipcMain.handle('links:get', guard(() => ownsLinks()));

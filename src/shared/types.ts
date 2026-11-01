@@ -26,8 +26,6 @@ export type TServerEntry = {
     /** pages only: whether a password is stored (a share code without one leaves it empty) */
     hasPassword?: boolean;
   };
-  /** keep Sharkord's login token across launches (default on) */
-  keepLogin?: boolean;
   /** Sharkord's 7-day login token, encrypted like the password; only handed to that server's page */
   loginEnc?: string;
   /** a Sharkord invite code (from an invite link or a share code): the page opens with it until
@@ -44,15 +42,16 @@ export type TServerInput = {
   name: string;
   url: string;
   basicAuth?: { username: string; password: string } | null;
-  keepLogin?: boolean;
   /** an invite code; null drops a stored one (an invite link as the url brings its own) */
   invite?: string | null;
 };
 
 export type TSettings = {
   servers: TServerEntry[];
-  /** server opened at startup instead of the launcher; null = show the launcher */
-  autoConnectServerId: string | null;
+  /** at start the tabs open last time come back (otherwise, and with none, the setup window) */
+  reopenTabs: boolean;
+  /** the tab shown last, shown again when the tabs come back */
+  lastActiveServerId: string | null;
   /** what closing the server window does */
   onClose: 'minimize' | 'tray' | 'quit';
   /** spellcheck in text fields; off by default because the dictionaries come from google's cdn */
@@ -87,13 +86,9 @@ export type TSettings = {
   lastSourceName: string | null;
   /** the sound picked for the last share ('all', 'none', 'app:<id>'), preselected when it is there again */
   lastSound: string;
-  /** sharkord's desktop mode on saved servers (window.sharkordDesktop, bridge v1): its own
-   *  notifications, unread and mention counts, hotkeys without pairing. servers from before
-   *  sharkord 0.0.29 never ask for it and stay as they were */
-  desktopMode: boolean;
   /** the server tabs in the bar (off: the bar names the server shown) */
   serverTabs: boolean;
-  /** the servers open in tabs, in their order; opened again at start with the auto-connect one */
+  /** the servers open in tabs, in their order; opened again at start (reopenTabs) */
   openServers: string[];
 };
 

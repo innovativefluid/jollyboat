@@ -86,6 +86,7 @@
       <description>
         <p>Screen sharing: the share picker asks which sound goes along: everything except the call, only one app that is playing (Windows 10 2004 and newer, Linux with PipeWire), or none. On Wayland, where the desktop picks the screen or window, a small sound picker comes first.</p>
         <p>Server tabs: drag them to reorder, close them with the × on the tab shown or under the pointer.</p>
+        <p>Fewer settings: the tabs from last time come back at start (one switch, instead of a server marked to open at start), logins are always kept, servers are shared by code only, desktop mode is always on, and the settings show hotkey and sound status only when something is wrong.</p>
       </description>
     </release>
     <release version="0.4.2" date="2026-11-01">

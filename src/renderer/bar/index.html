@@ -66,7 +66,7 @@
       .tabs.dragging .x { visibility: hidden; }
       .tab { transition: transform 140ms ease; }
       .tab.dragging { transition: none; z-index: 2; position: relative; }
-      .toggle, .add, .more-tabs { padding: 0 7px; }
+      .add, .more-tabs { padding: 0 7px; }
       body.tabs-on .name { display: none; }
       body:not(.tabs-on) :is(.tabs, .add, .more-tabs) { display: none; }
 
@@ -75,7 +75,7 @@
       html body.merged { background: transparent !important; border-bottom: 0 !important; box-shadow: none !important; }
       body.merged.part-main :is(.spacer, .zoom, #popout, #settings, #more, .controls) { display: none !important; }
       body.merged.part-main .bar { padding-right: 4px; }
-      body.part-right :is(canvas.mark, svg.mark-water, #tabs-toggle, .name, .tabs, #more-tabs, #add) { display: none !important; }
+      body.part-right :is(canvas.mark, svg.mark-water, .name, .tabs, #more-tabs, #add) { display: none !important; }
       body.part-right .bar { padding-left: 4px; }
       /* a dialog's backdrop over the page (sharkord's: black at half) */
       body.merged.dim::after { content: ''; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); pointer-events: none; z-index: 10; }
@@ -174,7 +174,6 @@
         </g>
         <path class="flow" d="M0 24.2q2 -1.6 4 0t4 0t4 0t4 0t4 0t4 0t4 0t4 0t4 0" fill="none" style="stroke: rgb(var(--w-liq-a))" stroke-width="1.4" stroke-linecap="round" />
       </svg>
-      <button class="chip toggle" id="tabs-toggle" aria-label="server tabs" title="server tabs" data-i18n-title>▸</button>
       <div class="name"><span id="server"></span> <span class="app">| Jollyboat</span></div>
       <div class="tabs" id="tabs"></div>
       <button class="chip more-tabs" id="more-tabs" hidden>»</button>

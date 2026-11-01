@@ -3,9 +3,7 @@
 // that survives a chat message. Passwords are only included when asked for. A share of one server
 // can carry a Sharkord invite too: the friend pastes one code and lands on the sign-up screen.
 
-import { dialog, type BrowserWindow } from 'electron';
 import { t } from './lang';
-import { readFile, writeFile } from 'node:fs/promises';
 import type { TServerInput } from '../shared/types';
 import { decryptPassword, getSettings, normalizeUrl, upsertServer } from './settings';
 import { INVITE_CODE, parseInvite } from '../shared/invite';
@@ -143,34 +141,4 @@ export const importInvite = async (text: string, probe: (url: string) => Promise
     invited: true,
     needsLogin: status === 401 ? [saved.id] : []
   };
-};
-
-export const exportToFile = async (win: BrowserWindow | null, doc: TShared) => {
-  const { filePath, canceled } = await dialog.showSaveDialog(win ?? undefined as never, {
-    title: t('save server file'),
-    defaultPath: 'jollyboat-servers.json',
-    filters: [{ name: t('sharkord servers'), extensions: ['json'] }]
-  });
-
-  if (canceled || !filePath) return null;
-
-  await writeFile(filePath, JSON.stringify(doc, null, 2), { mode: 0o600 }); // may hold passwords
-
-  return filePath;
-};
-
-export const importFromFile = async (win: BrowserWindow | null) => {
-  const { filePaths, canceled } = await dialog.showOpenDialog(win ?? undefined as never, {
-    title: t('open server file'),
-    properties: ['openFile'],
-    filters: [{ name: t('sharkord servers'), extensions: ['json'] }, { name: t('all files'), extensions: ['*'] }]
-  });
-
-  if (canceled || !filePaths[0]) return null;
-
-  const text = await readFile(filePaths[0], 'utf8');
-
-  if (text.length > 200_000) throw new Error(t('file too large'));
-
-  return importShared(parseShared(text));
 };
