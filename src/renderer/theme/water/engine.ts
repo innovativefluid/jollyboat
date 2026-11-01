@@ -128,6 +128,9 @@ export type TWaterOptions = {
   allowSoftware?: boolean;
   /** css zoom on the page's root (the bar zooms that way): the canvas is sized against it */
   zoom?: () => number;
+  /** only the glass on a see-through canvas: the water is not shown, it is still what the glass
+   * refracts (the bar's ends over the page's own water, when the bar is merged with its top bar) */
+  transparent?: boolean;
 };
 
 export type TWater = {
@@ -173,7 +176,7 @@ const compile = (gl: WebGL2RenderingContext, vs: string, fs: string): TProg => {
 const rgba = (c: [number, number, number], a = 1): TRgba => [c[0] / 255, c[1] / 255, c[2] / 255, a];
 
 export const createWater = (canvas: HTMLCanvasElement, opts: TWaterOptions): TWater | null => {
-  const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, depth: false, stencil: false, premultipliedAlpha: true, powerPreference: 'low-power' });
+  const gl = canvas.getContext('webgl2', { antialias: false, alpha: !!opts.transparent, depth: false, stencil: false, premultipliedAlpha: true, powerPreference: 'low-power' });
   if (!gl) return null;
 
   // a software renderer (no gpu, or one chromium refuses) would spend whole cores on this
@@ -633,12 +636,17 @@ export const createWater = (canvas: HTMLCanvasElement, opts: TWaterOptions): TWa
     // 4. on screen: the water, then the glass
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, cw, ch);
-    gl.useProgram(blit.prog);
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, bg);
-    gl.uniform1i(blit.u('src'), 0);
-    gl.uniform2f(blit.u('screen'), cw, ch);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    if (opts.transparent) {
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    } else {
+      gl.useProgram(blit.prog);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, bg);
+      gl.uniform1i(blit.u('src'), 0);
+      gl.uniform2f(blit.u('screen'), cw, ch);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    }
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     let current: WebGLProgram | null = null;
@@ -730,6 +738,10 @@ export const createWater = (canvas: HTMLCanvasElement, opts: TWaterOptions): TWa
     document.documentElement.removeEventListener('pointerleave', onLeave);
     document.removeEventListener('visibilitychange', onVisible);
     canvas.removeEventListener('webglcontextlost', onLost);
+    // the context goes now, not whenever the canvas is collected: chromium keeps only so many,
+    // and a water started again (a tab shown, the bar merged or not, full screen and back)
+    // would otherwise make it drop the oldest one, perhaps the one running
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
   };
 
   resize();

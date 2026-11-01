@@ -33,18 +33,22 @@ let mergedNow = part === 'right';
 document.body.classList.toggle('merged', mergedNow);
 let lookNow = window.shell.look;
 
+let waterAs = '';
 const startWater = (look: 'lcd' | 'water' | 'retro') => {
   lookNow = look;
+  // (already running as wanted: left alone)
+  const as = `${look}:${mergedNow}`;
+  if (as === waterAs && (water || look !== 'water')) return;
+  waterAs = as;
   water?.stop();
   waterCanvas?.remove();
   water = null;
   waterCanvas = null;
   document.documentElement.classList.remove('gl', 'no-gl');
+  // merged, the page under the bar draws the bar's glass slab over its own water: this end
+  // draws only its buttons' glass (with their water) on a see-through canvas
+  document.querySelector('.bar')?.classList.toggle('slab', !mergedNow);
   if (look !== 'water') return;
-  if (mergedNow) {
-    document.documentElement.classList.add('no-gl');
-    return;
-  }
   waterCanvas = document.createElement('canvas');
   waterCanvas.className = 'water';
   document.body.prepend(waterCanvas);
@@ -65,6 +69,7 @@ const startWater = (look: 'lcd' | 'water' | 'retro') => {
     bubbles: 4,
     allowSoftware: soft,
     pool: () => ({ view: [window.innerWidth, 900], offset: [0, 0] }),
+    transparent: mergedNow,
     zoom: () => parseFloat(document.documentElement.style.zoom) || 1
   });
   if (!water) {

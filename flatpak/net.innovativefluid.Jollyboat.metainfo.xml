@@ -82,6 +82,11 @@
   </keywords>
 
   <releases>
+    <release version="0.4.2" date="2026-11-01">
+      <description>
+        <p>Water theme: the bar's buttons and server tabs keep their glass and water while the bar is merged with Sharkord's top bar, and after full screen, instead of falling back to the plain look. Each water releases its graphics context when it stops, so switching tabs, full screen or the merged bar no longer uses them up.</p>
+      </description>
+    </release>
     <release version="0.4.1" date="2026-11-01">
       <description>
         <p>One bar on top: Sharkord's own top bar (search, member list, voice and plugin buttons) joins Jollyboat's bar instead of sitting below it, with the tabs on the left and zoom, settings and the window buttons on the right. At a big zoom in a small window the two go back to separate rows.</p>
