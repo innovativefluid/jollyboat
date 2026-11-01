@@ -331,3 +331,13 @@ html ::-webkit-scrollbar-track { background: repeating-conic-gradient(var(--r-fa
 html ::-webkit-scrollbar-thumb { background: var(--r-face); border-radius: 0; box-shadow: var(--r-raised); }
 html ::-webkit-scrollbar-corner { background: var(--r-face); }
 html body { scrollbar-color: auto; }
+
+/* ---- one bar (html[data-jb-bar], set by Jollyboat): the top bar is the middle of the app's
+   bar: the window's title bar, edge to edge ---- */
+html[data-jb-bar] .h-dvh > .bg-card.border-b {
+  background: linear-gradient(90deg, var(--r-title-a), var(--r-title-b)) !important;
+  border: 0 !important;
+  border-bottom: 2px solid var(--r-dark) !important;
+  box-shadow: none !important;
+}
+html[data-jb-bar] .h-dvh > .bg-card.border-b > :last-child button:not(:hover) { color: var(--r-title-ink); }

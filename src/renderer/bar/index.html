@@ -62,6 +62,16 @@
       body.tabs-on .name { display: none; }
       body:not(.tabs-on) :is(.tabs, .add, .more-tabs) { display: none; }
 
+      /* merged with sharkord's top bar: this page is one end of the bar, see-through (the page
+         under it draws the bar's background), the other end's parts hidden */
+      html body.merged { background: transparent !important; border-bottom: 0 !important; box-shadow: none !important; }
+      body.merged.part-main :is(.spacer, .zoom, #popout, #settings, #more, .controls) { display: none !important; }
+      body.merged.part-main .bar { padding-right: 4px; }
+      body.part-right :is(canvas.mark, svg.mark-water, #tabs-toggle, .name, .tabs, #more-tabs, #add) { display: none !important; }
+      body.part-right .bar { padding-left: 4px; }
+      /* a dialog's backdrop over the page (sharkord's: black at half) */
+      body.merged.dim::after { content: ''; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); pointer-events: none; z-index: 10; }
+
       /* the water look: a frosted glass bar, glass chips (the way to the settings filled with
          water), the boat smooth, bobbing on a line of water (moved by main.ts, a few times a second) */
       [data-look='water'] body {

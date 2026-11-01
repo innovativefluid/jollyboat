@@ -113,6 +113,10 @@ export type TTab = {
 };
 
 export type TBarState = {
+  /** the bar shares its row with sharkord's top bar: both ends transparent, the middle is the page */
+  merged: boolean;
+  /** merged, and a dialog's backdrop darkens the page: the bar's ends darken too */
+  dim: boolean;
   server: string;
   zoom: number;
   theme: 'light' | 'dark' | null;

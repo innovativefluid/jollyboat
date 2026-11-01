@@ -48,6 +48,8 @@ declare global {
       onUpdateStatus: (cb: (s: TUpdateStatus) => void) => void;
       onPickerSources: (cb: (sources: TCaptureSource[], lastName: string | null) => void) => void;
       promptAnswer: (answer: boolean) => void;
+      /** what this end of the bar needs, in window px */
+      barSize: (need: number) => void;
       barAction: (
         action: 'settings' | 'zoom-in' | 'zoom-out' | 'zoom-reset' | 'menu' | 'minimize' | 'maximize' | 'close' | 'popout' | 'tab' | 'tab-close' | 'tab-menu' | 'add' | 'overflow' | 'toggle-tabs',
         at?: { x: number; y: number },

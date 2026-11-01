@@ -82,6 +82,11 @@
   </keywords>
 
   <releases>
+    <release version="0.4.1" date="2026-11-01">
+      <description>
+        <p>One bar on top: Sharkord's own top bar (search, member list, voice and plugin buttons) joins Jollyboat's bar instead of sitting below it, with the tabs on the left and zoom, settings and the window buttons on the right. At a big zoom in a small window the two go back to separate rows.</p>
+      </description>
+    </release>
     <release version="0.4.0" date="2026-10-31">
       <description>
         <p>Server tabs: every server you open stays open in a tab in the bar, with its logo or initials, unread and mention marks and a speaker while you are in a call there. Stay in a call on one server while you read another; the tray, the overlay and the pop-out follow the call. Ctrl+1 to 9 and ctrl+tab switch, + opens another server, tabs that do not fit go into a menu, and the open tabs come back at the next start.</p>

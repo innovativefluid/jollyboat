@@ -24,13 +24,27 @@ document.addEventListener('click', (e) => {
   const r = chip.getBoundingClientRect();
   glassDom.poke(chip, e.clientX - r.left, e.clientY - r.top, 1);
 });
+// two views can show this page: the whole bar (or, merged with sharkord's top bar, its left end:
+// mark, tabs, +), and the right end (zoom, settings, window buttons) while merged
+const part = new URLSearchParams(location.search).get('part') === 'right' ? 'right' : 'main';
+document.body.classList.add(`part-${part}`);
+// merged, the page under the bar draws its background (the water too): ours is see-through
+let mergedNow = part === 'right';
+document.body.classList.toggle('merged', mergedNow);
+let lookNow = window.shell.look;
+
 const startWater = (look: 'lcd' | 'water' | 'retro') => {
+  lookNow = look;
   water?.stop();
   waterCanvas?.remove();
   water = null;
   waterCanvas = null;
   document.documentElement.classList.remove('gl', 'no-gl');
   if (look !== 'water') return;
+  if (mergedNow) {
+    document.documentElement.classList.add('no-gl');
+    return;
+  }
   waterCanvas = document.createElement('canvas');
   waterCanvas.className = 'water';
   document.body.prepend(waterCanvas);
@@ -211,18 +225,22 @@ const renderTabs = (list: TTab[]) => {
 };
 
 // the tabs that do not fit go into the » menu (the one shown always stays in the bar)
+// what the tabs would take if all of them showed (the merged bar's left end asks for it)
+let naturalTabs = 0;
 const fitTabs = () => {
   const els = [...tabsEl.querySelectorAll<HTMLButtonElement>('.tab')];
   els.forEach((el) => (el.hidden = false));
   moreTabs.hidden = true;
   tabsEl.style.minWidth = '';
-  if (!document.body.classList.contains('tabs-on')) return;
+  naturalTabs = 0;
+  if (!document.body.classList.contains('tabs-on')) return reportSize();
+  naturalTabs = els.reduce((n, el) => n + el.getBoundingClientRect().width + 6, 0);
   // the one shown always has its room
   const shownTab = els.find((el) => el.classList.contains('fill'));
   if (shownTab) tabsEl.style.minWidth = `${Math.ceil(shownTab.getBoundingClientRect().width / (parseFloat(document.documentElement.style.zoom) || 1)) + 2}px`;
   const room = tabsEl.getBoundingClientRect().width;
   const total = tabsEl.scrollWidth;
-  if (total <= room + 1) return;
+  if (total <= room + 1) return reportSize();
   moreTabs.hidden = false;
   // the room left with the » chip in the bar
   const budget = tabsEl.getBoundingClientRect().width;
@@ -241,8 +259,37 @@ const fitTabs = () => {
   });
   moreTabs.dataset.ids = hidden.join(',');
   moreTabs.textContent = `» ${hidden.length}`;
+  reportSize();
 };
 window.addEventListener('resize', fitTabs);
+void document.fonts.ready.then(() => fitTabs());
+
+// merged, each end of the bar is a view as wide as what it shows: it tells main what it needs
+// (window px; css zoom may or may not scale the rects, the root's rect against the window says)
+let lastNeed = -1;
+const reportSize = () => {
+  const bar = document.querySelector<HTMLElement>('.bar')!;
+  const k = window.innerWidth / (document.documentElement.getBoundingClientRect().width || window.innerWidth);
+  const shown = [...bar.children].filter((el) => el.getClientRects().length > 0 && !el.classList.contains('spacer')) as HTMLElement[];
+  if (!shown.length) return;
+  // the natural width: every shown part at its own size (they do not shrink), the tabs as if all
+  // of them showed, the server name unclipped
+  // (rects come zoomed, computed lengths not: scale is the css zoom)
+  const scale = (document.documentElement.getBoundingClientRect().width || window.innerWidth) / (bar.offsetWidth || 1);
+  const cs = getComputedStyle(bar);
+  const gap = parseFloat(cs.columnGap) || 0;
+  let need = ((parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0) + gap * (shown.length - 1)) * scale;
+  for (const el of shown) {
+    const m = getComputedStyle(el);
+    const w = el === tabsEl ? naturalTabs : el.classList.contains('name') ? el.scrollWidth * scale : el.getBoundingClientRect().width;
+    need += w + ((parseFloat(m.marginLeft) || 0) + (parseFloat(m.marginRight) || 0)) * scale;
+  }
+  need += 4 * scale;
+  need = Math.ceil(need * k);
+  if (need === lastNeed) return;
+  lastNeed = need;
+  window.shell.barSize(need);
+};
 
 tabsEl.addEventListener('click', (e) => {
   const el = (e.target as HTMLElement).closest<HTMLElement>('.tab');
@@ -265,6 +312,13 @@ $('add').onclick = () => window.shell.barAction('add', at($('add')));
 $('tabs-toggle').onclick = () => window.shell.barAction('toggle-tabs');
 
 window.shell.onBarState((state: TBarState) => {
+  const merge = part === 'right' || state.merged;
+  if (merge !== mergedNow) {
+    mergedNow = merge;
+    document.body.classList.toggle('merged', merge);
+    startWater(lookNow);
+  }
+  document.body.classList.toggle('dim', state.dim);
   document.body.classList.toggle('tabs-on', state.showTabs && state.tabs.length > 0);
   $('tabs-toggle').textContent = state.showTabs ? '◂' : '▸';
   $('tabs-toggle').hidden = !state.tabs.length;

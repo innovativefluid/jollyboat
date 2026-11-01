@@ -121,6 +121,7 @@ if (boot.ownPage) {
     },
     bar: {
       barAction: (action: string, at?: { x: number; y: number }, arg?: string | string[]) => ipcRenderer.send('bar:action', action, at, arg),
+      barSize: (need: number) => ipcRenderer.send('bar:size', need),
       windowFocused: hasFocus,
       onBarState: (cb: (state: TBarState) => void) => {
         ipcRenderer.on('bar:state', (_e, state) => cb(state));
@@ -419,9 +420,68 @@ if (boot.isSavedServer) {
     });
   };
 
+  // --- one bar: sharkord's top bar in the middle of ours ------------------------------------
+  // the server view's top bar (not the settings screen, which covers the page with its own)
+  const TOPBAR = '.h-dvh > .bg-card.border-b';
+  let lastTopbar: boolean | null = null;
+  // a dialog's dark backdrop over the page: the bar's ends darken with it (merged, they would
+  // stay bright beside its darkened middle)
+  let lastModal = false;
+  const reportTopbar = () => {
+    const on = !!document.querySelector(TOPBAR) && !document.querySelector('div:not(.relative) > .h-dvh.bg-background');
+    const modal = !!document.querySelector('[data-slot$="-overlay"][data-state="open"]');
+    if (modal !== lastModal) {
+      lastModal = modal;
+      ipcRenderer.send('server:modal', modal);
+    }
+    if (on === lastTopbar) return;
+    lastTopbar = on;
+    ipcRenderer.send('server:topbar', on);
+  };
+  // main says how much room our bar's two ends take, or null: the page is below the bar again.
+  // the top bar takes the bar's height and draws its background (the look's, see the themes);
+  // its own server-list and settings buttons go (the bar has them), the rest stays sharkord's
+  const BAR_CSS = `
+html[data-jb-bar] ${TOPBAR} {
+  display: grid !important; grid-template-columns: minmax(0, 1fr) auto !important; column-gap: 8px !important;
+  height: var(--jb-bar-h) !important; min-height: 0 !important; box-sizing: border-box !important;
+  margin: 0 !important; width: 100% !important; border-radius: 0 !important;
+  padding: 0 var(--jb-bar-r) 0 var(--jb-bar-l) !important;
+}
+html[data-jb-bar] ${TOPBAR} > :first-child { display: none !important; }
+/* the window is dragged by the free space of the middle only: a drag region anywhere under the
+   bar's own ends would take their clicks (the window's drag regions ignore which view is on top) */
+html[data-jb-bar] ${TOPBAR} > * { min-width: 0; -webkit-app-region: drag; }
+/* (the search keeps some of its column free: there the window can be dragged) */
+html[data-jb-bar] ${TOPBAR} > * > * { -webkit-app-region: no-drag; }
+html[data-jb-bar] ${TOPBAR} > :nth-child(2) > button { width: min(24rem, calc(100% - 64px)); min-width: 0; padding-top: 4px; padding-bottom: 4px; }
+html[data-jb-bar='lcd'] ${TOPBAR} { background: #a6b08a !important; border: 0 !important; border-bottom: 2px solid #1a221c !important; box-shadow: none !important; }
+html.dark[data-jb-bar='lcd'] ${TOPBAR} { background: #18201c !important; border-bottom-color: #c4d6a6 !important; }
+`;
+  ipcRenderer.on('shell:bar', (_e, bar: { look?: unknown; h?: unknown; l?: unknown; r?: unknown } | null) => {
+    const root = document.documentElement;
+    if (!root) return;
+    if (!bar) {
+      root.removeAttribute('data-jb-bar');
+      return;
+    }
+    if (!document.getElementById('jb-bar')) {
+      const style = document.createElement('style');
+      style.id = 'jb-bar';
+      style.textContent = BAR_CSS;
+      (document.head ?? root).append(style);
+    }
+    const px = (v: unknown) => `${Math.max(0, Math.min(5000, Number(v) || 0))}px`;
+    root.style.setProperty('--jb-bar-h', px(bar.h));
+    root.style.setProperty('--jb-bar-l', px(bar.l));
+    root.style.setProperty('--jb-bar-r', px(bar.r));
+    root.setAttribute('data-jb-bar', bar.look === 'water' || bar.look === 'retro' ? bar.look : 'lcd');
+  });
+
   let scheduled = false;
   const report = () => {
     scheduled = false;
+    reportTopbar();
     const state = readVoice();
     const key = JSON.stringify(state);
     if (key === last) return;

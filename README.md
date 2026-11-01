@@ -25,6 +25,7 @@ A desktop app for [Sharkord](https://sharkord.com) servers, for Windows, Linux a
 - **sharkord:// links** — the "Add to desktop app" links under a server's login open Jollyboat's setup window with the server filled in.
 
 **Around it**
+- **One bar on top** — Sharkord's own top bar (search, member list, voice and plugin buttons) joins Jollyboat's bar: one row with your tabs on the left and zoom, settings and the window buttons on the right. At a big zoom in a small window they go back to two rows.
 - **Tray** — in voice, talking, muted, deafened, new messages; its icon matches your theme.
 - **Controllers for plugins** — game controllers reach the page (Flatpak too), and plugins like Jollyplay may light up a DualShock 4 or DualSense.
 - **Light, dark or auto**, **English, German and Polish**, zoom per server.

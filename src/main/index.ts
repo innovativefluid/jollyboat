@@ -5,7 +5,7 @@ import { installBasicAuth, refreshBasicAuth } from './basic-auth';
 import { getBridgeStatus, setHotkeyRanking, startBridge, stopBridge } from './hotkeys/bridge';
 import { registerIpc } from './ipc';
 import { iconPath, isOwnPageUrl, originOf, pageUrl, preloadPath } from './paths';
-import { windowBackground } from './look';
+import { currentLook, windowBackground } from './look';
 import { installDisplayMediaHandler } from './screen-share';
 import { installContextMenu, installDownloads, isServerFile, saveUrl } from './downloads';
 import { allowsHid, installControllers } from './controllers';
@@ -82,6 +82,9 @@ if (!spellcheckAtStart) blockDictionaryDownloads();
 // the settings; the launcher (servers + settings) is its own window
 let mainWindow: BaseWindow | null = null;
 let barView: WebContentsView | null = null;
+// the bar's right end (zoom, settings, window buttons) on its own while the bar is merged with
+// sharkord's top bar; otherwise hidden and the main bar view holds everything
+let barRight: WebContentsView | null = null;
 let launcherWindow: BrowserWindow | null = null;
 let quitting = false;
 // the action sharkord's in-call guard interrupted, re-run with the guard waived after "leave"
@@ -116,6 +119,12 @@ type TServerView = {
   crashes: number[];
   /** chromium's background throttling (off while in a call) */
   throttled: boolean;
+  /** the page shows sharkord's top bar (its server view, not its settings screen) */
+  topbar: boolean;
+  /** what the page was last told about the merged bar */
+  barSent: string;
+  /** a dialog's backdrop covers the page */
+  modal: boolean;
 };
 
 const NO_VOICE: TVoiceState = { connected: false, inVoice: false, micMuted: false, deafened: false, speaking: false };
@@ -164,19 +173,65 @@ const rememberBounds = () => {
 // window has no border of its own
 // the bar grows with the page's zoom (its page scales its contents to match, see bar/main.ts)
 const barHeight = () => Math.round(BAR_HEIGHT * (page()?.getZoomFactor() ?? 1));
+
+// one bar instead of two: a page showing sharkord's top bar fills the window from the top, and
+// its top bar becomes the middle of ours (search, plugin buttons, voice buttons, member list).
+// our bar's two ends lie over that top bar's empty ends as transparent views; the page is told
+// how much room to leave (in its own css px) and draws the bar's background (shell:bar)
+// (and only while the row has room for both ends and some middle: at a big zoom in a small
+// window the bar stays a row of its own)
+const LEFT_MIN = 200;
+const roomy = () => {
+  if (!mainWindow) return false;
+  const z = page()?.getZoomFactor() ?? 1;
+  return (rightNeed || 430 * z) + (LEFT_MIN + MIDDLE_MIN) * z <= mainWindow.getContentBounds().width;
+};
+const canMerge = (v: TServerView | undefined) => !!v && v.topbar && !v.loading && !v.failed && !mainWindow?.isFullScreen() && roomy();
+const merged = () => canMerge(alive(active()));
+// what the two ends of the bar need (window px), as they measured themselves (bar:size)
+let leftNeed = 0;
+let rightNeed = 0;
+// the least the middle keeps for sharkord's own buttons and search (css px of the bar)
+const MIDDLE_MIN = 260;
+
+let lastJoin = false;
 const layout = () => {
   if (!mainWindow || !barView) return;
   const { width, height } = mainWindow.getContentBounds();
   const full = mainWindow.isFullScreen();
   const edge = full || mainWindow.isMaximized() ? 0 : 1;
   const bar = full ? 0 : barHeight();
+  const zoomNow = page()?.getZoomFactor() ?? 1;
   // mac: the traffic lights stay in the middle of the bar
   if (process.platform === 'darwin' && !full) mainWindow.setWindowButtonPosition({ x: 12, y: Math.max(4, Math.round((bar - 16) / 2)) });
-  barView.setBounds({ x: 0, y: 0, width, height: bar });
+  const join = merged();
+  // the bars learn it with their state (a resize or zoom can change it)
+  if (join !== lastJoin) {
+    lastJoin = join;
+    queueMicrotask(sendBarState);
+  }
+  // (the right end keeps its size while hidden: it measures itself there)
+  const right = Math.min(width, Math.ceil(rightNeed || 430 * zoomNow));
+  const left = join ? Math.max(Math.round(90 * zoomNow), Math.min(Math.ceil(leftNeed || 300 * zoomNow), width - right - Math.round(MIDDLE_MIN * zoomNow))) : width;
+  barView.setBounds({ x: 0, y: 0, width: left, height: bar });
+  barView.setBackgroundColor(join ? '#00000000' : windowBackground(barDark()));
+  if (barRight) {
+    barRight.setBounds({ x: width - right, y: 0, width: right, height: bar });
+    barRight.setVisible(join);
+  }
   // every page keeps the size it would be shown at; only the active one is visible
   for (const v of views.values()) {
-    v.view.setBounds({ x: edge, y: bar, width: Math.max(0, width - 2 * edge), height: Math.max(0, height - bar - edge) });
+    const m = canMerge(v) && !full;
+    v.view.setBounds({ x: edge, y: m ? 0 : bar, width: Math.max(0, width - 2 * edge), height: Math.max(0, height - (m ? 0 : bar) - edge) });
     v.view.setVisible(v.id === activeId);
+    // the room our ends take, in the page's css px (it is zoomed like the bar)
+    const z = v.wc.isDestroyed() ? 1 : v.wc.getZoomFactor();
+    const leftAt = join ? left : Math.max(Math.round(90 * zoomNow), Math.min(Math.ceil(leftNeed || 300 * zoomNow), width - right - Math.round(MIDDLE_MIN * zoomNow)));
+    const told = m ? JSON.stringify({ look: currentLook(), h: BAR_HEIGHT, l: Math.max(0, Math.round((leftAt - edge) / z)), r: Math.max(0, Math.round((right - edge) / z)) }) : 'null';
+    if (told !== v.barSent && !v.wc.isDestroyed()) {
+      v.barSent = told;
+      v.wc.send('shell:bar', JSON.parse(told));
+    }
   }
 };
 
@@ -202,6 +257,8 @@ const sendBarState = () => {
   const wc = barView?.webContents;
   if (!wc || wc.isDestroyed()) return;
   const state: TBarState = {
+    merged: merged(),
+    dim: merged() && !!active()?.modal,
     server: serverOf(activeId ?? '')?.name ?? '',
     zoom: page()?.getZoomFactor() ?? 1,
     theme: pageTheme(),
@@ -211,11 +268,11 @@ const sendBarState = () => {
     showTabs: getSettings().serverTabs
   };
   wc.send('bar:state', state);
+  const rw = barRight?.webContents;
+  if (rw && !rw.isDestroyed()) rw.send('bar:state', state);
   layout();
   setOverlayTheme(barDark() ? 'dark' : 'light');
-  const bg = windowBackground(barDark());
-  barView?.setBackgroundColor(bg);
-  mainWindow?.setBackgroundColor(bg);
+  mainWindow?.setBackgroundColor(windowBackground(barDark()));
   if (launcherWindow && !launcherWindow.isDestroyed()) launcherWindow.setBackgroundColor(windowBackground());
 };
 ipcMain.on('server:theme', (event, theme: unknown) => {
@@ -227,6 +284,33 @@ ipcMain.on('server:theme', (event, theme: unknown) => {
   if (v.id === activeId) sendBarState();
 });
 nativeTheme.on('updated', sendBarState);
+// a page shows sharkord's top bar or not (its settings screen, the login, a page from before)
+ipcMain.on('server:topbar', (event, on: unknown) => {
+  const v = viewOf(event.sender);
+  if (!v || !findServerByUrl(event.senderFrame?.url ?? '') || v.topbar === (on === true)) return;
+  v.topbar = on === true;
+  if (v.id === activeId) sendBarState();
+  else layout();
+});
+ipcMain.on('server:modal', (event, on: unknown) => {
+  const v = viewOf(event.sender);
+  if (!v || !findServerByUrl(event.senderFrame?.url ?? '') || v.modal === (on === true)) return;
+  v.modal = on === true;
+  if (v.id === activeId) sendBarState();
+});
+// the bar's two ends measured what they need
+ipcMain.on('bar:size', (event, need: unknown) => {
+  const n = Number(need);
+  if (!Number.isFinite(n) || n < 0 || n > 10_000) return;
+  if (barView && event.sender === barView.webContents) {
+    if (Math.abs(n - leftNeed) < 1) return;
+    leftNeed = n;
+  } else if (barRight && event.sender === barRight.webContents) {
+    if (Math.abs(n - rightNeed) < 1) return;
+    rightNeed = n;
+  } else return;
+  sendBarState();
+});
 onStreams(sendBarState);
 
 // the tray's unread count: every open server's, together
@@ -340,7 +424,7 @@ const handleShortcuts = (wc: Electron.WebContents) =>
 // both views of what is shown learn the window's focus (each one's own document focus says only
 // which of them has the keyboard): the water runs at full rate while the window is in front
 const sendFocus = (focused: boolean) => {
-  const all = [barView?.webContents, ...[...views.values()].map((v) => v.wc)];
+  const all = [barView?.webContents, barRight?.webContents, ...[...views.values()].map((v) => v.wc)];
   for (const c of all) if (c && !c.isDestroyed()) c.send('shell:focus', focused);
 };
 
@@ -366,16 +450,25 @@ const createMainWindow = () => {
   barView = barv;
   barv.setBackgroundColor(windowBackground(dark));
   win.contentView.addChildView(barv);
+  const barr = new WebContentsView({ webPreferences });
+  barRight = barr;
+  barr.setBackgroundColor('#00000000');
+  barr.setVisible(false);
+  win.contentView.addChildView(barr);
   layout();
 
   const bar = barv.webContents;
+  const barEnd = barr.webContents;
 
   bar.loadURL(pageUrl('bar'));
-  bar.on('did-finish-load', sendBarState);
-  bar.setWindowOpenHandler(() => ({ action: 'deny' }));
-  bar.on('will-navigate', (event) => event.preventDefault());
-  handleShortcuts(bar);
-  bar.on('did-finish-load', () => sendFocus(win.isFocused()));
+  barEnd.loadURL(`${pageUrl('bar')}?part=right`);
+  for (const wc of [bar, barEnd]) {
+    wc.on('did-finish-load', sendBarState);
+    wc.setWindowOpenHandler(() => ({ action: 'deny' }));
+    wc.on('will-navigate', (event) => event.preventDefault());
+    handleShortcuts(wc);
+    wc.on('did-finish-load', () => sendFocus(win.isFocused()));
+  }
 
   // reading the window clears the unread marker; typing goes to the page, not the bar
   win.on('focus', () => {
@@ -394,8 +487,8 @@ const createMainWindow = () => {
     rememberBounds();
   });
   win.on('move', rememberBounds);
-  win.on('enter-full-screen', layout);
-  win.on('leave-full-screen', layout);
+  win.on('enter-full-screen', sendBarState);
+  win.on('leave-full-screen', sendBarState);
   const onMaximizeChange = () => {
     layout();
     sendBarState();
@@ -425,6 +518,8 @@ const createMainWindow = () => {
 
   win.on('closed', () => {
     if (!bar.isDestroyed()) bar.close();
+    if (!barEnd.isDestroyed()) barEnd.close();
+    barRight = null;
     for (const v of views.values()) if (!v.wc.isDestroyed()) v.wc.close();
     views.clear();
     activeId = null;
@@ -482,7 +577,10 @@ const createServerView = (id: string): TServerView => {
     loading: true,
     failed: null,
     crashes: [],
-    throttled: true
+    throttled: true,
+    topbar: false,
+    barSent: '',
+    modal: false
   };
   views.set(id, v);
   view.setBackgroundColor('#0a0a0a');
@@ -529,7 +627,7 @@ const createServerView = (id: string): TServerView => {
   wc.on('did-start-navigation', (details) => {
     if (!details.isMainFrame || details.isSameDocument) return;
     if (inCall(v)) stopPipeWireShare();
-    Object.assign(v, { loading: true, unread: null, titled: 0, connection: null, desktopVoice: false, voice: { ...NO_VOICE }, members: [], streams: 0 });
+    Object.assign(v, { loading: true, unread: null, titled: 0, connection: null, desktopVoice: false, voice: { ...NO_VOICE }, members: [], streams: 0, topbar: false, barSent: '', modal: false });
     follow();
     refreshUnread();
   });
@@ -848,10 +946,12 @@ const toggleTabs = () => {
 };
 
 ipcMain.on('bar:action', (event, action: unknown, at: unknown, arg: unknown) => {
-  if (!barView || event.sender !== barView.webContents) return;
+  const from = [barView, barRight].find((b) => b && event.sender === b.webContents);
+  if (!from) return;
   if (action !== 'tab') log('bar', String(action));
   const p = (at ?? {}) as { x?: unknown; y?: unknown };
-  const pos = { x: typeof p.x === 'number' ? p.x : 0, y: typeof p.y === 'number' ? p.y : barHeight() };
+  // menus open under the button; the right end of the bar is a view of its own further along
+  const pos = { x: (typeof p.x === 'number' ? p.x : 0) + from.getBounds().x, y: typeof p.y === 'number' ? p.y : barHeight() };
   const id = typeof arg === 'string' && views.has(arg) ? arg : null;
 
   if (action === 'settings') showLauncher();
