@@ -149,6 +149,9 @@ html[data-jollyplay-playing] body::before { animation-play-state: paused; }
 
 /* the app: frosted sidebars and top bar, the chat a glass panel floating a little apart */
 html .h-dvh.bg-background { background: transparent; }
+/* a settings screen lies over the server view, both see-through to the water: the server view
+   steps aside meanwhile (it keeps running: calls, streams and plugins go on) */
+html:has(div:not(.relative) > .h-dvh.bg-background) .relative > .h-dvh { visibility: hidden; }
 html .h-dvh > .bg-card.border-b,
 html .h-dvh .bg-card.border-r,
 html .h-dvh .bg-card.border-l {
@@ -215,9 +218,10 @@ html [data-slot="tooltip-content"] svg { fill: rgb(var(--w-liq-b)); background: 
 html [data-slot="popover-content"][data-state="open"], html [data-slot="dropdown-menu-content"][data-state="open"],
 html [data-slot="context-menu-content"][data-state="open"], html [data-slot="select-content"][data-state="open"],
 html [data-slot="dialog-content"][data-state="open"], html [data-slot="alert-dialog-content"][data-state="open"] {
-  animation: jb-rise 260ms cubic-bezier(0.3, 1.5, 0.5, 1) both;
+  animation: jb-rise 260ms cubic-bezier(0.3, 1.5, 0.5, 1) backwards;
 }
-@keyframes jb-rise { from { opacity: 0; translate: 0 8px; scale: 0.97; } to { opacity: 1; translate: 0 0; scale: 1; } }
+/* (transform, not translate and scale: a dialog is centred with those, and they would stay put) */
+@keyframes jb-rise { from { opacity: 0; transform: translateY(8px) scale(0.97); } to { opacity: 1; transform: none; } }
 
 /* ---- buttons: glass bubbles; the main one filled with water ----------------------------- */
 

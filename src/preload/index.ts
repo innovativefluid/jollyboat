@@ -488,13 +488,34 @@ if (boot.isSavedServer) {
   // covered by something of its own (a plugin's full-window view, like Jollyplay's games, or the
   // picture viewer): our bar's ends would show that through, so the bar goes back to its own row.
   // a dialog's backdrop does not count (the bar dims with it instead)
+  // a sheet (sharkord's mod view, a side panel) or a dialog reaching up under the bar's ends: its
+  // close button would sit under our window buttons, so the bar goes back to its own row as well.
+  // menus and popovers do not count: they hang from what opened them and would move with the page
   const covered = (bar: Element) => {
     const r = bar.getBoundingClientRect();
     if (r.height < 4) return false;
-    return [r.left + 4, r.left + r.width / 2, r.right - 4].some((x) => {
-      const el = document.elementFromPoint(x, r.top + r.height / 2);
-      return !!el && !bar.contains(el) && !el.closest('[data-slot$="-overlay"]');
-    });
+    const css = getComputedStyle(document.documentElement);
+    const endL = parseFloat(css.getPropertyValue('--jb-bar-l')) || 0;
+    const endR = parseFloat(css.getPropertyValue('--jb-bar-r')) || 0;
+    const width = document.documentElement.clientWidth;
+    for (const c of Array.from(document.querySelectorAll('[data-state="open"]:is([data-slot="sheet-content"], [data-slot="dialog-content"], [data-slot="alert-dialog-content"])'))) {
+      if (c.matches('[data-slot="sheet-content"]:not(.bottom-0)')) return true;
+      const b = c.getBoundingClientRect();
+      if (b.height > 0 && b.top < r.bottom + 8 && (b.left < endL + 8 || b.right > width - endR - 8)) return true;
+    }
+    // an open menu or dialog makes the page ignore the pointer (pointer-events: none on the body),
+    // and a hit test with it would only find <html>: for the look, the body takes the pointer
+    const body = document.body;
+    const pe = body.style.pointerEvents;
+    if (pe) body.style.pointerEvents = 'auto';
+    try {
+      return [r.left + 4, r.left + r.width / 2, r.right - 4].some((x) => {
+        const el = document.elementFromPoint(x, r.top + r.height / 2);
+        return !!el && el !== document.documentElement && el !== body && !bar.contains(el) && !el.closest('[data-slot$="-overlay"], [data-radix-popper-content-wrapper], [data-sonner-toaster]');
+      });
+    } finally {
+      if (pe) body.style.pointerEvents = pe;
+    }
   };
   const reportTopbar = () => {
     const bar = document.querySelector(TOPBAR);
@@ -712,6 +733,12 @@ html.dark[data-jb-bar='lcd'] ${TOPBAR} { background: #18201c !important; border-
     const head = document.querySelector('head');
     if (head) new MutationObserver(reportTitle).observe(head, { subtree: true, childList: true, characterData: true });
     reportTitle();
+    // sharkord's search dialog is at least 80rem wide on a wide screen, more than a window under
+    // about 1300 px holds: its close button would be outside. it stays inside the window
+    const fixes = document.createElement('style');
+    fixes.id = 'jb-fixes';
+    fixes.textContent = '[data-slot="dialog-content"][class*="min-w-7xl"] { min-width: min(80rem, calc(100% - 2rem)) !important; }';
+    (head ?? document.documentElement).append(fixes);
   });
 
   // tray menu actions: click Sharkord's own buttons

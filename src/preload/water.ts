@@ -40,7 +40,8 @@ const radiiOf = (el: Element): TRgba => {
 };
 const findParts = (): TPart[] => {
   const out: TPart[] = [];
-  const root = document.querySelector<HTMLElement>('.h-dvh');
+  // the server view, or a settings screen lying over it (the theme hides the server view then)
+  const root = Array.from(document.querySelectorAll<HTMLElement>('.h-dvh')).filter((el) => getComputedStyle(el).visibility !== 'hidden').pop();
   if (!root) return out;
   const add = (el: HTMLElement | null, kind: TSlab) => el && out.push({ el, kind, radii: radiiOf(el) });
   for (const el of Array.from(root.querySelectorAll<HTMLElement>('.bg-card.border-r:not(.w-0)'))) add(el, 'left');

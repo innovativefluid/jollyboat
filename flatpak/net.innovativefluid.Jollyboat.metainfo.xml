@@ -82,6 +82,13 @@
   </keywords>
 
   <releases>
+    <release version="0.4.4" date="2026-11-01">
+      <description>
+        <p>One bar on top: opening a menu (like the server menu) no longer brings Sharkord's top bar back in its own row. A side panel (the user panel from the member list) or a dialog reaching under the bar puts the bar back in its own row, so its close button is never under the window buttons.</p>
+        <p>Water theme: the settings screens no longer show the server view through them.</p>
+        <p>Water and Jollyboat themes: dialogs are centred again instead of hanging off to the lower right. Sharkord's search window stays inside a window narrower than about 1300 px, close button included.</p>
+      </description>
+    </release>
     <release version="0.4.3" date="2026-11-01">
       <description>
         <p>Screen sharing: the share picker asks which sound goes along: everything except the call, only one app that is playing (Windows 10 2004 and newer, Linux with PipeWire), or none. On Wayland, where the desktop picks the screen or window, a small sound picker comes first.</p>
