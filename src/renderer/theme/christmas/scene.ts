@@ -10,7 +10,7 @@
 //
 // Light or dark follows the page. One canvas behind the page (or the app's window), drawn at no
 // more than 1.25 device pixels per css pixel (it is all soft light); the still parts are drawn
-// once per size into a layer. 30 frames a second in front, 10 behind; it rests while a game is
+// once per size into a layer. 60 frames a second in front, 30 behind (the water's); it rests while a game is
 // open over the page, and stands still with reduced motion.
 
 export type TXmasPalette = 'classic' | 'gold' | 'snow';
@@ -19,6 +19,9 @@ export type TXmasScene = {
   rest: (on: boolean) => void;
   /** the pointer moved (css px): baubles it brushes swing */
   pointer: (x: number, y: number) => void;
+  /** for tuning: the average time of a drawn frame lately (ms, the script's part) and the frames
+   *  drawn in the last second */
+  cost: () => { ms: number; fps: number };
 };
 export type TXmasOptions = {
   palette: () => string;
@@ -239,6 +242,49 @@ const sparkleSprite = (color: string) =>
     return c;
   });
 
+/** a beam of light: a horizontal profile, one pixel tall, stretched over the window's height */
+const beamSprite = (color: string) =>
+  cached(`beam${color}`, () => {
+    const c = mk(64, 1);
+    const x = c.getContext('2d')!;
+    const g = x.createLinearGradient(0, 0, 64, 0);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(0.5, color);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    x.fillStyle = g;
+    x.fillRect(0, 0, 64, 1);
+    return c;
+  });
+
+/** a small soft dot of light (the spiral trees, the strings of lights) */
+const dotSprite = (color: string) =>
+  cached(`dot${color}`, () => {
+    const c = mk(16, 16);
+    const x = c.getContext('2d')!;
+    const g = x.createRadialGradient(8, 8, 0, 8, 8, 8);
+    g.addColorStop(0, color);
+    g.addColorStop(0.45, color);
+    g.addColorStop(0.62, `${color}88`);
+    g.addColorStop(1, `${color}00`);
+    x.fillStyle = g;
+    x.fillRect(0, 0, 16, 16);
+    return c;
+  });
+
+/** a lens flare's ring of light */
+const flareSprite = (rgb: string) =>
+  cached(`flare${rgb}`, () => {
+    const c = mk(64, 64);
+    const x = c.getContext('2d')!;
+    const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+    g.addColorStop(0, `rgba(${rgb},0.18)`);
+    g.addColorStop(0.7, `rgba(${rgb},0.1)`);
+    g.addColorStop(1, `rgba(${rgb},0)`);
+    x.fillStyle = g;
+    x.fillRect(0, 0, 64, 64);
+    return c;
+  });
+
 /** a snow crystal: six arms with side branches */
 const flakeSprite = (color: string) =>
   cached(`flake${color}`, () => {
@@ -456,6 +502,10 @@ export const createXmasScene = (canvas: HTMLCanvasElement, o: TXmasOptions): TXm
   let key = '';
   let cfg: TCfg = CFG.classic.dark;
   let still: HTMLCanvasElement | null = null;
+  // the sun's rays, drawn once at a quarter of the size (they are soft) and turned as a whole
+  let rays: HTMLCanvasElement | null = null;
+  // the gold ribbons' fills, made once per size
+  let ribbonFills: CanvasGradient[] = [];
   let baubles: TBauble[] = [];
   let bokeh: TBokeh[] = [];
   let sparkles: TSparkle[] = [];
@@ -464,7 +514,6 @@ export const createXmasScene = (canvas: HTMLCanvasElement, o: TXmasOptions): TXm
   let stopped = false;
   let raf = 0;
   let last = performance.now();
-  let lastDraw = 0;
   let T = 0;
   let px = -1e4;
   let py = -1e4;
@@ -497,6 +546,18 @@ export const createXmasScene = (canvas: HTMLCanvasElement, o: TXmasOptions): TXm
     glow(cfg.glow);
     if (cfg.glow2) glow(cfg.glow2);
     if (short) return c;
+    // the sun's rings of light, arcs across the upper left (the sun itself turns in the frame)
+    if (cfg.sun) {
+      x.globalAlpha = 0.25;
+      x.strokeStyle = '#ffffff';
+      x.lineWidth = 1.2 * res;
+      for (let i = 0; i < 16; i++) {
+        x.beginPath();
+        x.arc(W * 0.02, -H * 0.15, H * (0.25 + i * 0.022), 0.05, Math.PI * 0.45);
+        x.stroke();
+      }
+      x.globalAlpha = 1;
+    }
 
     const r = rng(17);
     if (cfg.decor === 'pine') {
@@ -678,7 +739,8 @@ export const createXmasScene = (canvas: HTMLCanvasElement, o: TXmasOptions): TXm
 
   // ---- size, palette, everything that moves ------------------------------------------------------
   const fit = () => {
-    res = Math.min(window.devicePixelRatio || 1, 1.25);
+    // (all soft light: at most 1.25 device pixels per css pixel, and at most ~2.4 million in all)
+    res = Math.min(window.devicePixelRatio || 1, 1.25, Math.sqrt(2.4e6 / Math.max(1, window.innerWidth * window.innerHeight)));
     W = Math.max(1, Math.round(window.innerWidth * res));
     H = Math.max(1, Math.round(window.innerHeight * res));
     short = window.innerHeight < 200;
@@ -698,6 +760,40 @@ export const createXmasScene = (canvas: HTMLCanvasElement, o: TXmasOptions): TXm
     key = want;
     cfg = CFG[pal][dark ? 'dark' : 'light'];
     still = buildStill();
+    rays = null;
+    if (cfg.sun && !short) {
+      const L = Math.max(W, H) * 0.7;
+      const q = Math.ceil(L / 4);
+      rays = mk(q * 2, q * 2);
+      const x = rays.getContext('2d')!;
+      x.translate(q, q);
+      for (let i = 0; i < 14; i++) {
+        x.rotate((Math.PI * 2) / 14);
+        const rg = x.createLinearGradient(0, 0, q, 0);
+        rg.addColorStop(0, 'rgba(255,255,255,0.35)');
+        rg.addColorStop(1, 'rgba(255,255,255,0)');
+        x.globalAlpha = i % 2 ? 0.55 : 1;
+        x.fillStyle = rg;
+        x.beginPath();
+        x.moveTo(0, 0);
+        x.lineTo(q, -q * 0.06);
+        x.lineTo(q, q * 0.06);
+        x.closePath();
+        x.fill();
+      }
+    }
+    ribbonFills = [];
+    if (cfg.decor === 'gold') {
+      for (let i = 0; i < 3; i++) {
+        const y0 = H * (0.78 + i * 0.05);
+        const amp = H * (0.04 + i * 0.012);
+        const thick = H * (0.012 + i * 0.01);
+        const rg = g.createLinearGradient(0, y0 - amp, 0, y0 + amp + thick);
+        rg.addColorStop(0, '#fff6d8');
+        rg.addColorStop(1, '#e0a83a');
+        ribbonFills.push(rg);
+      }
+    }
     const r = rng(29);
     const area = (W * H) / (res * res);
     bokeh = [];
@@ -743,7 +839,18 @@ export const createXmasScene = (canvas: HTMLCanvasElement, o: TXmasOptions): TXm
   };
 
   // ---- one frame ----------------------------------------------------------------------------------
+  let costSum = 0;
+  let costN = 0;
   const draw = () => {
+    const t0 = performance.now();
+    drawFrame();
+    costSum += performance.now() - t0;
+    if (++costN > 120) {
+      costSum /= 2;
+      costN /= 2;
+    }
+  };
+  const drawFrame = () => {
     setup();
     g.globalCompositeOperation = 'source-over';
     g.globalAlpha = 1;
@@ -753,16 +860,12 @@ export const createXmasScene = (canvas: HTMLCanvasElement, o: TXmasOptions): TXm
     // soft beams of light, slowly breathing
     if (cfg.beams && !short) {
       g.globalCompositeOperation = 'screen';
+      const beam = beamSprite(cfg.beams);
       for (let i = 0; i < 4; i++) {
         const bx = W * (0.3 + i * 0.17) + Math.sin(t * 0.07 + i) * W * 0.03;
         const bw = W * (0.04 + (i % 2) * 0.05);
-        const lg = g.createLinearGradient(bx - bw, 0, bx + bw, 0);
-        lg.addColorStop(0, 'rgba(0,0,0,0)');
-        lg.addColorStop(0.5, cfg.beams);
-        lg.addColorStop(1, 'rgba(0,0,0,0)');
         g.globalAlpha = 0.6 + 0.4 * Math.sin(t * 0.3 + i * 1.7);
-        g.fillStyle = lg;
-        g.fillRect(bx - bw, 0, bw * 2, H);
+        g.drawImage(beam, bx - bw, 0, bw * 2, H);
       }
     }
 
@@ -780,10 +883,7 @@ export const createXmasScene = (canvas: HTMLCanvasElement, o: TXmasOptions): TXm
         const amp = H * (0.04 + i * 0.012);
         const thick = H * (0.012 + i * 0.01);
         g.globalAlpha = 0.5 - i * 0.1;
-        const rg = g.createLinearGradient(0, y0 - amp, 0, y0 + amp + thick);
-        rg.addColorStop(0, '#fff6d8');
-        rg.addColorStop(1, '#e0a83a');
-        g.fillStyle = rg;
+        g.fillStyle = ribbonFills[i];
         g.beginPath();
         for (let xx = 0; xx <= W; xx += 12) g.lineTo(xx, y0 + Math.sin(xx / W * Math.PI * 2 + t * 0.25 + i) * amp);
         for (let xx = W; xx >= 0; xx -= 12) g.lineTo(xx, y0 + thick * (0.3 + 0.7 * (xx / W)) + Math.sin(xx / W * Math.PI * 2 + t * 0.25 + i + 0.35) * amp);
@@ -798,111 +898,99 @@ export const createXmasScene = (canvas: HTMLCanvasElement, o: TXmasOptions): TXm
 
     // strings of little lights down the sides, a light running along them
     if (cfg.lights && !short) {
-      for (const lx of [W * 0.025, W * 0.975]) {
-        for (let i = 0, y = 6 * res; y < H; i++, y += 11 * res) {
-          const on = (i + Math.floor(t * 5)) % 7;
-          g.globalAlpha = on === 0 ? 1 : on === 1 ? 0.7 : 0.35;
-          g.fillStyle = '#fffbe8';
-          g.beginPath();
-          g.arc(lx, y, (on === 0 ? 2.6 : 1.8) * res, 0, Math.PI * 2);
-          g.fill();
+      // (three passes, one per brightness: one path each instead of one per light)
+      g.fillStyle = '#fffbe8';
+      const step = Math.floor(t * 5);
+      for (const [level, alpha, rr] of [
+        [0, 1, 2.6],
+        [1, 0.7, 1.8],
+        [2, 0.35, 1.8]
+      ] as const) {
+        g.globalAlpha = alpha;
+        g.beginPath();
+        for (const lx of [W * 0.025, W * 0.975]) {
+          for (let i = 0, y = 6 * res; y < H; i++, y += 11 * res) {
+            const on = (i + step) % 7;
+            if (Math.min(on, 2) !== level) continue;
+            g.moveTo(lx + rr * res, y);
+            g.arc(lx, y, rr * res, 0, Math.PI * 2);
+          }
         }
+        g.fill();
       }
     }
 
-    // the sun (snow, day): turning rays, rings, a lens flare toward the middle
+    // the sun (snow, day): turning rays, a lens flare toward the middle
     if (cfg.sun && !short) {
       const sx = W * 0.74;
       const sy = H * 0.08;
-      g.save();
-      g.translate(sx, sy);
-      g.rotate(t * 0.02);
-      for (let i = 0; i < 14; i++) {
-        g.rotate((Math.PI * 2) / 14);
-        const rg = g.createLinearGradient(0, 0, Math.max(W, H) * 0.7, 0);
-        rg.addColorStop(0, 'rgba(255,255,255,0.35)');
-        rg.addColorStop(1, 'rgba(255,255,255,0)');
-        g.globalAlpha = 0.5 + 0.5 * Math.sin(t * 0.4 + i);
-        g.fillStyle = rg;
-        g.beginPath();
-        g.moveTo(0, 0);
-        g.lineTo(Math.max(W, H) * 0.7, -Math.max(W, H) * 0.04);
-        g.lineTo(Math.max(W, H) * 0.7, Math.max(W, H) * 0.04);
-        g.closePath();
-        g.fill();
-      }
-      g.restore();
-      g.globalAlpha = 0.25;
-      g.strokeStyle = '#ffffff';
-      g.lineWidth = 1.2 * res;
-      for (let i = 0; i < 16; i++) {
-        g.beginPath();
-        g.arc(W * 0.02, -H * 0.15, H * (0.25 + i * 0.022) + Math.sin(t * 0.3 + i * 0.4) * 3 * res, 0.05, Math.PI * 0.45);
-        g.stroke();
+      if (rays) {
+        g.save();
+        g.translate(sx, sy);
+        g.rotate(t * 0.02);
+        g.globalAlpha = 0.8 + 0.2 * Math.sin(t * 0.4);
+        g.drawImage(rays, -rays.width * 2, -rays.height * 2, rays.width * 4, rays.height * 4);
+        g.restore();
       }
       const fx = W * 0.5 - sx;
       const fy = H * 0.55 - sy;
+      g.globalAlpha = 1;
       for (const [k, rr, col] of [
         [0.35, 26, '255,255,255'],
         [0.6, 14, '180,220,255'],
         [0.85, 40, '200,235,255'],
         [1.15, 18, '255,240,200']
       ] as const) {
-        const cxx = sx + fx * k;
-        const cyy = sy + fy * k;
-        const fg = g.createRadialGradient(cxx, cyy, 0, cxx, cyy, rr * res);
-        fg.addColorStop(0, `rgba(${col},0.18)`);
-        fg.addColorStop(0.7, `rgba(${col},0.1)`);
-        fg.addColorStop(1, `rgba(${col},0)`);
-        g.globalAlpha = 1;
-        g.fillStyle = fg;
-        g.beginPath();
-        g.arc(cxx, cyy, rr * res, 0, Math.PI * 2);
-        g.fill();
+        const R = rr * res;
+        g.drawImage(flareSprite(col), sx + fx * k - R, sy + fy * k - R, R * 2, R * 2);
       }
     }
 
     // the baubles, swaying on their strings
     g.globalCompositeOperation = 'source-over';
-    for (const b of baubles) {
-      const ang = b.amp * Math.sin((t * Math.PI * 2) / b.period + b.phase) + b.d;
-      const ax = b.ax * W;
-      const sprite = baubleSprite(b.kind, b.R, b.seed);
-      const tx = ax + Math.sin(ang) * b.len;
-      const ty = Math.cos(ang) * b.len;
-      g.globalAlpha = 1;
+    g.globalAlpha = 1;
+    if (baubles.length) {
       g.strokeStyle = 'rgba(214, 170, 70, 0.9)';
       g.lineWidth = 1.4 * res;
       g.beginPath();
-      g.moveTo(ax, -2);
-      g.lineTo(tx, ty);
+      for (const b of baubles) {
+        const ang = b.amp * Math.sin((t * Math.PI * 2) / b.period + b.phase) + b.d;
+        g.moveTo(b.ax * W, -2);
+        g.lineTo(b.ax * W + Math.sin(ang) * b.len, Math.cos(ang) * b.len);
+      }
       g.stroke();
-      g.save();
-      g.translate(tx, ty);
-      g.rotate(-ang);
-      g.drawImage(sprite, -sprite.width / 2, 0);
-      g.restore();
     }
+    for (const b of baubles) {
+      const ang = b.amp * Math.sin((t * Math.PI * 2) / b.period + b.phase) + b.d;
+      const sprite = baubleSprite(b.kind, b.R, b.seed);
+      g.setTransform(Math.cos(ang), -Math.sin(ang), Math.sin(ang), Math.cos(ang), b.ax * W + Math.sin(ang) * b.len, Math.cos(ang) * b.len);
+      g.drawImage(sprite, -sprite.width / 2, 0);
+    }
+    g.setTransform(1, 0, 0, 1, 0, 0);
 
     // falling snow
     if (flakes.length) {
+      // (the round flakes in one path; the few crystals as pictures, turning)
       g.fillStyle = '#ffffff';
+      g.globalAlpha = 0.85;
+      g.beginPath();
       for (const f of flakes) {
+        if (f.crystal) continue;
         const fx = f.x + Math.sin(t * 0.8 + f.ph) * f.sway;
-        g.globalAlpha = 0.85;
-        if (f.crystal) {
-          const s = f.r * 6;
-          g.save();
-          g.translate(fx, f.y);
-          g.rotate(f.rot + t * 0.3);
-          g.drawImage(flakeSprite('#ffffff'), -s / 2, -s / 2, s, s);
-          g.restore();
-        } else {
-          g.beginPath();
-          g.arc(fx, f.y, f.r, 0, Math.PI * 2);
-          g.fill();
-        }
+        g.moveTo(fx + f.r, f.y);
+        g.arc(fx, f.y, f.r, 0, Math.PI * 2);
       }
+      g.fill();
+      const crystal = flakeSprite('#ffffff');
+      for (const f of flakes) {
+        if (!f.crystal) continue;
+        const fx = f.x + Math.sin(t * 0.8 + f.ph) * f.sway;
+        const s = f.r * 6;
+        const a = f.rot + t * 0.3;
+        g.setTransform(Math.cos(a), Math.sin(a), -Math.sin(a), Math.cos(a), fx, f.y);
+        g.drawImage(crystal, -s / 2, -s / 2, s, s);
+      }
+      g.setTransform(1, 0, 0, 1, 0, 0);
     }
 
     // sparkles twinkling, drifting up a little
@@ -924,17 +1012,16 @@ export const createXmasScene = (canvas: HTMLCanvasElement, o: TXmasOptions): TXm
     const n = Math.round(h / (2.2 * res));
     const w = h * 0.36;
     g.globalCompositeOperation = 'screen';
-    g.fillStyle = cfg.spiral!;
+    const dot = dotSprite(cfg.spiral!);
     for (let i = 0; i < n; i++) {
       const u = i / n;
       const a = u * Math.PI * 2 * 5.5 + t * 0.5;
       const depth = Math.sin(a);
       const x = cx + Math.cos(a) * w * (1 - u);
       const y = base - u * h + depth * h * 0.03 * (1 - u);
+      const r = (0.9 + (depth + 1) * 0.9) * res * 1.6;
       g.globalAlpha = (0.3 + 0.7 * ((depth + 1) / 2)) * (0.6 + 0.4 * Math.sin(t * 3 + i));
-      g.beginPath();
-      g.arc(x, y, (0.9 + (depth + 1) * 0.9) * res, 0, Math.PI * 2);
-      g.fill();
+      g.drawImage(dot, x - r, y - r, r * 2, r * 2);
     }
     const top = sparkleSprite('#ffffff');
     const s = h * 0.12 * (0.85 + 0.15 * Math.sin(t * 2));
@@ -972,19 +1059,33 @@ export const createXmasScene = (canvas: HTMLCanvasElement, o: TXmasOptions): TXm
     }
   };
 
-  const busy = () => baubles.some((b) => Math.abs(b.v) > 0.002 || Math.abs(b.d) > 0.002);
+  // frames are budgeted like the water's, not skipped by a fixed gap: 60 a second in front, 30
+  // behind (on a 144 hz screen 60 stay 60, and a 60 hz screen's jitter drops none)
+  let budget = 0;
+  let prevTick = 0;
+  let drawn = 0;
+  let drawnSince = performance.now();
+  let fpsNow = 0;
   const frame = (now: number) => {
     raf = 0;
     if (stopped) return;
+    schedule();
+    const rate = (o.focused?.() ?? true) ? 60 : 30;
+    const interval = 1000 / rate;
+    budget = Math.min(budget + (prevTick ? now - prevTick : interval), interval * 2);
+    prevTick = now;
+    if (budget < interval - 1.5) return;
+    budget = Math.max(0, budget - interval);
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     update(dt);
-    const rate = (o.focused?.() ?? true) || busy() ? 30 : 10;
-    if (now - lastDraw >= 1000 / rate - 2) {
-      lastDraw = now;
-      draw();
+    draw();
+    drawn++;
+    if (now - drawnSince >= 1000) {
+      fpsNow = (drawn * 1000) / (now - drawnSince);
+      drawn = 0;
+      drawnSince = now;
     }
-    schedule();
   };
   const schedule = () => {
     if (stopped || resting || reduce.matches || raf) return;
@@ -1029,9 +1130,11 @@ export const createXmasScene = (canvas: HTMLCanvasElement, o: TXmasOptions): TXm
         draw();
       } else {
         last = performance.now();
+        prevTick = 0;
         schedule();
       }
     },
+    cost: () => ({ ms: costN ? costSum / costN : 0, fps: fpsNow }),
     pointer: (x, y) => {
       const now = performance.now();
       const X = x * res;

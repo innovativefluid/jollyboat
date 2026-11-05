@@ -3,7 +3,9 @@
    glow, soft beams, bokeh drifting up, sparkles, glass baubles on gold strings that sway and
    swing when the pointer brushes past them, pine branches with strings of lights (the gold and
    snow palettes bring their own scenery). In front of it the page's parts are panels of tinted
-   glass: a blur of the scene, a gloss over the top half, a white hairline, round corners.
+   glass: a tint over the scene (no backdrop blur: blurring a scene that moves 60 times a
+   second costs more than everything else together), a gloss over the top half, a white
+   hairline, round corners.
    Buttons are glossy gel, titles in Mountains of Christmas, the rest in Nunito. The chat itself
    is open: its words stand on little glass panels. Dark in .dark, light in .light.
 
@@ -48,7 +50,7 @@ html .light {
   --sidebar-ring: rgba(226, 168, 44, 0.75);
   /* the theme's own */
   --x-bg: #3f9a36;
-  --x-glass: rgba(255, 255, 255, 0.56); --x-glass-hi: rgba(248, 255, 242, 0.88); --x-edge: rgba(255, 255, 255, 0.95); --x-edge-out: rgba(20, 80, 30, 0.3);
+  --x-glass: rgba(255, 255, 255, 0.68); --x-glass-hi: rgba(248, 255, 242, 0.88); --x-edge: rgba(255, 255, 255, 0.95); --x-edge-out: rgba(20, 80, 30, 0.3);
   --x-ink: #10391a; --x-dim: #2f6b35; --x-mute: #739b74; --x-well: rgba(255, 255, 255, 0.7); --x-well-edge: rgba(30, 90, 40, 0.32);
   --x-gel-a: #ff7a64; --x-gel-b: #c8140e; --x-gel-edge: #8a0a06; --x-on-gel: #ffffff;
   --x-accent: #e2a82c; --x-accent-hi: rgba(255, 228, 140, 0.9); --x-warn: #c8140e;
@@ -86,7 +88,7 @@ html .dark {
   --sidebar-border: rgba(190, 255, 170, 0.18);
   --sidebar-ring: rgba(255, 216, 106, 0.75);
   --x-bg: #05280e;
-  --x-glass: rgba(6, 40, 16, 0.5); --x-glass-hi: rgba(10, 50, 22, 0.9); --x-edge: rgba(255, 255, 255, 0.28); --x-edge-out: rgba(0, 0, 0, 0.45);
+  --x-glass: rgba(6, 40, 16, 0.62); --x-glass-hi: rgba(10, 50, 22, 0.9); --x-edge: rgba(255, 255, 255, 0.28); --x-edge-out: rgba(0, 0, 0, 0.45);
   --x-ink: #f2ffe6; --x-dim: #b8dcaa; --x-mute: #7ea876; --x-well: rgba(0, 24, 8, 0.5); --x-well-edge: rgba(190, 255, 170, 0.22);
   --x-accent: #ffd86a; --x-warn: #ff8a7a;
   --x-online: #7ee35f; --x-idle: #ffd86a; --x-busy: #ff6a52;
@@ -112,7 +114,7 @@ html div:not(.relative) > .h-dvh.bg-background { background: transparent; }
 html:has(div:not(.relative) > .h-dvh.bg-background) .relative > .h-dvh { visibility: hidden; }
 
 /* the big panels: the top bar, the two sidebars, the chat's title row, the message box, the
-   settings screen's parts: blurred glass */
+   settings screen's parts: tinted glass */
 html .h-dvh > .bg-card.border-b,
 html .h-dvh .bg-card.border-r:not(.w-0),
 html .h-dvh .bg-card.border-l:not(.w-0),
@@ -125,10 +127,8 @@ html div:not(.relative) > .h-dvh.bg-background > .relative > nav.bg-background {
   border: 1px solid var(--x-edge) !important;
   border-radius: 14px;
   box-shadow: 0 0 0 1px var(--x-edge-out), inset 0 1px 0 rgba(255, 255, 255, 0.45), var(--x-shadow);
-  -webkit-backdrop-filter: blur(12px) saturate(1.35);
-  backdrop-filter: blur(12px) saturate(1.35);
 }
-/* every group of messages: a small glass panel as wide as its words (no blur: there are many) */
+/* every group of messages: a small glass panel as wide as its words */
 html main .space-y-4 > div:has([data-testid="message-item"]) {
   background: var(--x-gloss), var(--x-glass-hi);
   border: 1px solid var(--x-edge);
@@ -235,13 +235,11 @@ html [data-slot="hover-card-content"] {
   border-radius: 14px;
   background: var(--x-gloss), var(--x-glass-hi);
   box-shadow: 0 0 0 1px var(--x-edge-out), inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 14px 40px rgba(0, 0, 0, 0.35);
-  -webkit-backdrop-filter: blur(16px) saturate(1.3);
-  backdrop-filter: blur(16px) saturate(1.3);
 }
 html [data-slot="sheet-content"] { border-radius: 0; }
 html [data-slot="dialog-title"], html [data-slot="alert-dialog-title"], html [data-slot="sheet-title"] { font-family: 'Mountains of Christmas', 'Nunito', serif; font-size: 22px; font-weight: 700; color: var(--x-title); }
-/* behind a dialog the scene dims and blurs */
-html [data-slot="dialog-overlay"], html [data-slot="alert-dialog-overlay"], html [data-slot="sheet-overlay"] { background: rgba(0, 10, 4, 0.35); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+/* behind a dialog the scene dims */
+html [data-slot="dialog-overlay"], html [data-slot="alert-dialog-overlay"], html [data-slot="sheet-overlay"] { background: rgba(0, 10, 4, 0.35); }
 /* tooltips: little gel pills */
 html [data-slot="tooltip-content"] { border-radius: 999px; background: var(--x-gel); color: var(--x-on-gel); border: 1px solid var(--x-gel-edge); font-weight: 700; padding: 4px 12px; }
 html [data-slot="tooltip-content"] svg { display: none; }

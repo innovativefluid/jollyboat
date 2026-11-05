@@ -25,7 +25,7 @@ html .light {
   --sidebar-accent-foreground: #3a2404;
   --sidebar-border: rgba(120, 80, 20, 0.25);
   --x-bg: #c99540;
-  --x-glass: rgba(255, 250, 236, 0.58); --x-glass-hi: rgba(255, 252, 242, 0.88); --x-edge: rgba(255, 255, 255, 0.95); --x-edge-out: rgba(90, 58, 12, 0.32);
+  --x-glass: rgba(255, 250, 236, 0.70); --x-glass-hi: rgba(255, 252, 242, 0.88); --x-edge: rgba(255, 255, 255, 0.95); --x-edge-out: rgba(90, 58, 12, 0.32);
   --x-ink: #3a2404; --x-dim: #7a5418; --x-mute: #a8884e; --x-well: rgba(255, 252, 240, 0.72); --x-well-edge: rgba(120, 80, 20, 0.32);
   --x-gel-a: #fff0b0; --x-gel-b: #c8881c; --x-gel-edge: #7a4e08; --x-on-gel: #3a2404;
   --x-accent: #2f9e3a; --x-accent-hi: rgba(255, 236, 170, 0.95); --x-warn: #c8140e;
@@ -60,7 +60,7 @@ html .dark {
   --sidebar-accent-foreground: #fff6dc;
   --sidebar-border: rgba(255, 220, 140, 0.18);
   --x-bg: #160d03;
-  --x-glass: rgba(24, 14, 2, 0.5); --x-glass-hi: rgba(34, 22, 4, 0.9); --x-edge: rgba(255, 230, 160, 0.3); --x-edge-out: rgba(0, 0, 0, 0.5);
+  --x-glass: rgba(24, 14, 2, 0.62); --x-glass-hi: rgba(34, 22, 4, 0.9); --x-edge: rgba(255, 230, 160, 0.3); --x-edge-out: rgba(0, 0, 0, 0.5);
   --x-ink: #fff6dc; --x-dim: #e8cf94; --x-mute: #a88a50; --x-well: rgba(10, 6, 0, 0.5); --x-well-edge: rgba(255, 220, 140, 0.24);
   --x-gel-a: #fff0b0; --x-gel-b: #c8881c; --x-gel-edge: #7a4e08; --x-on-gel: #2a1802;
   --x-accent: #7ee35f; --x-accent-hi: rgba(255, 220, 130, 0.8); --x-warn: #ff8a7a;

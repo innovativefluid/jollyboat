@@ -20,6 +20,8 @@ export const startPageXmas = (focused: () => boolean, palette: () => string): TX
   });
   const move = (e: PointerEvent) => scene.pointer(e.clientX, e.clientY);
   window.addEventListener('pointermove', move, { passive: true, capture: true });
+  // for tuning (the preload's world): __xmasCost()
+  Object.assign(globalThis, { __xmasCost: () => scene.cost() });
   return {
     ...scene,
     stop: () => {

@@ -114,6 +114,8 @@ export const bootTheme = ({ boat = false, fps, pool }: { boat?: boolean; fps?: {
       });
       const move = (e: PointerEvent) => scene.pointer(e.clientX, e.clientY);
       window.addEventListener('pointermove', move, { passive: true });
+      // for tuning from devtools: window.__xmasCost()
+      Object.assign(window, { __xmasCost: () => scene.cost() });
       backdrop = {
         stop: () => {
           scene.stop();
