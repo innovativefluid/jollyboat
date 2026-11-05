@@ -85,6 +85,7 @@
     <release version="0.4.5" date="2026-11-05">
       <description>
         <p>Retro theme: more pixel motion, all in whole steps. Dialogs zoom open through a dotted frame over a dithered desktop and zoom shut again; side panels slide in from their edge; menus unroll and roll back up; settings screens open from the middle; a window's title bar glints when the pointer comes in; marching ants go round the channel or member under the pointer; the newest message prints itself in; new unread counts blink three times; spinners turn in eight frames and the typing dots hop as square pixels; toasts are small windows.</p>
+        <p>Retro theme dithering: the desktop and the title bars are drawn in hard bands dithered into each other, the way a sixteen-colour screen drew a gradient; the dark behind a dialog is every other pixel; tooltips and toasts dissolve in through an ordered dither; settings screens lie on the same desktop; offline members' pictures are greyed out by leaving out every other pixel.</p>
         <p>The bar in the Retro theme: a new tab unrolls, a new unread mark blinks, and the speaker of a call sends out its waves.</p>
       </description>
     </release>

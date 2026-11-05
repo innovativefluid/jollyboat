@@ -100,22 +100,33 @@ html:root, html .light, html.dark, html .dark {
 
 /* ---- the desktop and its windows ------------------------------------------------------- */
 
-/* the desktop: pink into lilac with a faint check, the windows float on it a little apart */
+/* dithering: a 2 px checker (every other pixel), and the steps of an ordered dither for
+   things that dissolve in (one pixel in four, every other one, three in four) */
+html:root {
+  --r-dither: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px;
+  --r-dither-25: conic-gradient(#000 0 25%, transparent 0) 0 0 / 2px 2px;
+  --r-dither-75: conic-gradient(#000 0 75%, transparent 0) 0 0 / 2px 2px;
+}
+/* the desktop: pink into lilac in hard bands, each band dithered into the next the way a
+   sixteen-colour screen drew a gradient, with a faint check; the windows float on it a little
+   apart (the dithered half of each band is the layer under the body, seen through a checker) */
 html {
   background:
     repeating-conic-gradient(var(--r-check) 0 25%, transparent 0 50%) 0 0 / 32px 32px,
-    linear-gradient(135deg, var(--r-desk), var(--r-desk2));
+    linear-gradient(135deg, var(--r-desk) 0.0% 20.0%, color-mix(in srgb, var(--r-desk2) 25.0%, var(--r-desk)) 20.0% 40.0%, color-mix(in srgb, var(--r-desk2) 50.0%, var(--r-desk)) 40.0% 60.0%, color-mix(in srgb, var(--r-desk2) 75.0%, var(--r-desk)) 60.0% 80.0%, var(--r-desk2) 80.0% 100.0%);
   background-attachment: fixed;
+}
+html body::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(135deg, transparent 0.0% 10.0%, color-mix(in srgb, var(--r-desk2) 25.0%, var(--r-desk)) 10.0% 20.0%, transparent 20.0% 30.0%, color-mix(in srgb, var(--r-desk2) 50.0%, var(--r-desk)) 30.0% 40.0%, transparent 40.0% 50.0%, color-mix(in srgb, var(--r-desk2) 75.0%, var(--r-desk)) 50.0% 60.0%, transparent 60.0% 70.0%, var(--r-desk2) 70.0% 80.0%, transparent 80.0% 90.0%, var(--r-desk2) 90.0% 100.0%);
+  mask: var(--r-dither);
 }
 html body { background: transparent; font-family: 'Jollyboat Dot', 'Jollyboat Pixel', ui-monospace, monospace; }
 html .relative > .h-dvh.bg-background { background: transparent; }
-/* the settings pages lie over it as a desktop of their own */
-html div:not(.relative) > .h-dvh.bg-background {
-  background:
-    repeating-conic-gradient(var(--r-check) 0 25%, transparent 0 50%) 0 0 / 32px 32px,
-    linear-gradient(135deg, var(--r-desk), var(--r-desk2));
-  background-attachment: fixed;
-}
+/* the settings pages lie on the same desktop: the server view under them steps aside meanwhile
+   (it keeps running: calls, streams and plugins go on) */
+html div:not(.relative) > .h-dvh.bg-background { background: transparent; }
+html:has(div:not(.relative) > .h-dvh.bg-background) .relative > .h-dvh { visibility: hidden; }
 html .h-dvh > .bg-card.border-b,
 html .h-dvh .bg-card.border-r:not(.w-0),
 html .h-dvh .bg-card.border-l:not(.w-0),
@@ -132,7 +143,7 @@ html .h-dvh .bg-card.border-l:not(.w-0) { margin: 8px 8px 8px 0; height: auto; o
 html main.bg-background { margin: 8px; overflow: hidden; }
 html div:not(.relative) > .h-dvh.bg-background > .h-14.border-b {
   border: 0 !important;
-  background: linear-gradient(90deg, var(--r-title-a), var(--r-title-b));
+  background: linear-gradient(90deg, var(--r-title-a) 0.0% 25.0%, color-mix(in srgb, var(--r-title-b) 33.3%, var(--r-title-a)) 25.0% 50.0%, color-mix(in srgb, var(--r-title-b) 66.7%, var(--r-title-a)) 50.0% 75.0%, var(--r-title-b) 75.0% 100.0%);
   color: var(--r-title-ink);
   box-shadow: inset 0 -2px var(--r-dark);
 }
@@ -144,12 +155,29 @@ html main.bg-background > .h-12.border-b {
   margin: 3px 3px 0;
   height: 32px;
   border: 0 !important;
-  /* (a glint waits off to the left: it runs across when the pointer comes into the window) */
-  background:
-    linear-gradient(115deg, transparent 45%, rgba(255, 255, 255, 0.55) 45% 47%, transparent 47% 49%, rgba(255, 255, 255, 0.35) 49% 50%, transparent 50%) 100% 0 / 300% 100% no-repeat,
-    linear-gradient(90deg, var(--r-title-a), var(--r-title-b));
+  background: linear-gradient(90deg, var(--r-title-a) 0.0% 25.0%, color-mix(in srgb, var(--r-title-b) 33.3%, var(--r-title-a)) 25.0% 50.0%, color-mix(in srgb, var(--r-title-b) 66.7%, var(--r-title-a)) 50.0% 75.0%, var(--r-title-b) 75.0% 100.0%);
   color: var(--r-title-ink);
   text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.25);
+}
+/* title bars (and the settings screen's): banded, each band dithered into the next (::before);
+   a glint waits off to the left (::after) and runs across when the pointer comes into the window */
+html .h-dvh .bg-card.border-r > .h-12.border-b,
+html .h-dvh .bg-card.border-l > .h-12.border-b,
+html main.bg-background > .h-12.border-b,
+html div:not(.relative) > .h-dvh.bg-background > .h-14.border-b { position: relative; isolation: isolate; }
+html .h-dvh .bg-card.border-r > .h-12.border-b::before,
+html .h-dvh .bg-card.border-l > .h-12.border-b::before,
+html main.bg-background > .h-12.border-b::before,
+html div:not(.relative) > .h-dvh.bg-background > .h-14.border-b::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(90deg, transparent 0.0% 12.5%, color-mix(in srgb, var(--r-title-b) 33.3%, var(--r-title-a)) 12.5% 25.0%, transparent 25.0% 37.5%, color-mix(in srgb, var(--r-title-b) 66.7%, var(--r-title-a)) 37.5% 50.0%, transparent 50.0% 62.5%, var(--r-title-b) 62.5% 75.0%, transparent 75.0% 87.5%, var(--r-title-b) 87.5% 100.0%);
+  mask: var(--r-dither);
+}
+html .h-dvh .bg-card.border-r > .h-12.border-b::after,
+html .h-dvh .bg-card.border-l > .h-12.border-b::after,
+html main.bg-background > .h-12.border-b::after {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(115deg, transparent 45%, rgba(255, 255, 255, 0.55) 45% 47%, transparent 47% 49%, rgba(255, 255, 255, 0.35) 49% 50%, transparent 50%) 100% 0 / 300% 100% no-repeat;
 }
 html .h-dvh .bg-card.border-r > .h-12.border-b *,
 html .h-dvh .bg-card.border-l > .h-12.border-b *,
@@ -286,7 +314,8 @@ html [data-testid="user-status"][data-status="online"] { background: radial-grad
 html [data-testid="user-status"][data-status="idle"] { background: linear-gradient(to right, var(--r-sel) 50%, var(--r-field) 50%); box-shadow: inset 0 0 0 1px var(--r-dark); }
 html [data-testid="user-status"][data-status="offline"] { background: var(--r-field); box-shadow: inset 0 0 0 1px var(--r-dim); }
 html [data-testid="member-item"]:has([data-status="offline"]) > span { color: color-mix(in srgb, var(--r-ink) 68%, var(--r-face)); }
-html [data-testid="member-item"]:has([data-status="offline"]) [data-slot="avatar"] { opacity: 0.55; filter: grayscale(0.6); }
+/* an offline member's picture is greyed the old way: every other pixel left out */
+html [data-testid="member-item"]:has([data-status="offline"]) [data-slot="avatar"] { filter: grayscale(0.6); mask: var(--r-dither); }
 
 /* ---- voice ------------------------------------------------------------------------------ */
 
@@ -357,9 +386,17 @@ html [data-slot="dialog-content"][data-state="closed"], html [data-slot="alert-d
 html [data-slot="dialog-overlay"], html [data-slot="alert-dialog-overlay"], html [data-slot="sheet-overlay"] {
   background: repeating-conic-gradient(color-mix(in srgb, var(--r-dark) 50%, transparent) 0 25%, transparent 0 50%) 0 0 / 2px 2px;
 }
-html [data-slot$="-overlay"][data-state="open"] { animation: jb-fade 120ms steps(2, jump-none) both; }
-html [data-slot$="-overlay"][data-state="closed"] { animation: jb-fade 100ms steps(2, jump-none) reverse both; }
-@keyframes jb-fade { from { opacity: 0; } to { opacity: 1; } }
+/* (it comes and goes through a sparser dither, one pixel in four, not a fade) */
+html [data-slot$="-overlay"][data-state="open"] { animation: jb-dim 120ms steps(1, end) both; }
+html [data-slot$="-overlay"][data-state="closed"] { animation: jb-dim 100ms steps(1, end) reverse both; }
+@keyframes jb-dim { from { mask: var(--r-dither-25); } 50% { mask: var(--r-dither-25); } to { mask: none; } }
+/* things that dissolve in through an ordered dither: a pixel in four, every other, three in four */
+@keyframes jb-dissolve {
+  0% { mask: var(--r-dither-25); }
+  33% { mask: var(--r-dither); }
+  66% { mask: var(--r-dither-75); }
+  100% { mask: none; }
+}
 /* side panels (the user panel) slide in from their edge in four strides, and out in three */
 html [data-slot="sheet-content"].right-0[data-state="open"] { animation: jb-slide-r 220ms steps(4, jump-none) both; }
 html [data-slot="sheet-content"].right-0[data-state="closed"] { animation: jb-slide-r 150ms steps(3, jump-none) reverse both; }
@@ -370,14 +407,14 @@ html [data-slot="sheet-content"].left-0[data-state="closed"] { animation: jb-sli
 /* a settings screen opens from the middle of the desktop */
 html div:not(.relative) > .h-dvh.bg-background { animation: jb-screen 200ms steps(4, jump-none) backwards; }
 @keyframes jb-screen { from { clip-path: inset(45% 45%); } to { clip-path: inset(0); } }
-/* tooltips just appear, a moment later, in two steps */
-html [data-slot="tooltip-content"] { animation: jb-open 80ms steps(2, jump-none) both; }
+/* tooltips dissolve in */
+html [data-slot="tooltip-content"] { animation: jb-dissolve 150ms steps(1, end) both; }
 
 /* a window's title bar glints once when the pointer comes in */
-html .h-dvh .bg-card.border-r:hover > .h-12.border-b,
-html .h-dvh .bg-card.border-l:hover > .h-12.border-b,
-html main.bg-background:hover > .h-12.border-b { animation: jb-glint 600ms steps(12, end) both; }
-@keyframes jb-glint { from { background-position: 100% 0, 0 0; } to { background-position: -10% 0, 0 0; } }
+html .h-dvh .bg-card.border-r:hover > .h-12.border-b::after,
+html .h-dvh .bg-card.border-l:hover > .h-12.border-b::after,
+html main.bg-background:hover > .h-12.border-b::after { animation: jb-glint 600ms steps(12, end) both; }
+@keyframes jb-glint { from { background-position: 100% 0; } to { background-position: -10% 0; } }
 
 /* the newest message prints itself in from the top, like an old printer's lines */
 html .space-y-4 > :last-child div.rounded-md:last-child > [data-testid="message-item"] { animation: jb-type 240ms steps(4, jump-none) backwards; }
@@ -402,13 +439,14 @@ html [data-sonner-toast][data-styled="true"] {
   box-shadow: var(--r-raised), 4px 4px 0 var(--r-drop) !important;
   font-family: 'Jollyboat Dot', 'Jollyboat Pixel', monospace;
   transition-timing-function: steps(4, jump-none) !important;
+  animation: jb-dissolve 240ms steps(1, end) both;
 }
 html [data-sonner-toast] [data-close-button] { border-radius: 0 !important; background: var(--r-face) !important; color: var(--r-ink) !important; border: 0 !important; box-shadow: var(--r-raised) !important; }
 
 @media (prefers-reduced-motion: reduce) {
   html .speaking-effect-medium, html .speaking-effect-high, html [data-state], html [data-slot="tooltip-content"],
   html div:not(.relative) > .h-dvh.bg-background, html .h-12.border-b, html [data-testid="message-item"],
-  html [data-testid="unread-count"], html .animate-bounce { animation: none !important; }
+  html [data-testid="unread-count"], html .animate-bounce, html [data-sonner-toast], html .h-12.border-b::after { animation: none !important; }
   html [data-testid="channel-item"]:not(.bg-accent):hover, html [data-testid="member-item"]:hover { animation: none; }
 }
 
