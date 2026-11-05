@@ -82,6 +82,12 @@
   </keywords>
 
   <releases>
+    <release version="0.4.6" date="2026-11-05">
+      <description>
+        <p>Christmas theme: it runs at 60 frames a second in front and 30 behind, like the Water theme, and costs far less: the panels are tinted glass without a live blur of the moving scene, and the scene draws its light beams, sun rays, flares and snow much more cheaply.</p>
+        <p>Pixel Sky theme: text, buttons and fields are the sizes of the other themes instead of a size or two larger, so nothing in the setup window gets cut off.</p>
+      </description>
+    </release>
     <release version="0.4.5" date="2026-11-05">
       <description>
         <p>A new theme, Pixel Sky: a calm sky over rolling hills drawn on a real pixel grid behind the page, its stars drifting and twinkling, a shooting star now and then, the moon in tonight's real phase, by day the sun and clouds. The chat is open sky with each group of messages on its own panel; panels, pills and fields have stepped corners and dithered shadows, in one ink and a 5 x 7 pixel type of their own. The app's own windows, the bar and the tray follow along, and in the setup window Pebble the frog from the study hangs out on the hill, breathing, blinking, and hopping with a wave when clicked.</p>
