@@ -100,8 +100,9 @@ jobs:
           Write-Output "::notice title=portable smoke::$line"
           if ($line -notmatch '^\[smoke\] win32 x64 .*portable') { throw 'unexpected smoke line' }
           Remove-Item -Recurse -Force (Join-Path $exe.DirectoryName 'Jollyboat-data')
-      # the portable update's swap, for real: a copy of the exe takes the running exe's place (the
-      # running one becomes .old), and the next start clears the .old away
+      # the portable update's swap, for real: a copy of the exe waits as the update (<exe>.update);
+      # once the app has quit (and the launcher has let go of the exe), a script swaps them, and the
+      # new file starts as the exe
       - name: Smoke test (portable update swap)
         shell: pwsh
         run: |
@@ -118,17 +119,20 @@ jobs:
           for ($i = 0; $i -lt 30 -and -not (Test-Path $log); $i++) { Start-Sleep 1 }
           $line = Get-Content $log
           Write-Output $line
-          if ($line -notmatch '\| swap ok') { throw "swap failed: $line" }
-          if (-not (Test-Path "$exe.old")) { throw 'no .old file after the swap' }
-          if (Test-Path (Join-Path $dir 'next.exe')) { throw 'the new file did not move into place' }
-          # the next start: the new file runs, the .old goes
+          if ($line -notmatch '\| swap waiting') { throw "swap not set up: $line" }
+          for ($i = 0; $i -lt 90 -and ((Test-Path "$exe.update") -or (Test-Path "$exe.old")); $i++) { Start-Sleep 1 }
+          Get-ChildItem $dir | Format-Table Name, Length
+          if (Test-Path "$exe.update") { throw 'the update was not swapped in after the quit' }
+          if (Test-Path "$exe.old") { throw 'the old exe was not cleared away' }
+          if (-not (Test-Path $exe)) { throw 'the exe is gone' }
+          # the swapped-in exe starts
           Remove-Item Env:JOLLYBOAT_SMOKE_SWAP
-          Start-Sleep 3
+          Remove-Item $log
           $p = Start-Process -FilePath $exe -PassThru; $null = $p.Handle
           if (-not $p.WaitForExit(180000)) { $p.Kill(); throw 'second run timed out' }
-          for ($i = 0; $i -lt 10 -and (Test-Path "$exe.old"); $i++) { Start-Sleep 1 }
-          if (Test-Path "$exe.old") { throw 'the .old file was not cleared on the next start' }
-          Write-Output "::notice title=portable update::swap ok, .old cleared on the next start"
+          for ($i = 0; $i -lt 30 -and -not (Test-Path $log); $i++) { Start-Sleep 1 }
+          if (-not (Test-Path $log)) { throw 'the swapped-in exe did not run' }
+          Write-Output "::notice title=portable update::swapped in after the quit; the new exe runs"
       # signing (a release, once set up): the three downloads go to SignPath, an approver confirms
       # the request there, the signed files come back in place of the unsigned ones
       - name: Unsigned downloads, for SignPath

@@ -1,5 +1,5 @@
 import { app, BaseWindow, BrowserWindow, ipcMain, Menu, nativeTheme, screen, session, shell, WebContentsView } from 'electron';
-import { writeFileSync } from 'node:fs';
+import { renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { installBasicAuth, refreshBasicAuth } from './basic-auth';
 import { getBridgeStatus, setHotkeyRanking, startBridge, stopBridge } from './hotkeys/bridge';
@@ -20,7 +20,7 @@ import type { TBarState, TTab, TVoiceMember, TVoiceState } from '../shared/types
 import { applySpellcheck, blockDictionaryDownloads } from './privacy';
 import { initScreenAudio, soundAppsSupported, stopPipeWireShare } from './screen-audio';
 import { canSelfUpdate, loadAutoUpdater, startUpdater } from './updater';
-import { cleanPortableLeftovers, portableFile, swapPortable } from './portable-update';
+import { cleanPortableLeftovers, pendingFile, portableFile, swapAfterQuit, swapOnQuit } from './portable-update';
 import { askPrompt } from './prompt';
 import { t } from './lang';
 import { setOverlayHostFocused, setOverlayTheme, setOverlayVoice } from './overlay';
@@ -1098,14 +1098,15 @@ const runSmokeTest = async () => {
     // the installed windows build updates itself: its updater has to load (0.3.1–0.3.8 shipped
     // one that did not)
     const updater = canSelfUpdate() ? await loadAutoUpdater().then(() => 'ok', (err: Error) => `failed: ${err.message}`) : 'n/a';
-    // the portable update's swap, tried for real by CI (JOLLYBOAT_SMOKE_SWAP: a copy of the exe that
-    // takes the running exe's place while it runs; the next start clears the old one away)
+    // the portable update's swap, tried for real by CI (JOLLYBOAT_SMOKE_SWAP: a copy of the exe,
+    // put in as a waiting update; after this run quits it takes the exe's place)
     let swap = '';
     const swapWith = process.env.JOLLYBOAT_SMOKE_SWAP;
     if (PORTABLE && swapWith) {
       try {
-        swapPortable(portableFile()!, swapWith);
-        swap = ' | swap ok';
+        renameSync(swapWith, pendingFile(portableFile()!));
+        swapAfterQuit(portableFile()!, false);
+        swap = ' | swap waiting';
       } catch (err) {
         swap = ` | swap failed: ${(err as Error).message}`;
       }
@@ -1157,8 +1158,9 @@ if (!app.requestSingleInstanceLock()) {
   });
 
   app.whenReady().then(async () => {
-    // a portable copy that updated itself: the old exe (it ran until the last quit) goes
+    // a portable copy: what an update left behind goes, and a waiting update swaps in on quit
     cleanPortableLeftovers();
+    swapOnQuit();
     // dev only: JOLLYBOAT_NETLOG=/path/log.json records every request; SIGUSR2 writes it out
     if (!app.isPackaged && process.env.JOLLYBOAT_NETLOG) {
       const { netLog } = await import('electron');

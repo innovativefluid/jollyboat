@@ -4,11 +4,13 @@
 // one and checked: the size and sha512 must match, and once our downloads are signed, the new
 // file must carry a valid signature from the same publisher as the running one.
 //
-// Then the files trade places while the app runs: windows lets a running exe be renamed, not
-// overwritten. The running file becomes <name>.old, the new one takes its name (so shortcuts and
-// the Jollyboat-data folder next to it stay as they are). "click to install" starts the new
-// file and quits; the next start clears the .old file away. A release without
-// latest-portable.json (before 0.4.5) keeps the old notice.
+// The checked file waits next to the exe as <name>.update. The running exe cannot be renamed or
+// replaced (the portable launcher holds its own file until it has cleaned up after the app), so
+// the files trade places after the app has quit: a small powershell script, not tied to the app,
+// waits until the launcher lets go, puts the old exe aside, gives the new one its name (so
+// shortcuts and the Jollyboat-data folder next to it stay as they are) and clears the old one
+// away. That happens on every quit while an update waits; "click to install" also starts the new
+// version. A release without latest-portable.json (before 0.4.5) keeps the old notice.
 
 import { app, net } from 'electron';
 import { spawn, execFile } from 'node:child_process';
@@ -25,7 +27,7 @@ type TPortableInfo = { version: string; files: { arch: string; name: string; siz
 /** the portable exe this app runs from (the launcher that unpacked it), or null */
 export const portableFile = () => (process.platform === 'win32' && process.env.PORTABLE_EXECUTABLE_FILE) || null;
 
-/** leftovers of an update: the old exe (it ran until the last quit) and an unfinished download */
+/** leftovers of an update: an old exe the last swap could not clear, an unfinished download */
 export const cleanPortableLeftovers = () => {
   const exe = portableFile();
   if (!exe) return;
@@ -73,24 +75,43 @@ const checkSignature = async (current: string, next: string) => {
   if (then.subject !== now.subject) throw new Error('the download is signed by someone else');
 };
 
-/** the running exe aside, the new file in its place */
-export const swapPortable = (exe: string, next: string) => {
-  let old = `${exe}.old`;
-  // an .old file still there (its process did not let go): the next free number
-  for (let i = 1; existsSync(old); i++) {
-    try {
-      rmSync(old, { force: true });
-    } catch {
-      old = `${exe}.old.${i}`;
-    }
-  }
-  renameSync(exe, old);
-  try {
-    renameSync(next, exe);
-  } catch (err) {
-    renameSync(old, exe); // back as it was
-    throw err;
-  }
+/** the new exe, checked, waiting for the app to quit */
+export const pendingFile = (exe: string) => `${exe}.update`;
+
+/** the swap, run after the app quits: waits (up to a minute) until the launcher lets go of the
+ *  exe, puts it aside, moves the update into its place, clears the old one away; and with
+ *  `start`, starts the new version */
+export const swapAfterQuit = (exe: string, start: boolean) => {
+  const q = (p: string) => `'${p.replace(/'/g, "''")}'`;
+  const name = basename(exe);
+  const script = [
+    `$exe = ${q(exe)}; $upd = ${q(pendingFile(exe))}; $old = ${q(`${exe}.old`)}`,
+    'if (-not (Test-Path -LiteralPath $upd)) { exit }',
+    'for ($i = 0; $i -lt 120; $i++) {',
+    '  try {',
+    '    if (Test-Path -LiteralPath $old) { Remove-Item -LiteralPath $old -Force -ErrorAction Stop }',
+    `    Rename-Item -LiteralPath $exe -NewName ${q(`${name}.old`)} -ErrorAction Stop`,
+    '    break',
+    '  } catch { Start-Sleep -Milliseconds 500 }',
+    '}',
+    'if (Test-Path -LiteralPath $exe) { exit }',
+    'try {',
+    `  Rename-Item -LiteralPath $upd -NewName ${q(name)} -ErrorAction Stop`,
+    '} catch {',
+    `  Rename-Item -LiteralPath $old -NewName ${q(name)}`,
+    '  exit',
+    '}',
+    'for ($i = 0; $i -lt 20 -and (Test-Path -LiteralPath $old); $i++) { try { Remove-Item -LiteralPath $old -Force -ErrorAction Stop } catch { Start-Sleep -Milliseconds 500 } }',
+    start ? 'Start-Process -FilePath $exe' : ''
+  ].join('\n');
+  const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-Command', script], {
+    detached: true,
+    stdio: 'ignore',
+    windowsHide: true,
+    cwd: dirname(exe)
+  });
+  child.unref();
+  log('portable-update', 'swap after quit', start ? '(and start)' : '');
 };
 
 /** the new release's portable exe for this architecture, or null when that release has none */
@@ -127,7 +148,8 @@ export const downloadPortable = async (version: string, file: { name: string; si
     if (size !== file.size) throw new Error('download is incomplete');
     if (hash.digest('base64') !== file.sha512) throw new Error('download does not match its checksum');
     await checkSignature(exe, part);
-    swapPortable(exe, part);
+    rmSync(pendingFile(exe), { force: true });
+    renameSync(part, pendingFile(exe));
     log('portable-update', 'ready', version);
   } catch (err) {
     out.destroy();
@@ -136,18 +158,25 @@ export const downloadPortable = async (version: string, file: { name: string; si
   }
 };
 
-/** start the (new) portable exe once this one has gone, then quit */
-export const restartPortable = () => {
+// the swap is on its way (from "click to install"): the quit does not start another
+let swapStarted = false;
+
+/** an update waits: on quit the files trade places (registered once, at start) */
+export const swapOnQuit = () => {
   const exe = portableFile();
   if (!exe) return;
-  // the launcher of this copy still cleans up after the app quits: the new one starts a moment
-  // later, from a powershell that is not tied to us
-  const quoted = exe.replace(/'/g, "''");
-  const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-Command', `Start-Sleep -Seconds 3; Start-Process -FilePath '${quoted}'`], {
-    detached: true,
-    stdio: 'ignore',
-    windowsHide: true
+  app.on('will-quit', () => {
+    if (swapStarted || !existsSync(pendingFile(exe))) return;
+    swapStarted = true;
+    swapAfterQuit(exe, false);
   });
-  child.unref();
+};
+
+/** "click to install": quit, and the swap starts the new version */
+export const restartPortable = () => {
+  const exe = portableFile();
+  if (!exe || !existsSync(pendingFile(exe))) return;
+  swapStarted = true;
+  swapAfterQuit(exe, true);
   app.quit();
 };
