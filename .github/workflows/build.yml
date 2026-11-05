@@ -122,6 +122,8 @@ jobs:
           if ($line -notmatch '\| swap waiting') { throw "swap not set up: $line" }
           for ($i = 0; $i -lt 90 -and ((Test-Path "$exe.update") -or (Test-Path "$exe.old")); $i++) { Start-Sleep 1 }
           Get-ChildItem $dir | Format-Table Name, Length
+          $swapLog = Join-Path $dir 'Jollyboat-data\update-swap.log'
+          if (Test-Path $swapLog) { Get-Content $swapLog } else { Write-Output 'no update-swap.log' }
           if (Test-Path "$exe.update") { throw 'the update was not swapped in after the quit' }
           if (Test-Path "$exe.old") { throw 'the old exe was not cleared away' }
           if (-not (Test-Path $exe)) { throw 'the exe is gone' }

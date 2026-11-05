@@ -15,7 +15,7 @@
 import { app, net } from 'electron';
 import { spawn, execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { createWriteStream, existsSync, readdirSync, renameSync, rmSync } from 'node:fs';
+import { createWriteStream, existsSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { log } from './log';
 
@@ -84,31 +84,42 @@ export const pendingFile = (exe: string) => `${exe}.update`;
 export const swapAfterQuit = (exe: string, start: boolean) => {
   const q = (p: string) => `'${p.replace(/'/g, "''")}'`;
   const name = basename(exe);
+  // (a script file, not a -Command line: powershell takes a file as it is)
+  const dir = app.getPath('userData');
+  const file = join(dir, 'update-swap.ps1');
+  const logFile = join(dir, 'update-swap.log');
   const script = [
-    `$exe = ${q(exe)}; $upd = ${q(pendingFile(exe))}; $old = ${q(`${exe}.old`)}`,
-    'if (-not (Test-Path -LiteralPath $upd)) { exit }',
+    `$exe = ${q(exe)}; $upd = ${q(pendingFile(exe))}; $old = ${q(`${exe}.old`)}; $log = ${q(logFile)}`,
+    'function Say($m) { Add-Content -LiteralPath $log -Value "$(Get-Date -Format o) $m" }',
+    "Say 'waiting for the exe'",
+    "if (-not (Test-Path -LiteralPath $upd)) { Say 'no update waiting'; exit }",
+    '$moved = $false',
     'for ($i = 0; $i -lt 120; $i++) {',
     '  try {',
     '    if (Test-Path -LiteralPath $old) { Remove-Item -LiteralPath $old -Force -ErrorAction Stop }',
     `    Rename-Item -LiteralPath $exe -NewName ${q(`${name}.old`)} -ErrorAction Stop`,
+    '    $moved = $true',
     '    break',
-    '  } catch { Start-Sleep -Milliseconds 500 }',
+    '  } catch { $last = $_.Exception.Message; Start-Sleep -Milliseconds 500 }',
     '}',
-    'if (Test-Path -LiteralPath $exe) { exit }',
+    'if (-not $moved) { Say "the exe stayed busy: $last"; exit }',
     'try {',
     `  Rename-Item -LiteralPath $upd -NewName ${q(name)} -ErrorAction Stop`,
+    "  Say 'swapped'",
     '} catch {',
+    '  Say "could not move the update in: $($_.Exception.Message)"',
     `  Rename-Item -LiteralPath $old -NewName ${q(name)}`,
     '  exit',
     '}',
     'for ($i = 0; $i -lt 20 -and (Test-Path -LiteralPath $old); $i++) { try { Remove-Item -LiteralPath $old -Force -ErrorAction Stop } catch { Start-Sleep -Milliseconds 500 } }',
-    start ? 'Start-Process -FilePath $exe' : ''
-  ].join('\n');
-  const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-Command', script], {
+    start ? "Say 'starting the new version'; Start-Process -FilePath $exe" : ''
+  ].join('\r\n');
+  writeFileSync(file, `${script}\r\n`);
+  const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', file], {
     detached: true,
     stdio: 'ignore',
     windowsHide: true,
-    cwd: dirname(exe)
+    cwd: dir
   });
   child.unref();
   log('portable-update', 'swap after quit', start ? '(and start)' : '');
