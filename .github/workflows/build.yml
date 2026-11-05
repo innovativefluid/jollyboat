@@ -124,6 +124,11 @@ jobs:
           Get-ChildItem $dir | Format-Table Name, Length
           $swapLog = Join-Path $dir 'Jollyboat-data\update-swap.log'
           if (Test-Path $swapLog) { Get-Content $swapLog } else { Write-Output 'no update-swap.log' }
+          Get-ChildItem (Join-Path $dir 'Jollyboat-data') | Format-Table Name, Length
+          $swapOut = Join-Path $dir 'Jollyboat-data\update-swap.out'
+          if (Test-Path $swapOut) { Write-Output '--- update-swap.out'; Get-Content $swapOut }
+          $mainLog = Get-ChildItem (Join-Path $dir 'Jollyboat-data') -Recurse -Filter '*.log' | Where-Object Name -ne 'smoke.log' | Select-Object -First 1
+          if ($mainLog) { Write-Output "--- $($mainLog.Name)"; Get-Content $mainLog.FullName -Tail 15 }
           if (Test-Path "$exe.update") { throw 'the update was not swapped in after the quit' }
           if (Test-Path "$exe.old") { throw 'the old exe was not cleared away' }
           if (-not (Test-Path $exe)) { throw 'the exe is gone' }

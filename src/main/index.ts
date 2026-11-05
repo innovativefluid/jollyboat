@@ -1,5 +1,5 @@
 import { app, BaseWindow, BrowserWindow, ipcMain, Menu, nativeTheme, screen, session, shell, WebContentsView } from 'electron';
-import { renameSync, writeFileSync } from 'node:fs';
+import { existsSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { installBasicAuth, refreshBasicAuth } from './basic-auth';
 import { getBridgeStatus, setHotkeyRanking, startBridge, stopBridge } from './hotkeys/bridge';
@@ -1106,7 +1106,9 @@ const runSmokeTest = async () => {
       try {
         renameSync(swapWith, pendingFile(portableFile()!));
         swapAfterQuit(portableFile()!, false);
-        swap = ' | swap waiting';
+        // (the script says so in its log within a moment, while it waits for the exe)
+        await new Promise((r) => setTimeout(r, 4000));
+        swap = ` | swap waiting | script ${existsSync(join(app.getPath('userData'), 'update-swap.log')) ? 'started' : 'silent'}`;
       } catch (err) {
         swap = ` | swap failed: ${(err as Error).message}`;
       }

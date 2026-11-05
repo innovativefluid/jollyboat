@@ -15,7 +15,7 @@
 import { app, net } from 'electron';
 import { spawn, execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { createWriteStream, existsSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { closeSync, createWriteStream, existsSync, openSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { log } from './log';
 
@@ -115,13 +115,17 @@ export const swapAfterQuit = (exe: string, start: boolean) => {
     start ? "Say 'starting the new version'; Start-Process -FilePath $exe" : ''
   ].join('\r\n');
   writeFileSync(file, `${script}\r\n`);
+  // (its own output and errors go to update-swap.out, for when it does not get as far as its log)
+  const out = openSync(join(dir, 'update-swap.out'), 'w');
   const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', file], {
     detached: true,
-    stdio: 'ignore',
+    stdio: ['ignore', out, out],
     windowsHide: true,
     cwd: dir
   });
+  child.on('error', (err) => log('portable-update', 'swap script did not start', err.message));
   child.unref();
+  closeSync(out);
   log('portable-update', 'swap after quit', start ? '(and start)' : '');
 };
 
