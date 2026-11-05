@@ -1,8 +1,7 @@
 // The portable exe updates itself. It looks at GitHub's releases like the notice did; a newer
 // release with latest-portable.json (written by CI, tools/update-info.cjs) has the new portable
 // exe for this architecture with its size and sha512. The exe is downloaded next to the running
-// one and checked: the size and sha512 must match, and once our downloads are signed, the new
-// file must carry a valid signature from the same publisher as the running one.
+// one and checked: its size and sha512 must match.
 //
 // The checked file waits next to the exe as <name>.update. The running exe cannot be renamed or
 // replaced (the portable launcher holds its own file until it has cleaned up after the app), so
@@ -52,31 +51,6 @@ export const cleanPortableLeftovers = () => {
   } catch {
     /* the folder cannot be read: nothing to do */
   }
-};
-
-/** the signer of a file and whether its signature holds (powershell's Get-AuthenticodeSignature) */
-const signatureOf = (file: string) =>
-  new Promise<{ status: string; subject: string }>((resolve) => {
-    const quoted = file.replace(/'/g, "''");
-    execFile(
-      'powershell.exe',
-      ['-NoProfile', '-NonInteractive', '-Command', `$s = Get-AuthenticodeSignature -LiteralPath '${quoted}'; "$($s.Status)"; "$($s.SignerCertificate.Subject)"`],
-      { windowsHide: true, timeout: 30000 },
-      (err, stdout) => {
-        if (err) return resolve({ status: 'Unknown', subject: '' });
-        const [status = 'Unknown', subject = ''] = stdout.split(/\r?\n/).map((l) => l.trim());
-        resolve({ status, subject });
-      }
-    );
-  });
-
-/** the new file must be signed like the running one (a running unsigned build takes any) */
-const checkSignature = async (current: string, next: string) => {
-  const now = await signatureOf(current);
-  if (now.status !== 'Valid') return;
-  const then = await signatureOf(next);
-  if (then.status !== 'Valid') throw new Error(`the download is not signed (${then.status.toLowerCase()})`);
-  if (then.subject !== now.subject) throw new Error('the download is signed by someone else');
 };
 
 /** the new exe, checked, waiting for the app to quit */
@@ -169,7 +143,6 @@ export const downloadPortable = async (version: string, file: { name: string; si
     await new Promise<void>((resolve, reject) => out.end((err?: Error | null) => (err ? reject(err) : resolve())));
     if (size !== file.size) throw new Error('download is incomplete');
     if (hash.digest('base64') !== file.sha512) throw new Error('download does not match its checksum');
-    await checkSignature(exe, part);
     rmSync(pendingFile(exe), { force: true });
     renameSync(part, pendingFile(exe));
     log('portable-update', 'ready', version);

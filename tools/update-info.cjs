@@ -1,5 +1,4 @@
-// The update files of a windows build, from the files as they are now (anything that changes a
-// file after electron-builder, signing say, would leave checksums installed copies refuse).
+// The update files of a windows build, from the files as they are now.
 //
 //   - every installer with a .blockmap next to it: its blockmap built again, and its entry in
 //     latest.yml (sha512, size; the top-level path / sha512 too) set to the file as it is
