@@ -103,17 +103,6 @@ npm run dist:mac       # on a mac
 python3 tools/make-icons.py   # the app and tray icons, from build/pixel/ (needs Pillow)
 ```
 
-## Code signing policy
-
-Free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org).
-
-The Windows downloads (the installer and the portable exes) are signed from the first release after the project's application to the SignPath Foundation is accepted; earlier releases are unsigned. Only builds made by this repository's GitHub Actions release workflow from its public source are signed, and each release is approved by hand before it is signed.
-
-- Committers and reviewers: [innovativefluid](https://github.com/innovativefluid)
-- Approvers: [innovativefluid](https://github.com/innovativefluid)
-
-Privacy: Jollyboat sends nothing to anyone but the servers you add, and GitHub for update checks while those are on. See the [privacy policy](PRIVACY.md).
-
 ## License
 
 MIT — see [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

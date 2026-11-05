@@ -51,9 +51,7 @@ jobs:
   build:
     needs: tag
     uses: ./.github/workflows/build.yml
-    # the windows downloads signed through SignPath, once that is set up (.signpath/README.md)
-    with: { targets: main, sign: true }
-    secrets: inherit
+    with: { targets: main }
 
   # the mac build on its own: macos runners are sometimes not available for hours,
   # so the release does not wait for it; the dmg is added to the draft when (if) it is done
@@ -82,8 +80,6 @@ jobs:
             - Mac (macOS 13+, Intel and Apple silicon): `Jollyboat-${{ inputs.version }}-mac-universal.dmg`. Not signed by Apple: to open it the first time, System Settings → Privacy & Security → Open Anyway.
 
             `latest.yml`, `latest-linux*.yml`, `latest-portable.json` and `.blockmap` are read by installed and portable copies when they check for updates; ignore them.
-
-            [Code signing policy](https://github.com/innovativefluid/jollyboat#code-signing-policy)
 
           generate_release_notes: true
           draft: true
