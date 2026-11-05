@@ -82,7 +82,7 @@ const pickSettingsPatch = (patch: unknown): Partial<TSettings> => {
   if (typeof p.overlay === 'boolean') out.overlay = p.overlay;
   if (typeof p.reopenTabs === 'boolean') out.reopenTabs = p.reopenTabs;
   if (typeof p.serverTabs === 'boolean') out.serverTabs = p.serverTabs;
-  if (p.theme === 'none' || p.theme === 'jollyboat' || p.theme === 'water' || p.theme === 'retro' || p.theme === 'pixelsky' || p.theme === 'custom') out.theme = p.theme;
+  if (p.theme === 'none' || p.theme === 'jollyboat' || p.theme === 'water' || p.theme === 'retro' || p.theme === 'pixelsky' || p.theme === 'christmas' || p.theme === 'custom') out.theme = p.theme;
   const pal = (p.palettes ?? null) as Record<string, unknown> | null;
   if (pal) {
     const next = { ...getSettings().palettes };

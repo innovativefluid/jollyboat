@@ -1,15 +1,15 @@
 // Types shared by main, preload and renderer. Keep this file free of imports.
 
 /** the look of the app's own windows */
-export type TLook = 'lcd' | 'water' | 'retro' | 'sky';
-export const LOOKS: readonly TLook[] = ['lcd', 'water', 'retro', 'sky'];
+export type TLook = 'lcd' | 'water' | 'retro' | 'sky' | 'xmas';
+export const LOOKS: readonly TLook[] = ['lcd', 'water', 'retro', 'sky', 'xmas'];
 /** a theme's colours (theme tints): the same theme in a few palettes, picked beside the theme
  *  menu. the first of each list is the theme's own (the default) */
-export const PALETTES = { retro: ['pink', 'green', 'grey'], water: ['blue', 'pink', 'mono'] } as const;
+export const PALETTES = { retro: ['pink', 'green', 'grey'], water: ['blue', 'pink', 'mono'], christmas: ['classic', 'gold', 'snow'] } as const;
 export type TTintedTheme = keyof typeof PALETTES;
 export type TPalettes = { [K in TTintedTheme]: (typeof PALETTES)[K][number] };
 export type TPalette = TPalettes[TTintedTheme];
-export const ALL_PALETTES: readonly TPalette[] = [...new Set<TPalette>([...PALETTES.retro, ...PALETTES.water])];
+export const ALL_PALETTES: readonly TPalette[] = [...new Set<TPalette>([...PALETTES.retro, ...PALETTES.water, ...PALETTES.christmas])];
 export const isTinted = (theme: string): theme is TTintedTheme => theme in PALETTES;
 
 export type TServerEntry = {
@@ -71,8 +71,9 @@ export type TSettings = {
   colorMode: 'auto' | 'dark' | 'light';
   /** a theme on the server page: none, the app's own lcd look, the water look, the retro look,
    *  or custom.css next to the settings. the app's own windows take the water look with 'water',
-   *  the retro look with 'retro', the pixel sky with 'pixelsky', else the lcd one */
-  theme: 'none' | 'jollyboat' | 'water' | 'retro' | 'pixelsky' | 'custom';
+   *  the retro look with 'retro', the pixel sky with 'pixelsky', christmas with 'christmas', else
+   *  the lcd one */
+  theme: 'none' | 'jollyboat' | 'water' | 'retro' | 'pixelsky' | 'christmas' | 'custom';
   /** each tintable theme's palette */
   palettes: TPalettes;
   /** where the overlay was left (top-left corner), null = top left of the main display */

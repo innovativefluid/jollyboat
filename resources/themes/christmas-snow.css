@@ -1,0 +1,79 @@
+/* Christmas in snow: Jollyboat's Christmas theme in winter blue and white, two snowmen on a
+   snowy hill behind (by day the sun's rays and a lens flare, at night a spiral tree of light),
+   ice gel, and snow lying on every panel. Put after christmas.css, it only changes the colours. */
+
+html:root,
+html .light {
+  --background: #eef7ff;
+  --foreground: #0d2c5a;
+  --card: #eef7ff;
+  --card-foreground: #0d2c5a;
+  --popover: rgba(244, 250, 255, 0.92);
+  --popover-foreground: #0d2c5a;
+  --primary: #2f86d8;
+  --primary-foreground: #ffffff;
+  --muted-foreground: #3a6a9e;
+  --accent-foreground: #0d2c5a;
+  --secondary-foreground: #0d2c5a;
+  --border: rgba(40, 100, 170, 0.22);
+  --input: rgba(40, 100, 170, 0.3);
+  --ring: rgba(255, 138, 36, 0.6);
+  --sidebar: #eef7ff;
+  --sidebar-foreground: #0d2c5a;
+  --sidebar-primary: #2f86d8;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent-foreground: #0d2c5a;
+  --sidebar-border: rgba(40, 100, 170, 0.22);
+  --x-bg: #7ab8ea;
+  --x-glass: rgba(255, 255, 255, 0.52); --x-glass-hi: rgba(250, 253, 255, 0.88); --x-edge: rgba(255, 255, 255, 0.98); --x-edge-out: rgba(30, 80, 150, 0.28);
+  --x-ink: #0d2c5a; --x-dim: #3a6a9e; --x-mute: #7d9cc2; --x-well: rgba(255, 255, 255, 0.74); --x-well-edge: rgba(40, 100, 170, 0.3);
+  --x-gel-a: #a6dcff; --x-gel-b: #2f86d8; --x-gel-edge: #164f92; --x-on-gel: #ffffff;
+  --x-accent: #ff8a24; --x-accent-hi: rgba(255, 255, 255, 0.95); --x-warn: #d8231a;
+  --x-online: #2f9e6a; --x-idle: #ff8a24; --x-busy: #d8231a;
+  --x-title: #0d2c5a;
+  --x-shadow: 0 8px 26px rgba(20, 60, 120, 0.22);
+  --x-snow-c: #ffffff;
+}
+html.dark,
+html .dark {
+  --background: #071a4a;
+  --foreground: #eef7ff;
+  --card: #071a4a;
+  --card-foreground: #eef7ff;
+  --popover: rgba(10, 30, 86, 0.92);
+  --popover-foreground: #eef7ff;
+  --primary: #6ab4f0;
+  --primary-foreground: #08245a;
+  --secondary: rgba(30, 64, 140, 0.6);
+  --muted: rgba(2, 12, 44, 0.5);
+  --muted-foreground: #a8c8ee;
+  --accent: rgba(40, 80, 160, 0.6);
+  --accent-foreground: #eef7ff;
+  --secondary-foreground: #eef7ff;
+  --border: rgba(170, 210, 255, 0.2);
+  --input: rgba(170, 210, 255, 0.28);
+  --ring: rgba(255, 138, 36, 0.6);
+  --sidebar: #071a4a;
+  --sidebar-foreground: #eef7ff;
+  --sidebar-primary: #6ab4f0;
+  --sidebar-primary-foreground: #08245a;
+  --sidebar-accent: rgba(40, 80, 160, 0.6);
+  --sidebar-accent-foreground: #eef7ff;
+  --sidebar-border: rgba(170, 210, 255, 0.2);
+  --x-bg: #0a2266;
+  --x-glass: rgba(8, 26, 80, 0.48); --x-glass-hi: rgba(12, 34, 96, 0.9); --x-edge: rgba(200, 230, 255, 0.34); --x-edge-out: rgba(0, 0, 20, 0.5);
+  --x-ink: #eef7ff; --x-dim: #a8c8ee; --x-mute: #6f8fc0; --x-well: rgba(2, 12, 44, 0.5); --x-well-edge: rgba(170, 210, 255, 0.26);
+  --x-gel-a: #e4f7ff; --x-gel-b: #6ab4f0; --x-gel-edge: #2a5aa0; --x-on-gel: #08245a;
+  --x-accent: #ffb060; --x-accent-hi: rgba(180, 220, 255, 0.8); --x-warn: #ff8a7a;
+  --x-online: #6fe0a0; --x-idle: #ffb060; --x-busy: #ff6a52;
+  --x-title: #ffffff;
+  --x-shadow: 0 8px 26px rgba(0, 0, 20, 0.5);
+  --x-snow-c: #eaf4ff;
+}
+/* snow lying on the panels: two rows of drifts along the top edge */
+html:root {
+  --x-snow: radial-gradient(10px 7px at 50% 0, var(--x-snow-c) 96%, transparent) 0 -1px / 22px 7px repeat-x,
+    radial-gradient(16px 9px at 50% 0, var(--x-snow-c) 96%, transparent) 9px -2px / 38px 9px repeat-x;
+  --x-snow-room: 6px;
+}
+html [data-slot="dialog-content"], html [data-slot="card"] { background: var(--x-snow), var(--x-gloss), var(--x-glass-hi); }

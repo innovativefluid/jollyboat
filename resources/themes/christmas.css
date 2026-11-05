@@ -1,0 +1,349 @@
+/* Jollyboat's Christmas look for the Sharkord page, in the "Frutiger Jolly" way: the glossy,
+   glowing Christmas of mid-2000s desktops. Behind the page Jollyboat draws the scene: a deep
+   glow, soft beams, bokeh drifting up, sparkles, glass baubles on gold strings that sway and
+   swing when the pointer brushes past them, pine branches with strings of lights (the gold and
+   snow palettes bring their own scenery). In front of it the page's parts are panels of tinted
+   glass: a blur of the scene, a gloss over the top half, a white hairline, round corners.
+   Buttons are glossy gel, titles in Mountains of Christmas, the rest in Nunito. The chat itself
+   is open: its words stand on little glass panels. Dark in .dark, light in .light.
+
+   This is the red and green palette; christmas-gold.css and christmas-snow.css come after it and
+   change only the colours. As custom.css you can edit all of it; the file is read again
+   whenever it changes. url("jollyboat-font:Name") loads one of the app's own fonts:
+   MountainsOfChristmas, Nunito. */
+
+@font-face { font-family: 'Mountains of Christmas'; src: url("jollyboat-font:MountainsOfChristmas") format('truetype'); font-weight: 400 900; }
+@font-face { font-family: 'Nunito'; src: url("jollyboat-font:Nunito") format('truetype'); font-weight: 200 1000; }
+
+/* ---- the schemes ------------------------------------------------------------------------- */
+
+html:root,
+html .light {
+  --radius: 0.8rem;
+  --background: #f2fbe9;
+  --foreground: #10391a;
+  --card: #f2fbe9;
+  --card-foreground: #10391a;
+  --popover: rgba(246, 255, 240, 0.92);
+  --popover-foreground: #10391a;
+  --primary: #c8140e;
+  --primary-foreground: #ffffff;
+  --secondary: rgba(255, 255, 255, 0.7);
+  --secondary-foreground: #10391a;
+  --muted: rgba(255, 255, 255, 0.6);
+  --muted-foreground: #2f6b35;
+  --accent: rgba(255, 255, 255, 0.75);
+  --accent-foreground: #10391a;
+  --destructive: #c8140e;
+  --border: rgba(30, 90, 40, 0.25);
+  --input: rgba(30, 90, 40, 0.32);
+  --ring: rgba(226, 168, 44, 0.75);
+  --sidebar: #f2fbe9;
+  --sidebar-foreground: #10391a;
+  --sidebar-primary: #c8140e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(255, 255, 255, 0.75);
+  --sidebar-accent-foreground: #10391a;
+  --sidebar-border: rgba(30, 90, 40, 0.25);
+  --sidebar-ring: rgba(226, 168, 44, 0.75);
+  /* the theme's own */
+  --x-bg: #3f9a36;
+  --x-glass: rgba(255, 255, 255, 0.56); --x-glass-hi: rgba(248, 255, 242, 0.88); --x-edge: rgba(255, 255, 255, 0.95); --x-edge-out: rgba(20, 80, 30, 0.3);
+  --x-ink: #10391a; --x-dim: #2f6b35; --x-mute: #739b74; --x-well: rgba(255, 255, 255, 0.7); --x-well-edge: rgba(30, 90, 40, 0.32);
+  --x-gel-a: #ff7a64; --x-gel-b: #c8140e; --x-gel-edge: #8a0a06; --x-on-gel: #ffffff;
+  --x-accent: #e2a82c; --x-accent-hi: rgba(255, 228, 140, 0.9); --x-warn: #c8140e;
+  --x-online: #2f9e3a; --x-idle: #e2a82c; --x-busy: #d8231a;
+  --x-title: #10391a;
+  --x-shadow: 0 8px 26px rgba(10, 50, 15, 0.25);
+  --x-snow: none;
+}
+html.dark,
+html .dark {
+  --background: #062a10;
+  --foreground: #f2ffe6;
+  --card: #062a10;
+  --card-foreground: #f2ffe6;
+  --popover: rgba(8, 44, 18, 0.92);
+  --popover-foreground: #f2ffe6;
+  --primary: #e8281e;
+  --primary-foreground: #ffffff;
+  --secondary: rgba(30, 90, 44, 0.6);
+  --secondary-foreground: #f2ffe6;
+  --muted: rgba(0, 24, 8, 0.5);
+  --muted-foreground: #b8dcaa;
+  --accent: rgba(40, 110, 54, 0.6);
+  --accent-foreground: #f2ffe6;
+  --destructive: #ff8a7a;
+  --border: rgba(190, 255, 170, 0.18);
+  --input: rgba(190, 255, 170, 0.25);
+  --ring: rgba(255, 216, 106, 0.75);
+  --sidebar: #062a10;
+  --sidebar-foreground: #f2ffe6;
+  --sidebar-primary: #e8281e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(40, 110, 54, 0.6);
+  --sidebar-accent-foreground: #f2ffe6;
+  --sidebar-border: rgba(190, 255, 170, 0.18);
+  --sidebar-ring: rgba(255, 216, 106, 0.75);
+  --x-bg: #05280e;
+  --x-glass: rgba(6, 40, 16, 0.5); --x-glass-hi: rgba(10, 50, 22, 0.9); --x-edge: rgba(255, 255, 255, 0.28); --x-edge-out: rgba(0, 0, 0, 0.45);
+  --x-ink: #f2ffe6; --x-dim: #b8dcaa; --x-mute: #7ea876; --x-well: rgba(0, 24, 8, 0.5); --x-well-edge: rgba(190, 255, 170, 0.22);
+  --x-accent: #ffd86a; --x-warn: #ff8a7a;
+  --x-online: #7ee35f; --x-idle: #ffd86a; --x-busy: #ff6a52;
+  --x-title: #fff2c0;
+  --x-shadow: 0 8px 26px rgba(0, 0, 0, 0.45);
+}
+
+/* the pieces every glass surface shares */
+html:root {
+  --x-gloss: linear-gradient(to bottom, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.07) 48%, rgba(255, 255, 255, 0) 52%);
+  --x-gel: linear-gradient(to bottom, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0) 51%), linear-gradient(var(--x-gel-a), var(--x-gel-b));
+}
+
+/* ---- the scene and the glass in front of it -------------------------------------------------- */
+
+/* the scene is Jollyboat's canvas behind the page; this colour shows only before it is drawn */
+html { background: var(--x-bg); }
+html body { background: transparent; color: var(--x-ink); font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif; font-weight: 500; }
+html .relative > .h-dvh.bg-background { background: transparent; }
+/* a settings screen lies over the same scene: the server view under it steps aside meanwhile
+   (it keeps running: calls, streams and plugins go on) */
+html div:not(.relative) > .h-dvh.bg-background { background: transparent; }
+html:has(div:not(.relative) > .h-dvh.bg-background) .relative > .h-dvh { visibility: hidden; }
+
+/* the big panels: the top bar, the two sidebars, the chat's title row, the message box, the
+   settings screen's parts: blurred glass */
+html .h-dvh > .bg-card.border-b,
+html .h-dvh .bg-card.border-r:not(.w-0),
+html .h-dvh .bg-card.border-l:not(.w-0),
+html main.bg-background > .h-12.border-b,
+html main .compose-container,
+html div:not(.relative) > .h-dvh.bg-background > .h-14.border-b,
+html div:not(.relative) > .h-dvh.bg-background > .relative > nav.bg-background {
+  position: relative;
+  background: var(--x-snow), var(--x-gloss), var(--x-glass);
+  border: 1px solid var(--x-edge) !important;
+  border-radius: 14px;
+  box-shadow: 0 0 0 1px var(--x-edge-out), inset 0 1px 0 rgba(255, 255, 255, 0.45), var(--x-shadow);
+  -webkit-backdrop-filter: blur(12px) saturate(1.35);
+  backdrop-filter: blur(12px) saturate(1.35);
+}
+/* every group of messages: a small glass panel as wide as its words (no blur: there are many) */
+html main .space-y-4 > div:has([data-testid="message-item"]) {
+  background: var(--x-gloss), var(--x-glass-hi);
+  border: 1px solid var(--x-edge);
+  border-radius: 14px;
+  box-shadow: 0 0 0 1px var(--x-edge-out), 0 4px 14px rgba(0, 0, 0, 0.16);
+  width: fit-content;
+  max-width: calc(100% - 8px);
+  padding: 6px 14px 8px 8px;
+  margin-top: 10px;
+}
+/* (sharkord makes them full width and height: with the margins they shrink instead) */
+html .h-dvh > .bg-card.border-b { margin: 10px 12px 0 10px; width: calc(100% - 22px); box-sizing: border-box; }
+html .h-dvh .bg-card.border-r:not(.w-0) { margin: 10px 0 12px 10px; height: auto; overflow: hidden; }
+html .h-dvh .bg-card.border-l:not(.w-0) { margin: 10px 12px 12px 0; height: auto; overflow: hidden; }
+html main.bg-background { margin: 10px 12px 12px 10px; overflow: hidden; background: transparent; border: 0; border-radius: 0; box-shadow: none; }
+html main.bg-background .bg-background { background: transparent; }
+html main.bg-background > .h-12.border-b { margin: 0 0 6px; }
+html main .space-y-4 { padding-bottom: 6px; }
+html main .compose-container { margin: 6px 0 0; padding-top: 10px; }
+html div:not(.relative) > .h-dvh.bg-background > .h-14.border-b { margin: 10px 12px 4px 10px; }
+html div:not(.relative) > .h-dvh.bg-background > .relative > nav.bg-background { margin: 6px 0 12px 10px; padding: 8px; }
+/* the snow palette's caps need a little room above the first row */
+html .h-dvh .bg-card.border-r:not(.w-0), html .h-dvh .bg-card.border-l:not(.w-0) { padding-top: var(--x-snow-room, 0); }
+/* inside them nothing paints over the glass */
+html .h-dvh .bg-card.border-r > *, html .h-dvh .bg-card.border-l > * { background-color: transparent; }
+/* a panel's title row: the festive face */
+html .h-dvh .bg-card.border-r > .h-12.border-b,
+html .h-dvh .bg-card.border-l > .h-12.border-b,
+html main.bg-background > .h-12.border-b { font-family: 'Mountains of Christmas', 'Nunito', serif; font-size: 20px; font-weight: 700; color: var(--x-title); }
+/* the lines inside a panel: soft */
+html .border-r, html .border-l, html .border-b, html .border-t, html .border { border-color: var(--border); }
+
+/* ---- type -------------------------------------------------------------------------------- */
+
+html h1, html .text-2xl, html .text-3xl, html .text-4xl { font-family: 'Mountains of Christmas', 'Nunito', serif; font-weight: 700; letter-spacing: 0.3px; }
+html h2, html h3 { font-family: 'Mountains of Christmas', 'Nunito', serif; font-weight: 700; }
+html [class*="text-muted"], html [class*="text-primary/"] { color: var(--x-dim); }
+html .tiptap.ProseMirror, html textarea, html input { font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif; }
+html a { color: var(--x-ink); text-decoration: underline; text-decoration-color: var(--x-accent); text-underline-offset: 3px; text-decoration-thickness: 2px; }
+html ::selection { background: var(--x-gel-b); color: #ffffff; }
+
+/* ---- buttons: gel ----------------------------------------------------------------------- */
+
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))) {
+  position: relative;
+  border: 1px solid var(--x-well-edge);
+  border-radius: 999px;
+  background: var(--x-gloss), var(--x-well);
+  color: var(--x-ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 1px 3px rgba(0, 0, 0, 0.16);
+  font-weight: 700;
+  transition: filter 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+}
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))):hover:not(:disabled) { filter: brightness(1.08) saturate(1.1); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), 0 0 12px var(--x-accent-hi); }
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))):active:not(:disabled) { transform: translateY(1px); filter: brightness(0.95); }
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).bg-primary {
+  background: var(--x-gel);
+  border-color: var(--x-gel-edge);
+  color: var(--x-on-gel);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), inset 0 -2px 4px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.22);
+}
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).bg-primary svg { color: var(--x-on-gel); }
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))):disabled { opacity: 0.55; }
+/* sharkord's ghost and icon buttons: no glass until hovered */
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).hover\:bg-accent:not(.bg-primary):not(.border):not(.bg-secondary),
+html [data-slot="icon-button"] { background: transparent; border-color: transparent; box-shadow: none; }
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).hover\:bg-accent:not(.bg-primary):not(.border):not(.bg-secondary):hover,
+html [data-slot="icon-button"]:hover { background: var(--x-gloss), var(--x-well); border-color: var(--x-edge); }
+/* warnings: a red gel */
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))).bg-destructive,
+html [class*="bg-[#ec4245]"] { background: linear-gradient(to bottom, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0) 51%), linear-gradient(#ff7a64, #c8140e); border-color: #8a0a06; color: #ffffff; }
+/* the call's own toggles (camera, screen share on; muted, deafened): gel while on */
+html :is([data-slot="button"], button:where(.inline-flex.whitespace-nowrap:not([data-slot]))):is([class*="bg-green-500/"], [class*="bg-blue-500/"], [class*="bg-red-500/"]) { background: var(--x-gel); border-color: var(--x-gel-edge); color: var(--x-on-gel); }
+
+/* ---- wells: fields, the message box ----------------------------------------------------- */
+
+html input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), html textarea, html [data-slot="input"], html [data-slot="textarea"], html [data-slot="select-trigger"] {
+  border: 1px solid var(--x-well-edge);
+  border-radius: 10px;
+  background: var(--x-well);
+  color: var(--x-ink);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+html input:focus-visible, html textarea:focus-visible, html [data-slot="input"]:focus-visible, html [data-slot="select-trigger"]:focus-visible { outline: none; border-color: var(--x-accent); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15), 0 0 0 3px var(--x-accent-hi); }
+html input::placeholder, html textarea::placeholder { color: var(--x-mute); }
+html div:has(> [class*="tiptap"][class*="relative"]) { border: 1px solid var(--x-well-edge); border-radius: 12px; background: var(--x-well); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15); margin: 0 10px 10px; }
+html div:has(> [class*="tiptap"][class*="relative"]):focus-within { border-color: var(--x-accent); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15), 0 0 0 3px var(--x-accent-hi); }
+html .tiptap p.is-editor-empty:first-child::before { color: var(--x-mute); }
+
+/* switches and checks: glass, gel when on */
+html [data-slot="switch"] { border: 1px solid var(--x-well-edge); background: var(--x-well); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2); }
+html [data-slot="switch"][data-state="checked"] { background: var(--x-gel); border-color: var(--x-gel-edge); }
+html [data-slot="switch-thumb"] { background: radial-gradient(circle at 35% 30%, #ffffff, #e8eef0); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); }
+html [data-slot="checkbox"] { border: 1px solid var(--x-well-edge); border-radius: 6px; background: var(--x-well); }
+html [data-slot="checkbox"][data-state="checked"] { background: var(--x-gel); border-color: var(--x-gel-edge); color: var(--x-on-gel); }
+
+/* ---- floating: menus, popovers, dialogs, side panels: thick glass over the scene -------------- */
+
+html [data-slot="popover-content"], html [data-slot="dropdown-menu-content"], html [data-slot="context-menu-content"],
+html [data-slot="dialog-content"], html [data-slot="select-content"], html [data-slot="sheet-content"], html [data-slot="alert-dialog-content"],
+html [data-slot="hover-card-content"] {
+  border: 1px solid var(--x-edge);
+  border-radius: 14px;
+  background: var(--x-gloss), var(--x-glass-hi);
+  box-shadow: 0 0 0 1px var(--x-edge-out), inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 14px 40px rgba(0, 0, 0, 0.35);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  backdrop-filter: blur(16px) saturate(1.3);
+}
+html [data-slot="sheet-content"] { border-radius: 0; }
+html [data-slot="dialog-title"], html [data-slot="alert-dialog-title"], html [data-slot="sheet-title"] { font-family: 'Mountains of Christmas', 'Nunito', serif; font-size: 22px; font-weight: 700; color: var(--x-title); }
+/* behind a dialog the scene dims and blurs */
+html [data-slot="dialog-overlay"], html [data-slot="alert-dialog-overlay"], html [data-slot="sheet-overlay"] { background: rgba(0, 10, 4, 0.35); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+/* tooltips: little gel pills */
+html [data-slot="tooltip-content"] { border-radius: 999px; background: var(--x-gel); color: var(--x-on-gel); border: 1px solid var(--x-gel-edge); font-weight: 700; padding: 4px 12px; }
+html [data-slot="tooltip-content"] svg { display: none; }
+/* menu items: the one under the pointer or the keys gel */
+html [data-slot="dropdown-menu-item"], html [data-slot="context-menu-item"], html [data-slot="select-item"] { border-radius: 9px; }
+html [data-slot="dropdown-menu-item"][data-highlighted], html [data-slot="context-menu-item"][data-highlighted],
+html [data-slot="select-item"][data-highlighted], html [data-slot="command-item"][data-selected="true"] { background: var(--x-gel); color: var(--x-on-gel); }
+html [data-slot="dropdown-menu-item"][data-highlighted] svg, html [data-slot="context-menu-item"][data-highlighted] svg,
+html [data-slot="select-item"][data-highlighted] svg, html [data-slot="command-item"][data-selected="true"] svg { color: var(--x-on-gel); }
+html [data-slot$="menu-item"][data-variant="destructive"] { color: var(--x-warn); }
+/* cards (settings, profiles): glass too */
+html [data-slot="card"] { border: 1px solid var(--x-edge); border-radius: 14px; background: var(--x-gloss), var(--x-glass); box-shadow: 0 0 0 1px var(--x-edge-out), var(--x-shadow); }
+html [data-slot="badge"] { border-radius: 999px; border: 1px solid var(--x-well-edge); background: var(--x-gloss), var(--x-well); color: var(--x-ink); }
+html [data-slot="badge"].bg-primary { background: var(--x-gel); border-color: var(--x-gel-edge); color: var(--x-on-gel); }
+
+/* ---- channels, members, messages ---------------------------------------------------------- */
+
+/* the channel you are on: a gel row; the one under the pointer a glass row */
+html [data-testid="channel-item"] { border-radius: 10px; border: 1px solid transparent; }
+html [data-testid="channel-item"].bg-accent { background: var(--x-gel); border-color: var(--x-gel-edge); color: var(--x-on-gel); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6); }
+html [data-testid="channel-item"].bg-accent svg, html [data-testid="channel-item"].bg-accent * { color: var(--x-on-gel); }
+html [data-testid="channel-item"]:not(.bg-accent):hover,
+html [data-testid="member-item"]:hover { background: var(--x-gloss), var(--x-well); border-color: var(--x-edge); }
+html [data-testid="member-item"] { border-radius: 10px; border: 1px solid transparent; }
+/* a message under the pointer, and one that mentions you: a light, and a warm glow */
+html .hover\:bg-secondary\/50:hover { background: rgba(255, 255, 255, 0.18); border-radius: 8px; }
+html .bg-primary\/5 { background: color-mix(in srgb, var(--x-accent) 22%, transparent); border-radius: 8px; }
+html .border-primary { border-color: var(--x-accent); }
+/* unread counts: little gel baubles */
+html [data-testid="unread-count"] { border-radius: 999px; background: var(--x-gel); border: 1px solid var(--x-gel-edge); color: var(--x-on-gel); font-weight: 800; }
+
+/* avatars: round, with a glass rim */
+html [data-slot="avatar"] { box-shadow: 0 0 0 1px var(--x-edge), 0 2px 6px rgba(0, 0, 0, 0.2); }
+html [data-slot="avatar-fallback"] { background: var(--x-gel); color: var(--x-on-gel); font-weight: 800; }
+/* presence: a tiny glowing bauble */
+html [data-testid="user-status"] { border: 2px solid var(--x-glass-hi); box-sizing: content-box; }
+html [data-testid="user-status"][data-status="online"] { background: radial-gradient(circle at 35% 30%, #fff, var(--x-online) 60%); box-shadow: 0 0 6px var(--x-online); }
+html [data-testid="user-status"][data-status="idle"] { background: radial-gradient(circle at 35% 30%, #fff, var(--x-idle) 60%); }
+html [data-testid="user-status"][data-status="dnd"], html [data-testid="user-status"][data-status="busy"] { background: radial-gradient(circle at 35% 30%, #fff, var(--x-busy) 60%); }
+html [data-testid="user-status"][data-status="offline"] { background: var(--x-mute); }
+html [data-testid="member-item"]:has([data-status="offline"]) > span { color: var(--x-dim); }
+html [data-testid="member-item"]:has([data-status="offline"]) [data-slot="avatar"] { opacity: 0.55; }
+
+/* who is talking: a warm glow round them that breathes, quicker when louder */
+html .speaking-effect-low, html .speaking-effect-medium, html .speaking-effect-high { box-shadow: 0 0 0 2px var(--x-accent), 0 0 12px var(--x-accent-hi); animation: none; }
+html .speaking-effect-medium { animation: x-glow 0.9s ease-in-out infinite alternate; }
+html .speaking-effect-high { animation: x-glow 0.45s ease-in-out infinite alternate; }
+@keyframes x-glow { from { box-shadow: 0 0 0 2px var(--x-accent), 0 0 6px var(--x-accent-hi); } to { box-shadow: 0 0 0 2px var(--x-accent), 0 0 18px var(--x-accent-hi); } }
+
+/* the places sharkord colours directly: the theme's own */
+html [class*="text-green-"], html [class*="text-emerald-"] { color: var(--x-online); }
+html [class*="text-red-"], html [class*="text-rose-"] { color: var(--x-warn); }
+html [class*="text-gray-"] { color: var(--x-dim); }
+html .bg-green-500, html .bg-green-600 { background: var(--x-online); }
+html .bg-red-500 { background: var(--x-gel-b); color: #ffffff; }
+html .border-card { border-color: var(--x-glass-hi); }
+
+/* where the keyboard is: a gold ring */
+html :focus-visible:not(input):not(textarea):not(.ProseMirror):not([data-slot="input"]):not([data-slot$="-item"]) { outline: 2px solid var(--x-accent); outline-offset: 2px; }
+
+/* ---- scrollbars: a gel rail ------------------------------------------------------------------- */
+
+html ::-webkit-scrollbar { width: 10px; height: 10px; }
+html ::-webkit-scrollbar-track { background: transparent; }
+html ::-webkit-scrollbar-thumb { background: var(--x-gel); border-radius: 5px; border: 2px solid transparent; background-clip: content-box; }
+html ::-webkit-scrollbar-corner { background: transparent; }
+html body { scrollbar-color: auto; }
+
+/* ---- toasts: gel pills ------------------------------------------------------------------------ */
+
+html [data-sonner-toast][data-styled="true"] {
+  border: 1px solid var(--x-gel-edge) !important;
+  border-radius: 999px !important;
+  background: var(--x-gel) !important;
+  color: var(--x-on-gel) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3) !important;
+  font-weight: 700;
+}
+html [data-sonner-toast] [data-description] { color: var(--x-on-gel) !important; }
+
+/* ---- motion: soft, a little springy ---------------------------------------------------------- */
+
+/* the panels come in on load: they rise and fade in, 70 ms apart */
+html .h-dvh > .bg-card.border-b { animation: x-rise 480ms cubic-bezier(0.2, 0.9, 0.3, 1.15) backwards; }
+html .h-dvh .bg-card.border-r:not(.w-0) { animation: x-rise 480ms cubic-bezier(0.2, 0.9, 0.3, 1.15) 70ms backwards; }
+html main.bg-background > .h-12.border-b, html main .compose-container { animation: x-rise 480ms cubic-bezier(0.2, 0.9, 0.3, 1.15) 140ms backwards; }
+html .h-dvh .bg-card.border-l:not(.w-0) { animation: x-rise 480ms cubic-bezier(0.2, 0.9, 0.3, 1.15) 210ms backwards; }
+@keyframes x-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+/* menus and popovers grow from where they open */
+@keyframes x-in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+html [data-slot="popover-content"][data-state="open"], html [data-slot="dropdown-menu-content"][data-state="open"],
+html [data-slot="context-menu-content"][data-state="open"], html [data-slot="select-content"][data-state="open"] { animation: x-in 160ms ease-out both; }
+/* (a dialog is centred with translate: it rises with transform) */
+html [data-slot="dialog-content"][data-state="open"], html [data-slot="alert-dialog-content"][data-state="open"] { animation: x-pop 280ms cubic-bezier(0.2, 0.9, 0.3, 1.25) both; }
+@keyframes x-pop { from { opacity: 0; transform: translateY(10px) scale(0.97); } to { opacity: 1; transform: none; } }
+/* a settings screen fades in over the scene */
+html div:not(.relative) > .h-dvh.bg-background { animation: x-fade 260ms ease-out backwards; }
+@keyframes x-fade { from { opacity: 0; } to { opacity: 1; } }
+/* the newest message: its panel swings in like a bauble on a string */
+html .space-y-4 > :last-child div.rounded-md:last-child > [data-testid="message-item"] { animation: x-swing 700ms cubic-bezier(0.3, 1.4, 0.5, 1) backwards; transform-origin: 30% -20px; }
+@keyframes x-swing { 0% { opacity: 0; transform: rotate(-4deg) translateY(-6px); } 40% { opacity: 1; } 100% { transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  html *, html *::before, html *::after { animation: none !important; transition: none !important; }
+}

@@ -7,13 +7,14 @@
 import { createPaper } from './paper';
 import { createDesk } from './retro';
 import { createSky } from './sky/sky';
+import { createXmasScene } from './christmas/scene';
 import { createSparks } from './sparks';
 import { createStrip } from './strip';
 import { createWater, type TWater } from './water/engine';
 import { createGlassDom, type TGlassDom } from './water/glass-dom';
 import { waterTokens } from './water/tokens';
 
-type TLook = 'lcd' | 'water' | 'retro' | 'sky';
+type TLook = 'lcd' | 'water' | 'retro' | 'sky' | 'xmas';
 type TBackdrop = { stop: () => void; water?: TWater; dom?: TGlassDom };
 
 // the hook a toast uses to make its bubble jiggle when it pops in
@@ -30,7 +31,7 @@ const allowSoftGl = () => {
 
 const lookNow = (): TLook => {
   const look = document.documentElement.dataset.look;
-  return look === 'water' || look === 'retro' || look === 'sky' ? look : 'lcd';
+  return look === 'water' || look === 'retro' || look === 'sky' || look === 'xmas' ? look : 'lcd';
 };
 
 export const bootTheme = ({ boat = false, fps, pool }: { boat?: boolean; fps?: { focused: number; blurred: number }; pool?: () => { view: [number, number]; offset: [number, number] } } = {}) => {
@@ -92,6 +93,33 @@ export const bootTheme = ({ boat = false, fps, pool }: { boat?: boolean; fps?: {
       // a click on open sky: a shooting star (a wish)
       skyWish = (x, y) => sky.wish(x, y);
       backdrop = { stop: sky.stop };
+    } else if (look === 'xmas') {
+      // christmas: the glow, bokeh, sparkles and the palette's scenery; baubles swing on their
+      // strings when the pointer brushes past
+      onToast = null;
+      canvas.className = 'xmas';
+      const dark = matchMedia('(prefers-color-scheme: dark)');
+      const scene = createXmasScene(canvas, {
+        palette: () => document.documentElement.dataset.palette ?? 'classic',
+        dark: () => {
+          const t = document.documentElement.dataset.theme;
+          return t ? t === 'dark' : dark.matches;
+        },
+        focused: () => document.hasFocus(),
+        // the setup window: small ones, a garland in the free row beside the title (the panels
+        // start below it); the picker and the prompt have no such row
+        hang: boat ? [0.33, 0.43, 0.53, 0.63, 0.73, 0.83, 0.93] : [],
+        len: [4, 22],
+        size: [17, 23]
+      });
+      const move = (e: PointerEvent) => scene.pointer(e.clientX, e.clientY);
+      window.addEventListener('pointermove', move, { passive: true });
+      backdrop = {
+        stop: () => {
+          scene.stop();
+          window.removeEventListener('pointermove', move);
+        }
+      };
     } else if (look === 'retro') {
       // the retro desktop: a pattern, scattered pixel hearts and stars, the boat as an icon
       onToast = null;

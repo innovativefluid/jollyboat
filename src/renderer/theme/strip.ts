@@ -2,7 +2,8 @@
 // plus dither. water: the glass renderer draws it (a tube of water streaming along); only
 // without webgl2 (html.no-gl) is it drawn here, as a flat tube. retro: an old progress bar whose
 // blocks march along, eight steps a second. sky: the study's starline, mute dots 6 apart with a
-// small warm star running along that lifts the dots it passes.
+// small warm star running along that lifts the dots it passes. christmas: a glossy gel tube with
+// candy-cane stripes sliding along it (the palette's two colours, --xm-cane-a / -b).
 
 import { lcdScheme } from './scheme';
 import { css, waterTokens } from './water/tokens';
@@ -24,11 +25,11 @@ export const createStrip = (canvas: HTMLCanvasElement) => {
 
   const lookNow = () => {
     const l = document.documentElement.dataset.look;
-    return l === 'water' || l === 'retro' || l === 'sky' ? l : 'lcd';
+    return l === 'water' || l === 'retro' || l === 'sky' || l === 'xmas' ? l : 'lcd';
   };
   const resize = () => {
     look = lookNow();
-    if (look === 'water' || look === 'retro' || look === 'sky') {
+    if (look === 'water' || look === 'retro' || look === 'sky' || look === 'xmas') {
       dpr = window.devicePixelRatio || 1;
       canvas.width = Math.round((canvas.clientWidth || 300) * dpr);
       canvas.height = Math.round((canvas.clientHeight || 9) * dpr);
@@ -40,6 +41,55 @@ export const createStrip = (canvas: HTMLCanvasElement) => {
     cells.width = cw;
     cells.height = ROWS;
     image = cctx.createImageData(cw, ROWS);
+  };
+
+  const cane = (t: number) => {
+    const w = canvas.width / dpr;
+    const h = canvas.height / dpr;
+    const r = h / 2;
+    const st = getComputedStyle(document.documentElement);
+    const a = st.getPropertyValue('--xm-cane-a').trim() || '#d8231a';
+    const b = st.getPropertyValue('--xm-cane-b').trim() || '#fff6ea';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(0.5, 0.5, w - 1, h - 1, r);
+    ctx.clip();
+    ctx.fillStyle = b;
+    ctx.fillRect(0, 0, w, h);
+    // the stripes: leaning bands, 14 px apart, sliding right
+    ctx.fillStyle = a;
+    const off = (t * 18) % 14;
+    for (let x = -14 - h; x < w + 14; x += 14) {
+      ctx.beginPath();
+      ctx.moveTo(x + off, h);
+      ctx.lineTo(x + off + 6, h);
+      ctx.lineTo(x + off + 6 + h, 0);
+      ctx.lineTo(x + off + h, 0);
+      ctx.closePath();
+      ctx.fill();
+    }
+    // the gel: shade below, a gloss band in the top half
+    const shade = ctx.createLinearGradient(0, 0, 0, h);
+    shade.addColorStop(0, 'rgba(255,255,255,0)');
+    shade.addColorStop(0.55, 'rgba(0,0,0,0)');
+    shade.addColorStop(1, 'rgba(0,0,0,0.28)');
+    ctx.fillStyle = shade;
+    ctx.fillRect(0, 0, w, h);
+    const gloss = ctx.createLinearGradient(0, 0, 0, h / 2);
+    gloss.addColorStop(0, 'rgba(255,255,255,0.85)');
+    gloss.addColorStop(1, 'rgba(255,255,255,0.15)');
+    ctx.fillStyle = gloss;
+    ctx.beginPath();
+    ctx.roundRect(2, 1, w - 4, h * 0.45, h * 0.25);
+    ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(0.5, 0.5, w - 1, h - 1, r);
+    ctx.stroke();
   };
 
   const tube = (t: number) => {
@@ -149,6 +199,12 @@ export const createStrip = (canvas: HTMLCanvasElement) => {
     const now = lookNow();
     if (now !== look) resize();
     const t = ((performance.now() - start) / 1000) * (reduce.matches ? 0 : 1);
+
+    if (look === 'xmas') {
+      cane(t);
+      window.setTimeout(() => requestAnimationFrame(frame), 33);
+      return;
+    }
 
     if (look === 'sky') {
       starline(t);

@@ -342,12 +342,14 @@ const renderSettings = async () => {
     { value: 'water', label: t('Water') },
     { value: 'retro', label: t('Retro') },
     { value: 'pixelsky', label: 'Pixel Sky' },
+    { value: 'christmas', label: t('Christmas') },
     { value: 'custom', label: t('Custom') }
   ];
   themeSelect.replaceChildren(...themes.map((o) => new Option(o.label, o.value, false, o.value === settings.theme)));
   // theme tints: a theme with palettes shows them beside the menu, each a 16 px square of four
   // of its colours (retro: title bar, its second colour, the desktop, the night window; water:
-  // the water's two colours, the pool by day and by night); a click picks it
+  // the water's two colours, the pool by day and by night; christmas: two baubles, the glow by day
+  // and by night); a click picks it
   const tints = $('theme-tints');
   let palettes = settings.palettes;
   type TTint = { value: TPalette; label: string; colours: [string, string, string, string] };
@@ -361,6 +363,11 @@ const renderSettings = async () => {
       { value: 'blue', label: t('Blue'), colours: ['#5cc0f7', '#0757c2', '#9fd8f6', '#06203c'] },
       { value: 'pink', label: t('Pink'), colours: ['#ff8cc8', '#c2187a', '#f7b6d8', '#2a0820'] },
       { value: 'mono', label: t('Black and white'), colours: ['#ffffff', '#a0a0a0', '#3a3a3a', '#000000'] }
+    ],
+    christmas: [
+      { value: 'classic', label: t('Red and green'), colours: ['#d8231a', '#e2a82c', '#3f9a36', '#05280e'] },
+      { value: 'gold', label: t('Gold'), colours: ['#ffe39a', '#e2a82c', '#2f9e3a', '#160d03'] },
+      { value: 'snow', label: t('Snow'), colours: ['#ffffff', '#ff8a24', '#7ab8ea', '#0a2266'] }
     ]
   };
   const showTints = (theme: TSettings['theme']) => {

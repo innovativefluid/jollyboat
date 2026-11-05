@@ -2,6 +2,7 @@
 // for the rest. follows the system's light/dark setting (css), the mark too
 
 import { createSky, type TSky } from '../theme/sky/sky';
+import { createXmasScene } from '../theme/christmas/scene';
 import boatMap from '../../../build/pixel/icon-16.txt?raw';
 import { t, translatePage } from '../i18n';
 import { createWater, type TWater } from '../theme/water/engine';
@@ -36,8 +37,8 @@ let lookNow = window.shell.look;
 const dark = window.matchMedia('(prefers-color-scheme: dark)');
 
 let waterAs = '';
-let barSky: TSky | null = null;
-const startWater = (look: 'lcd' | 'water' | 'retro' | 'sky') => {
+let barSky: Pick<TSky, 'stop' | 'rest'> | null = null;
+const startWater = (look: 'lcd' | 'water' | 'retro' | 'sky' | 'xmas') => {
   lookNow = look;
   // (already running as wanted: left alone)
   const as = `${look}:${mergedNow}`;
@@ -64,6 +65,20 @@ const startWater = (look: 'lcd' | 'water' | 'retro' | 'sky') => {
       scheme: () => (document.documentElement.dataset.theme === 'light' ? 'day' : document.documentElement.dataset.theme === 'dark' ? 'night' : dark.matches ? 'night' : 'day'),
       focused: window.shell.windowFocused,
       fps: { calm: 10, busy: 60 }
+    });
+    return;
+  }
+  // christmas: a strip of its glow with bokeh and sparkles (no baubles in 34 px); merged, the
+  // page's own scene shows through
+  if (look === 'xmas') {
+    if (mergedNow) return;
+    waterCanvas = document.createElement('canvas');
+    waterCanvas.className = 'xmas';
+    document.body.prepend(waterCanvas);
+    barSky = createXmasScene(waterCanvas, {
+      palette: () => document.documentElement.dataset.palette ?? 'classic',
+      dark: () => (document.documentElement.dataset.theme === 'light' ? false : document.documentElement.dataset.theme === 'dark' ? true : dark.matches),
+      focused: window.shell.windowFocused
     });
     return;
   }

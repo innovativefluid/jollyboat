@@ -213,6 +213,14 @@ WATER_SETS = {
                        spark=hexc('#fff0f8'), glow=hexc('#ff5fbf'), warm=hexc('#ffd84d'), dark=hexc('#14020d'), talk=(hexc('#ffd0ea'), hexc('#e8338d'))),
     'water-mono': dict(top=hexc('#4a4a4a'), bot=hexc('#050505'), edge=hexc('#e0e0e0'), liq_a=hexc('#d8d8d8'), liq_b=hexc('#6a6a6a'),
                        spark=hexc('#ffffff'), glow=hexc('#ffffff'), warm=hexc('#ff6b7d'), dark=hexc('#000000'), talk=(hexc('#ffffff'), hexc('#4a4a4a'))),
+    # christmas, glass like the water's (frutiger jolly): pine green with red water, black and
+    # gold, a night of snow blue with ice
+    'christmas': dict(top=hexc('#1f6b2a'), bot=hexc('#03200b'), edge=hexc('#ffd86a'), liq_a=hexc('#ff6a52'), liq_b=hexc('#a80e0a'),
+                      spark=hexc('#fff6d8'), glow=hexc('#ffd86a'), warm=hexc('#ffd86a'), dark=hexc('#021406'), talk=(hexc('#ffe9a0'), hexc('#e2a82c'))),
+    'christmas-gold': dict(top=hexc('#5a3a0c'), bot=hexc('#070401'), edge=hexc('#ffe39a'), liq_a=hexc('#ffe39a'), liq_b=hexc('#b07a1c'),
+                           spark=hexc('#fffbe8'), glow=hexc('#ffd36a'), warm=hexc('#ff6a52'), dark=hexc('#050300'), talk=(hexc('#fff6d8'), hexc('#e2a82c'))),
+    'christmas-snow': dict(top=hexc('#2a62c8'), bot=hexc('#04113a'), edge=hexc('#e4f4ff'), liq_a=hexc('#e4f7ff'), liq_b=hexc('#4fa8ec'),
+                           spark=hexc('#ffffff'), glow=hexc('#9fd0ff'), warm=hexc('#ff6a52'), dark=hexc('#020a24'), talk=(hexc('#ffffff'), hexc('#7fc0f4'))),
 }
 
 HULL = [(2.2, 17.0), (26.6, 17.0), (26.2, 19.8), (24.4, 22.6), (7.4, 22.6)]

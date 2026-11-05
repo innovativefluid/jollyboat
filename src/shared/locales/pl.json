@@ -187,5 +187,9 @@
   "{keys} opens this window": "{keys} otwiera to okno",
   "{n} new": "nowe: {n}",
   "{v} available | click to open": "dostępna {v} | kliknij, by otworzyć",
-  "{v} ready | click to install": "{v} gotowa | kliknij, by zainstalować"
+  "{v} ready | click to install": "{v} gotowa | kliknij, by zainstalować",
+  "Christmas": "Boże Narodzenie",
+  "Red and green": "Czerwono-zielony",
+  "Gold": "Złoty",
+  "Snow": "Śnieg"
 }

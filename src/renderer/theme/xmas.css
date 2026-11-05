@@ -1,0 +1,323 @@
+/* the christmas look of the app's own pages, in the "Frutiger Jolly" way (Frutiger Aero dressed
+   for the season): an animated scene behind (theme/christmas/scene.ts: the glow, bokeh,
+   sparkles, baubles swaying on their strings, the palette's scenery), and in front of it panels
+   of tinted glass: a blur of what is behind, a gloss over the top half, a white hairline, round
+   corners. Buttons are glossy gel. Titles in Mountains of Christmas, the rest in Nunito.
+   Three palettes (data-palette): classic red and green, gold, snow (the snowmen; the panels
+   wear snow on top). Light or dark with the colour mode, or with the server page's data-theme in
+   the bar and the overlay. On while <html data-look="xmas">. */
+
+@font-face { font-family: 'Mountains of Christmas'; src: url('../fonts/MountainsOfChristmas.ttf') format('truetype'); font-weight: 400 900; }
+@font-face { font-family: 'Nunito'; src: url('../fonts/Nunito.ttf') format('truetype'); font-weight: 200 1000; }
+
+/* ---- colours: classic (the default), light then dark ---------------------------------------- */
+
+:root[data-look='xmas'] {
+  --xm-font: 'Nunito', 'Segoe UI', system-ui, sans-serif;
+  --xm-title-font: 'Mountains of Christmas', 'Nunito', serif;
+  --xm-bg: #3f9a36; --xm-panel-rgb: 240, 255, 232;
+  --xm-glass: rgba(255, 255, 255, 0.58); --xm-glass-hi: rgba(255, 255, 255, 0.78); --xm-edge: rgba(255, 255, 255, 0.95); --xm-edge-out: rgba(20, 80, 30, 0.35);
+  --xm-ink: #10391a; --xm-dim: #2f6b35; --xm-mute: #739b74; --xm-well: rgba(255, 255, 255, 0.72); --xm-well-edge: rgba(30, 90, 40, 0.35);
+  --xm-gel-a: #ff7a64; --xm-gel-b: #c8140e; --xm-gel-edge: #8a0a06; --xm-on-gel: #ffffff;
+  --xm-accent: #e2a82c; --xm-accent-hi: #fff0a8; --xm-good: #2f9e3a; --xm-warn: #c8140e;
+  --xm-title: linear-gradient(#fff8d0, #f4c64a 55%, #c88a1a);
+  --xm-title-shadow: 0 2px 0 #7a4a06, 0 0 18px rgba(255, 230, 140, 0.8);
+  --xm-shadow: 0 10px 30px rgba(10, 50, 15, 0.28);
+  --xm-cane-a: #d8231a; --xm-cane-b: #fff6ea;
+  --xm-snow: none;
+  /* the lcd tokens, for the bits of the pages that use them directly */
+  --px: var(--xm-font); --body: var(--xm-font); --cnt: var(--xm-font);
+  --bg: var(--xm-bg); --panel: var(--xm-glass-hi); --fg: var(--xm-ink); --dim: var(--xm-dim); --mute: var(--xm-mute);
+  --faint: var(--xm-well); --line: var(--xm-well-edge); --spark: var(--xm-accent);
+  --fg-rgb: 16, 57, 26; --dim-rgb: 47, 107, 53; --shadow: rgba(10, 50, 15, 0.3); --shadow-dim: rgba(10, 50, 15, 0.15);
+  color-scheme: light;
+}
+:root[data-look='xmas'][data-theme='dark'] {
+  --xm-bg: #05280e; --xm-panel-rgb: 8, 44, 18;
+  --xm-glass: rgba(6, 40, 16, 0.5); --xm-glass-hi: rgba(18, 70, 30, 0.7); --xm-edge: rgba(255, 255, 255, 0.3); --xm-edge-out: rgba(0, 0, 0, 0.5);
+  --xm-ink: #f2ffe6; --xm-dim: #b8dcaa; --xm-mute: #7ea876; --xm-well: rgba(0, 24, 8, 0.5); --xm-well-edge: rgba(190, 255, 170, 0.25);
+  --xm-accent: #ffd86a; --xm-good: #7ee35f; --xm-warn: #ff8a7a;
+  --xm-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --fg-rgb: 242, 255, 230; --dim-rgb: 184, 220, 170;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='xmas']:not([data-theme]) {
+    --xm-bg: #05280e; --xm-panel-rgb: 8, 44, 18;
+    --xm-glass: rgba(6, 40, 16, 0.5); --xm-glass-hi: rgba(18, 70, 30, 0.7); --xm-edge: rgba(255, 255, 255, 0.3); --xm-edge-out: rgba(0, 0, 0, 0.5);
+    --xm-ink: #f2ffe6; --xm-dim: #b8dcaa; --xm-mute: #7ea876; --xm-well: rgba(0, 24, 8, 0.5); --xm-well-edge: rgba(190, 255, 170, 0.25);
+    --xm-accent: #ffd86a; --xm-good: #7ee35f; --xm-warn: #ff8a7a;
+    --xm-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    --fg-rgb: 242, 255, 230; --dim-rgb: 184, 220, 170;
+    color-scheme: dark;
+  }
+}
+
+/* ---- gold: black into gold, gold gel ------------------------------------------------------- */
+
+:root[data-look='xmas'][data-palette='gold'] {
+  --xm-bg: #c99540; --xm-panel-rgb: 255, 248, 232;
+  --xm-glass: rgba(255, 250, 236, 0.6); --xm-glass-hi: rgba(255, 252, 242, 0.8); --xm-edge: rgba(255, 255, 255, 0.95); --xm-edge-out: rgba(90, 58, 12, 0.35);
+  --xm-ink: #3a2404; --xm-dim: #7a5418; --xm-mute: #a8884e; --xm-well: rgba(255, 252, 240, 0.75); --xm-well-edge: rgba(120, 80, 20, 0.35);
+  --xm-gel-a: #fff0b0; --xm-gel-b: #c8881c; --xm-gel-edge: #7a4e08; --xm-on-gel: #3a2404;
+  --xm-accent: #2f9e3a; --xm-accent-hi: #b8f5a0; --xm-good: #2f9e3a; --xm-warn: #c8140e;
+  --xm-title: linear-gradient(#fffbe6, #f2cf6a 55%, #b0761c);
+  --xm-title-shadow: 0 2px 0 #4a2e04, 0 0 20px rgba(255, 236, 170, 0.9);
+  --xm-shadow: 0 10px 30px rgba(60, 36, 4, 0.3);
+  --xm-cane-a: #e2a82c; --xm-cane-b: #fffbe8;
+  --fg-rgb: 58, 36, 4; --dim-rgb: 122, 84, 24;
+}
+:root[data-look='xmas'][data-palette='gold'][data-theme='dark'] {
+  --xm-bg: #160d03; --xm-panel-rgb: 30, 18, 4;
+  --xm-glass: rgba(24, 14, 2, 0.52); --xm-glass-hi: rgba(56, 36, 8, 0.72); --xm-edge: rgba(255, 230, 160, 0.32); --xm-edge-out: rgba(0, 0, 0, 0.55);
+  --xm-ink: #fff6dc; --xm-dim: #e8cf94; --xm-mute: #a88a50; --xm-well: rgba(10, 6, 0, 0.5); --xm-well-edge: rgba(255, 220, 140, 0.25);
+  --xm-accent: #7ee35f; --xm-good: #7ee35f; --xm-warn: #ff8a7a;
+  --xm-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --fg-rgb: 255, 246, 220; --dim-rgb: 232, 207, 148;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='xmas'][data-palette='gold']:not([data-theme]) {
+    --xm-bg: #160d03; --xm-panel-rgb: 30, 18, 4;
+    --xm-glass: rgba(24, 14, 2, 0.52); --xm-glass-hi: rgba(56, 36, 8, 0.72); --xm-edge: rgba(255, 230, 160, 0.32); --xm-edge-out: rgba(0, 0, 0, 0.55);
+    --xm-ink: #fff6dc; --xm-dim: #e8cf94; --xm-mute: #a88a50; --xm-well: rgba(10, 6, 0, 0.5); --xm-well-edge: rgba(255, 220, 140, 0.25);
+    --xm-accent: #7ee35f; --xm-good: #7ee35f; --xm-warn: #ff8a7a;
+    --xm-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    --fg-rgb: 255, 246, 220; --dim-rgb: 232, 207, 148;
+  }
+}
+
+/* ---- snow: winter blue, ice gel, snow on every panel ---------------------------------------- */
+
+:root[data-look='xmas'][data-palette='snow'] {
+  --xm-bg: #7ab8ea; --xm-panel-rgb: 238, 247, 255;
+  --xm-glass: rgba(255, 255, 255, 0.55); --xm-glass-hi: rgba(255, 255, 255, 0.8); --xm-edge: rgba(255, 255, 255, 0.98); --xm-edge-out: rgba(30, 80, 150, 0.3);
+  --xm-ink: #0d2c5a; --xm-dim: #3a6a9e; --xm-mute: #7d9cc2; --xm-well: rgba(255, 255, 255, 0.75); --xm-well-edge: rgba(40, 100, 170, 0.32);
+  --xm-gel-a: #a6dcff; --xm-gel-b: #2f86d8; --xm-gel-edge: #164f92; --xm-on-gel: #ffffff;
+  --xm-accent: #ff8a24; --xm-accent-hi: #ffd0a0; --xm-good: #2f9e6a; --xm-warn: #d8231a;
+  --xm-title: linear-gradient(#ffffff, #e4f4ff 55%, #9cc8f0);
+  --xm-title-shadow: 0 2px 0 #2a5a9a, 0 0 18px rgba(255, 255, 255, 0.9);
+  --xm-shadow: 0 10px 30px rgba(20, 60, 120, 0.25);
+  --xm-cane-a: #4fa8ec; --xm-cane-b: #ffffff;
+  --xm-snow: radial-gradient(10px 7px at 50% 0, #fff 96%, transparent) 0 -1px / 22px 7px repeat-x,
+    radial-gradient(16px 9px at 50% 0, #fff 96%, transparent) 9px -2px / 38px 9px repeat-x;
+  --fg-rgb: 13, 44, 90; --dim-rgb: 58, 106, 158;
+}
+:root[data-look='xmas'][data-palette='snow'][data-theme='dark'] {
+  --xm-bg: #0a2266; --xm-panel-rgb: 10, 30, 86;
+  --xm-glass: rgba(8, 26, 80, 0.5); --xm-glass-hi: rgba(26, 60, 140, 0.7); --xm-edge: rgba(200, 230, 255, 0.35); --xm-edge-out: rgba(0, 0, 20, 0.55);
+  --xm-ink: #eef7ff; --xm-dim: #a8c8ee; --xm-mute: #6f8fc0; --xm-well: rgba(2, 12, 44, 0.5); --xm-well-edge: rgba(170, 210, 255, 0.28);
+  --xm-gel-a: #e4f7ff; --xm-gel-b: #6ab4f0; --xm-gel-edge: #2a5aa0; --xm-on-gel: #08245a;
+  --xm-good: #6fe0a0; --xm-warn: #ff8a7a;
+  --xm-shadow: 0 10px 30px rgba(0, 0, 20, 0.5);
+  --xm-snow: radial-gradient(10px 7px at 50% 0, #eaf4ff 96%, transparent) 0 -1px / 22px 7px repeat-x,
+    radial-gradient(16px 9px at 50% 0, #eaf4ff 96%, transparent) 9px -2px / 38px 9px repeat-x;
+  --fg-rgb: 238, 247, 255; --dim-rgb: 168, 200, 238;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='xmas'][data-palette='snow']:not([data-theme]) {
+    --xm-bg: #0a2266; --xm-panel-rgb: 10, 30, 86;
+    --xm-glass: rgba(8, 26, 80, 0.5); --xm-glass-hi: rgba(26, 60, 140, 0.7); --xm-edge: rgba(200, 230, 255, 0.35); --xm-edge-out: rgba(0, 0, 20, 0.55);
+    --xm-ink: #eef7ff; --xm-dim: #a8c8ee; --xm-mute: #6f8fc0; --xm-well: rgba(2, 12, 44, 0.5); --xm-well-edge: rgba(170, 210, 255, 0.28);
+    --xm-gel-a: #e4f7ff; --xm-gel-b: #6ab4f0; --xm-gel-edge: #2a5aa0; --xm-on-gel: #08245a;
+    --xm-good: #6fe0a0; --xm-warn: #ff8a7a;
+    --xm-shadow: 0 10px 30px rgba(0, 0, 20, 0.5);
+    --xm-snow: radial-gradient(10px 7px at 50% 0, #eaf4ff 96%, transparent) 0 -1px / 22px 7px repeat-x,
+      radial-gradient(16px 9px at 50% 0, #eaf4ff 96%, transparent) 9px -2px / 38px 9px repeat-x;
+    --fg-rgb: 238, 247, 255; --dim-rgb: 168, 200, 238;
+  }
+}
+
+/* the pieces every glass surface shares: the top-half gloss over the tint */
+:root[data-look='xmas'] {
+  --xm-gloss: linear-gradient(to bottom, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 52%);
+  --xm-gel: linear-gradient(to bottom, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0) 51%), linear-gradient(var(--xm-gel-a), var(--xm-gel-b));
+  --xm-glass-bg: var(--xm-gloss), var(--xm-glass);
+}
+
+/* ---- the page ---------------------------------------------------------------------------- */
+
+[data-look='xmas'] body { background: var(--xm-bg); color: var(--xm-ink); font: 500 14px/1.45 var(--xm-font); }
+[data-look='xmas'] ::selection { background: var(--xm-gel-b); color: #fff; }
+canvas.xmas { position: fixed; left: 0; top: 0; z-index: 0; }
+[data-look='xmas'] .page.enter { animation: xm-fade 420ms ease-out both; }
+@keyframes xm-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* the title: gold (or ice) letters with a glow, on the scene */
+[data-look='xmas'] .title {
+  font: 700 46px/1.05 var(--xm-title-font);
+  letter-spacing: 0.5px;
+  background: var(--xm-title);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.25));
+  text-shadow: none;
+}
+[data-look='xmas'] .title::before { content: none; }
+[data-look='xmas'] .title-block { gap: 6px; }
+[data-look='xmas'] canvas.strip { height: 10px; border-radius: 5px; }
+
+/* ---- panels: tinted glass ------------------------------------------------------------------- */
+
+[data-look='xmas'] .panel {
+  position: relative;
+  background: var(--xm-snow), var(--xm-glass-bg);
+  border: 1px solid var(--xm-edge);
+  border-radius: 14px;
+  box-shadow: 0 0 0 1px var(--xm-edge-out), inset 0 1px 0 rgba(255, 255, 255, 0.5), var(--xm-shadow);
+  -webkit-backdrop-filter: blur(12px) saturate(1.3);
+  backdrop-filter: blur(12px) saturate(1.3);
+  animation: none;
+}
+[data-look='xmas'] .panel.enter, [data-look='xmas'] .panel.enter.alt { animation: xm-rise 420ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+@keyframes xm-rise { from { opacity: 0; transform: translateY(14px) scale(0.98); } to { opacity: 1; transform: none; } }
+[data-look='xmas'][data-palette='snow'] .panel { padding-top: 18px; }
+[data-look='xmas'] .panel-title { font: 700 22px/1.1 var(--xm-title-font); color: var(--xm-ink); letter-spacing: 0.3px; }
+[data-look='xmas'] .panel-title::before { content: none; }
+
+/* ---- buttons: gel ------------------------------------------------------------------------- */
+
+[data-look='xmas'] :is(.pill, .seg button) {
+  position: relative;
+  height: 30px;
+  padding: 0 16px;
+  border: 1px solid var(--xm-well-edge);
+  border-radius: 999px;
+  background: var(--xm-gloss), var(--xm-well);
+  color: var(--xm-ink);
+  font: 700 13px/1 var(--xm-font);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 1px 3px rgba(0, 0, 0, 0.18);
+  transition: filter 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+}
+[data-look='xmas'] .pill:not(.minor), [data-look='xmas'] .seg button.on {
+  background: var(--xm-gel);
+  border-color: var(--xm-gel-edge);
+  color: var(--xm-on-gel);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), inset 0 -2px 4px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+[data-look='xmas'][data-palette='gold'] .pill:not(.minor), [data-look='xmas'][data-palette='gold'] .seg button.on { text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5); }
+[data-look='xmas'] .pill.small { height: 26px; padding: 0 12px; font-size: 12px; }
+[data-look='xmas'] :is(.pill, .seg button):hover:not(:disabled) { filter: brightness(1.08) saturate(1.1); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 0 12px var(--xm-accent-hi); }
+[data-look='xmas'] :is(.pill, .seg button):active:not(:disabled) { transform: translateY(1px); filter: brightness(0.95); }
+[data-look='xmas'] :is(.pill, .seg button):disabled { opacity: 0.55; }
+[data-look='xmas'] :is(.pill, .seg button):focus-visible { outline: 2px solid var(--xm-accent); outline-offset: 2px; }
+[data-look='xmas'] .seg { gap: 6px; flex-wrap: wrap; }
+
+/* ---- wells: fields --------------------------------------------------------------------------- */
+
+[data-look='xmas'] :is(input[type='text'], input[type='password'], input[type='url'], select) {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--xm-well-edge);
+  border-radius: 9px;
+  background: var(--xm-well);
+  color: var(--xm-ink);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.18);
+  font: 500 13px/1 var(--xm-font);
+}
+[data-look='xmas'] :is(input, select):focus { outline: none; border-color: var(--xm-accent); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.18), 0 0 0 3px color-mix(in srgb, var(--xm-accent) 35%, transparent); }
+[data-look='xmas'] input::placeholder { color: var(--xm-mute); }
+[data-look='xmas'] input:-webkit-autofill { -webkit-text-fill-color: var(--xm-ink); box-shadow: 0 0 0 100px var(--xm-well) inset; }
+[data-look='xmas'] .field > label { font: 600 13px/30px var(--xm-font); color: var(--xm-dim); }
+[data-look='xmas'] .field > .control .note { font: 500 12px/1.4 var(--xm-font); color: var(--xm-dim); }
+
+/* ---- checks: a little glass bauble that fills with gel ---------------------------------------- */
+
+[data-look='xmas'] .check { font: 500 13px/1.4 var(--xm-font); color: var(--xm-ink); }
+[data-look='xmas'] .check input {
+  width: 18px; height: 18px; border: 1px solid var(--xm-well-edge); border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 45%), var(--xm-well);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: background 160ms ease, transform 160ms cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+[data-look='xmas'] .check input:checked {
+  border-color: var(--xm-gel-edge);
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 40%), radial-gradient(circle at 50% 60%, var(--xm-gel-a), var(--xm-gel-b));
+  transform: scale(1.08);
+}
+[data-look='xmas'] .check input:focus-visible { outline: 2px solid var(--xm-accent); outline-offset: 2px; }
+
+/* ---- the slider: a candy track, a bauble for a knob -------------------------------------------- */
+
+[data-look='xmas'] .slider { height: 22px; }
+[data-look='xmas'] .slider::-webkit-slider-runnable-track {
+  height: 8px; border: 1px solid var(--xm-well-edge); border-radius: 4px; box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(to right, var(--xm-gel-b) var(--fill, 50%), var(--xm-well) var(--fill, 50%));
+}
+[data-look='xmas'] .slider::-webkit-slider-thumb {
+  appearance: none; width: 18px; height: 18px; margin-top: -6px; border: 1px solid var(--xm-gel-edge); border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, rgba(255, 255, 255, 0) 45%), radial-gradient(circle at 50% 60%, var(--xm-gel-a), var(--xm-gel-b));
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+[data-look='xmas'] .slider:focus-visible { outline: 2px solid var(--xm-accent); outline-offset: 3px; }
+
+/* ---- words ------------------------------------------------------------------------------- */
+
+[data-look='xmas'] .hint { font: 500 13px/1.4 var(--xm-font); color: var(--xm-dim); }
+[data-look='xmas'] .hint.good { color: var(--xm-good); }
+[data-look='xmas'] .hint.bad { color: var(--xm-ink); font-weight: 700; }
+[data-look='xmas'] .hint.bad::first-letter { color: var(--xm-warn); }
+[data-look='xmas'] .meta { font: 500 12px/1.4 var(--xm-font); color: var(--xm-dim); }
+[data-look='xmas'] button.link { color: var(--xm-ink); font: inherit; text-decoration: underline; text-decoration-color: var(--xm-accent); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+/* list rows: the open one a gel row */
+[data-look='xmas'] .item { border: 1px solid transparent; border-radius: 10px; padding: 6px 10px; gap: 10px; }
+[data-look='xmas'] .item:hover { background: var(--xm-gloss), var(--xm-glass); border-color: var(--xm-edge); }
+[data-look='xmas'] .item .name { font: 700 13px/1.4 var(--xm-font); }
+[data-look='xmas'] .item.on { background: var(--xm-gel); border-color: var(--xm-gel-edge); color: var(--xm-on-gel); }
+[data-look='xmas'] .item.on .meta { color: var(--xm-on-gel); opacity: 0.85; }
+[data-look='xmas'] .col::-webkit-scrollbar, [data-look='xmas'] .grid::-webkit-scrollbar { width: 10px; }
+[data-look='xmas'] .col::-webkit-scrollbar-track { background: transparent; }
+[data-look='xmas'] .col::-webkit-scrollbar-thumb { background: var(--xm-gel); border-radius: 5px; border: 2px solid transparent; background-clip: content-box; }
+
+/* the footer: a glass strip */
+[data-look='xmas'] .footer {
+  align-self: stretch;
+  padding: 4px 14px;
+  background: var(--xm-glass-bg);
+  border: 1px solid var(--xm-edge);
+  border-radius: 999px;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  font: 500 12px/22px var(--xm-font);
+  color: var(--xm-dim);
+}
+
+/* the toast: a gel pill */
+[data-look='xmas'] .toast {
+  height: 34px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid var(--xm-gel-edge);
+  background: var(--xm-gel);
+  color: var(--xm-on-gel);
+  font: 700 13px/32px var(--xm-font);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* the setup window's server lamps: tiny baubles */
+[data-look='xmas'] .dot { width: 10px; height: 10px; border: 1px solid var(--xm-well-edge); border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, rgba(255, 255, 255, 0) 50%), var(--xm-mute); box-shadow: none; }
+[data-look='xmas'] .dot.ok { background: radial-gradient(circle at 35% 30%, #fff, rgba(255, 255, 255, 0) 50%), var(--xm-good); box-shadow: 0 0 8px var(--xm-good); }
+[data-look='xmas'] .dot.bad::after { background: var(--xm-warn); }
+
+/* the screen picker's sources: glass, the chosen one rimmed in gel */
+[data-look='xmas'] .source { background: var(--xm-glass-bg); border: 1px solid var(--xm-edge); border-radius: 12px; box-shadow: var(--xm-shadow); color: var(--xm-ink); }
+[data-look='xmas'] .source.on { border-color: var(--xm-gel-b); box-shadow: 0 0 0 2px var(--xm-gel-b), 0 0 16px var(--xm-accent-hi); }
+[data-look='xmas'] .source img.thumb { border-radius: 8px; }
+[data-look='xmas'] .source .label { font: 600 12px/1.25 var(--xm-font); }
+
+/* the theme menu: a well, its list a glass panel */
+[data-look='xmas'] select { padding-right: 28px; }
+[data-look='xmas'] select::picker(select) { border: 1px solid var(--xm-edge); border-radius: 12px; padding: 4px; background: var(--xm-glass-hi); box-shadow: var(--xm-shadow); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+[data-look='xmas'] select option { font: 500 13px/1 var(--xm-font); padding: 7px 10px; border-radius: 8px; color: var(--xm-ink); }
+[data-look='xmas'] select option:hover, [data-look='xmas'] select option:focus-visible { background: var(--xm-gel); color: var(--xm-on-gel); outline: none; }
+[data-look='xmas'] select option:checked { font-weight: 800; }
+
+/* theme tints: little glass baubles */
+[data-look='xmas'] .tint { border-radius: 50%; }
+[data-look='xmas'] .tint .sw { border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 1px var(--xm-edge-out), inset 0 0 0 1px rgba(255, 255, 255, 0.4); }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-look='xmas'] .panel.enter, [data-look='xmas'] .page.enter { animation: none; }
+  [data-look='xmas'] :is(.pill, .seg button, .check input) { transition: none; }
+}

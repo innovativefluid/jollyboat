@@ -8,6 +8,7 @@ import { ALL_PALETTES, LOOKS, type TLook, type TPalette } from '../shared/types'
 import type { TBarState, TOverlayState, TPickerResult, TServerInput, TSettings, TUpdateStatus, TVoiceMember, TVoiceReport } from '../shared/types';
 import { startPageWater } from './water';
 import { startPageSky } from './sky';
+import { startPageXmas } from './christmas';
 import { startSaveButtons } from './save-buttons';
 import { exposeDesktopBridge } from './desktop-bridge';
 import { createT } from '../shared/i18n';
@@ -568,7 +569,7 @@ html.dark[data-jb-bar='lcd'] ${TOPBAR} { background: #18201c !important; border-
     root.style.setProperty('--jb-bar-h', px(bar.h));
     root.style.setProperty('--jb-bar-l', px(bar.l));
     root.style.setProperty('--jb-bar-r', px(bar.r));
-    root.setAttribute('data-jb-bar', bar.look === 'water' || bar.look === 'retro' || bar.look === 'sky' ? bar.look : 'lcd');
+    root.setAttribute('data-jb-bar', bar.look === 'water' || bar.look === 'retro' || bar.look === 'sky' || bar.look === 'xmas' ? bar.look : 'lcd');
   });
 
   // (a view shown by a class change brings no new nodes: looked at once a second as well)
@@ -651,18 +652,23 @@ html.dark[data-jb-bar='lcd'] ${TOPBAR} { background: #18201c !important; border-
   if (document.documentElement) watchPlaying();
   else window.addEventListener('DOMContentLoaded', watchPlaying, { once: true });
 
-  // the pixel sky theme: its sky behind the page (rests with the water's rules: hidden tab, a game)
-  let pageSky: ReturnType<typeof startPageSky> = null;
-  let wantSky = boot.isSavedServer && boot.look === 'sky';
+  // the pixel sky and christmas themes: their scene behind the page (rests with the water's
+  // rules: hidden tab, a game)
+  type TScene = { stop: () => void; rest: (on: boolean) => void };
+  let pageSky: TScene | null = null;
+  let skyAs: TLook | null = null;
+  const sceneLook = (look: unknown): TLook | null => (boot.isSavedServer && (look === 'sky' || look === 'xmas') ? look : null);
+  let wantSky = sceneLook(boot.look);
   const setSky = () => {
-    const on = wantSky && shown;
-    if (on && !pageSky && document.body) {
-      pageSky = startPageSky(hasFocus);
-      if (playing()) pageSky?.rest(true);
-    }
-    if (!on && pageSky) {
+    const on = shown ? wantSky : null;
+    if (pageSky && skyAs !== on) {
       pageSky.stop();
       pageSky = null;
+    }
+    skyAs = on;
+    if (on && !pageSky && document.body) {
+      pageSky = on === 'sky' ? startPageSky(hasFocus) : startPageXmas(hasFocus, () => waterPalette);
+      if (playing()) pageSky?.rest(true);
     }
   };
   window.addEventListener('DOMContentLoaded', setSky, { once: true });
@@ -684,7 +690,7 @@ html.dark[data-jb-bar='lcd'] ${TOPBAR} { background: #18201c !important; border-
   window.addEventListener('DOMContentLoaded', () => setWater(wantWater), { once: true });
   ipcRenderer.on('shell:water', (_e, on: unknown, palette: unknown, look: unknown) => {
     wantWater = on === true;
-    wantSky = boot.isSavedServer && look === 'sky';
+    wantSky = sceneLook(look);
     if (ALL_PALETTES.includes(palette as TPalette)) waterPalette = palette as TPalette;
     if (document.body) {
       setWater(wantWater);

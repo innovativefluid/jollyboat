@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="../theme/water.css" />
     <link rel="stylesheet" href="../theme/retro.css" />
     <link rel="stylesheet" href="../theme/sky.css" />
+    <link rel="stylesheet" href="../theme/xmas.css" />
     <style>
       /* the bar above a server: the lcd look (dark tokens in theme.css), dark when the sharkord
          page below is (data-theme), else with the colour mode */
@@ -211,6 +212,33 @@
       [data-look='sky'] body.merged.dim::after { background: var(--sk-shade); mask: var(--sk-d8); }
       @media (prefers-reduced-motion: reduce) {
         [data-look='sky'] .tab.born, [data-look='sky'] .tab .unread, [data-look='sky'] .tab .count, [data-look='sky'] .tab svg.voice path, [data-look='sky'] .chip::after { animation: none; }
+      }
+      /* christmas: the bar is a strip of the scene's glow (bokeh drifting, sparkles); chips are
+         glass pills, the chosen ones gel. merged, the page's own scene shows through */
+      :root[data-look='xmas'] body { background: var(--xm-bg); border-bottom: 0; }
+      [data-look='xmas'] .bar { position: relative; z-index: 1; gap: 6px; }
+      [data-look='xmas'] :is(.name, .chip, .zoom span, .controls button) {
+        border: 1px solid var(--xm-edge); border-radius: 999px; color: var(--xm-ink);
+        background: var(--xm-gloss), var(--xm-glass); box-shadow: 0 0 0 1px var(--xm-edge-out), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+      }
+      [data-look='xmas'] .name { font: 700 13px/1 var(--xm-font); padding: 4px 12px; }
+      [data-look='xmas'] .name .app { color: var(--xm-dim); font-weight: 500; }
+      [data-look='xmas'] .chip { font: 700 12px/1 var(--xm-font); }
+      [data-look='xmas'] :is(.chip, .controls button):hover { filter: brightness(1.08); box-shadow: 0 0 0 1px var(--xm-edge-out), 0 0 10px var(--xm-accent-hi); background: var(--xm-gloss), var(--xm-glass-hi); color: var(--xm-ink); }
+      [data-look='xmas'] .chip.fill { background: var(--xm-gel); border-color: var(--xm-gel-edge); color: var(--xm-on-gel); }
+      [data-look='xmas'] .zoom span { font: 700 12px/1 var(--xm-font); padding: 5px 0; min-width: 48px; }
+      [data-look='xmas'] .controls { border-left: 0; gap: 4px; align-items: center; padding: 0 8px 0 4px; }
+      [data-look='xmas'] .controls button { width: 26px; height: 22px; }
+      [data-look='xmas'] .controls button#close:hover { background: linear-gradient(to bottom, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0) 51%), linear-gradient(#ff7a64, #c8140e); border-color: #8a0a06; color: #fff; }
+      [data-look='xmas'] .tab .ico { border-radius: 50%; }
+      [data-look='xmas'] .tab .unread { background: radial-gradient(circle at 35% 30%, #fff, var(--xm-accent) 60%); box-shadow: 0 0 6px var(--xm-accent); }
+      [data-look='xmas'] .tab .count { border-radius: 999px; background: var(--xm-gel); color: var(--xm-on-gel); font: 800 11px/16px var(--xm-font); }
+      [data-look='xmas'] .tab.off { color: var(--xm-mute); }
+      [data-look='xmas'] .tab.born { animation: xm-pop 320ms cubic-bezier(0.3, 1.5, 0.5, 1) backwards; }
+      @keyframes xm-pop { from { transform: scale(0.6); opacity: 0; } to { transform: none; opacity: 1; } }
+      [data-look='xmas'] body.merged.dim::after { background: rgba(0, 10, 4, 0.35); }
+      @media (prefers-reduced-motion: reduce) {
+        [data-look='xmas'] .tab.born { animation: none; }
       }
       @media (prefers-reduced-motion: reduce) {
         [data-look='retro'] .tab.born, [data-look='retro'] .tab .unread, [data-look='retro'] .tab .count, [data-look='retro'] .tab svg.voice path { animation: none; }

@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="../theme/water.css" />
     <link rel="stylesheet" href="../theme/retro.css" />
     <link rel="stylesheet" href="../theme/sky.css" />
+    <link rel="stylesheet" href="../theme/xmas.css" />
     <style>
       /* the voice overlay: the lcd look on a see-through window. the background takes the opacity
          from the settings; text and the talking fill stay solid, with an outline in the
@@ -108,6 +109,21 @@
       [data-look='retro'] .place button { font: 400 12px/1 var(--r-font); color: #fff; border: 0; border-radius: 0; padding: 4px 10px; background: var(--r-accent); box-shadow: inset -1px -1px var(--r-dark), inset 1px 1px var(--r-accent-hi); }
       /* the pixel sky: a panel (as see-through as set: the panel's own picture without its fill,
          the colour behind it with the opacity), whoever talks a filled row */
+      /* christmas: tinted glass, its gloss on top; whoever talks a gel row */
+      [data-look='xmas'] .card {
+        background: var(--xm-gloss), rgba(var(--xm-panel-rgb), var(--alpha));
+        border: 1px solid rgba(255, 255, 255, max(calc(var(--alpha) * 0.9), 0.0)); border-radius: 12px;
+        --outline: rgba(var(--xm-panel-rgb), calc(1 - var(--alpha) * 0.6));
+      }
+      [data-look='xmas'] .head { font: 700 16px/1.1 var(--xm-title-font); color: var(--xm-ink); }
+      [data-look='xmas'] .row { font: 600 13px/1.2 var(--xm-font); color: var(--xm-ink); border-radius: 8px; }
+      [data-look='xmas'] .row .self, [data-look='xmas'] .row.quiet .who { color: var(--xm-dim); }
+      [data-look='xmas'] .dot { border: 0; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, var(--xm-mute) 60%); }
+      [data-look='xmas'] .row.talking { background: var(--xm-gel); color: var(--xm-on-gel); text-shadow: none; }
+      [data-look='xmas'] .row.talking .dot { background: radial-gradient(circle at 35% 30%, #fff, var(--xm-accent) 60%); box-shadow: 0 0 6px var(--xm-accent); }
+      [data-look='xmas'] .row.talking .self { color: var(--xm-on-gel); }
+      [data-look='xmas'] .empty, [data-look='xmas'] .place { font: 500 12px/1.2 var(--xm-font); color: var(--xm-dim); }
+      [data-look='xmas'] .place button { font: 700 12px/1 var(--xm-font); color: var(--xm-on-gel); border: 1px solid var(--xm-gel-edge); border-radius: 999px; padding: 5px 12px; background: var(--xm-gel); }
       [data-look='sky'] .card {
         background: rgba(var(--sk-panel-rgb, 251, 253, 255), max(var(--alpha), 0.0));
         background-clip: padding-box; border: 0; border-radius: 0; padding: 4px 6px 8px;

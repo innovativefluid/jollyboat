@@ -12,7 +12,7 @@ export type { TLook, TPalette };
 
 export const currentLook = (): TLook => {
   const { theme } = getSettings();
-  return theme === 'water' ? 'water' : theme === 'retro' ? 'retro' : theme === 'pixelsky' ? 'sky' : 'lcd';
+  return theme === 'water' ? 'water' : theme === 'retro' ? 'retro' : theme === 'pixelsky' ? 'sky' : theme === 'christmas' ? 'xmas' : 'lcd';
 };
 
 /** the current theme's colours, picked beside the theme menu (lcd has none: blue, unused) */
@@ -24,7 +24,8 @@ export const currentPalette = (): TPalette => {
 // [light, dark] per theme and palette: the pool's middle, the retro desktop
 const BACKGROUNDS = {
   water: { blue: ['#9fd8f6', '#06203c'], pink: ['#f7b6d8', '#2a0820'], mono: ['#e6e6e6', '#121212'] },
-  retro: { pink: ['#f9c9e4', '#1c1029'], green: ['#9fe0c8', '#0b1f24'], grey: ['#a8acb4', '#1e1f24'] }
+  retro: { pink: ['#f9c9e4', '#1c1029'], green: ['#9fe0c8', '#0b1f24'], grey: ['#a8acb4', '#1e1f24'] },
+  christmas: { classic: ['#3f9a36', '#05280e'], gold: ['#c99540', '#160d03'], snow: ['#7ab8ea', '#0a2266'] }
 } as const;
 
 /** what a window shows before its page has painted: the page's own background colour */
@@ -35,10 +36,11 @@ export const windowBackground = (dark = nativeTheme.shouldUseDarkColors) => {
   if (look === 'retro') return BACKGROUNDS.retro[palette as 'pink']?.[dark ? 1 : 0] ?? BACKGROUNDS.retro.pink[dark ? 1 : 0];
   // the pixel sky: the top of its sky, night or day
   if (look === 'sky') return dark ? '#070920' : '#3e8ee4';
+  if (look === 'xmas') return BACKGROUNDS.christmas[palette as 'classic']?.[dark ? 1 : 0] ?? BACKGROUNDS.christmas.classic[dark ? 1 : 0];
   return dark ? '#18201c' : '#a6b08a';
 };
 
-/** tells every open page of ours, and saved server pages whether the water (or the pixel sky) runs behind them */
+/** tells every open page of ours, and saved server pages whether the water (or the pixel sky, or christmas) runs behind them */
 export const broadcastLook = () => {
   const look = currentLook();
   const palette = currentPalette();
