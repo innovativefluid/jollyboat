@@ -1,7 +1,8 @@
 // Updates. Windows (installed) and the Linux AppImage: electron-updater against GitHub Releases
 // (latest.yml, latest-linux.yml, latest-linux-arm64.yml), downloads in the background and
-// installs on quit (the AppImage replaces its own file). The portable exe, the .flatpak from
-// GitHub and the mac build: only a notice that a newer release exists (a bundle
+// installs on quit (the AppImage replaces its own file). The portable exe updates itself too, in
+// its own way (portable-update.ts: latest-portable.json, the file swapped next to itself). The
+// .flatpak from GitHub and the mac build: only a notice that a newer release exists (a bundle
 // file has no update channel; an unsigned mac app cannot update itself). The Flathub build
 // checks nothing: Flathub delivers its updates. All run only in packaged builds, every six
 // hours, behind the "check for updates" toggle.
@@ -12,6 +13,7 @@ import { log } from './log';
 import { getSettings } from './settings';
 import { integrateAppImage } from './appimage';
 import { refreshAutoStart } from './autostart';
+import { downloadPortable, portableFile, portableInfo, restartPortable } from './portable-update';
 
 const RELEASES_API = 'https://api.github.com/repos/innovativefluid/jollyboat/releases?per_page=10';
 const RELEASES_PAGE = 'https://github.com/innovativefluid/jollyboat/releases';
@@ -37,22 +39,49 @@ const newer = (a: string, b: string) => {
   return false;
 };
 
+/** the newest published release on github */
+const latestRelease = async () => {
+  const res = await net.fetch(RELEASES_API, { headers: { Accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(10000) });
+  if (!res.ok) throw new Error(`http ${res.status}`);
+  const releases = (await res.json()) as { tag_name: string; draft: boolean; html_url: string }[];
+  const latest = releases.find((r) => !r.draft && /^v\d+\.\d+\.\d+$/.test(r.tag_name));
+  return latest ? { version: latest.tag_name.slice(1), url: latest.html_url } : null;
+};
+
 /** linux and mac: look at github, say so if there is something newer */
 const checkGitHub = async () => {
   set({ state: 'checking' });
 
   try {
-    const res = await net.fetch(RELEASES_API, { headers: { Accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(10000) });
-    if (!res.ok) throw new Error(`http ${res.status}`);
-
-    const releases = (await res.json()) as { tag_name: string; draft: boolean; html_url: string }[];
-    const latest = releases.find((r) => !r.draft && /^v\d+\.\d+\.\d+$/.test(r.tag_name));
-    const version = latest?.tag_name.slice(1);
-
-    if (version && newer(version, app.getVersion())) set({ state: 'available', version, url: latest!.html_url });
+    const latest = await latestRelease();
+    if (latest && newer(latest.version, app.getVersion())) set({ state: 'available', version: latest.version, url: latest.url });
     else set({ state: 'none' });
   } catch (err) {
     set({ state: 'error', message: (err as Error).message.toLowerCase() });
+  }
+};
+
+/** the portable exe: a newer release's portable exe downloaded, checked and put in place */
+let portableBusy = false;
+const checkPortable = async () => {
+  // (a new version already waiting for its start: nothing more to do)
+  if (portableBusy || status.state === 'downloaded') return;
+  portableBusy = true;
+  set({ state: 'checking' });
+
+  try {
+    const latest = await latestRelease();
+    if (!latest || !newer(latest.version, app.getVersion())) return set({ state: 'none' });
+    const file = await portableInfo(latest.version);
+    // a release from before the portable updates: the notice, as before
+    if (!file) return set({ state: 'available', version: latest.version, url: latest.url });
+    set({ state: 'available', version: latest.version });
+    await downloadPortable(latest.version, file);
+    set({ state: 'downloaded', version: latest.version });
+  } catch (err) {
+    set({ state: 'error', message: (err as Error).message.toLowerCase() });
+  } finally {
+    portableBusy = false;
   }
 };
 
@@ -104,9 +133,9 @@ export const startUpdater = async () => {
   started = true;
 
   try {
-    // the portable exe and the flatpak cannot replace themselves: like mac they get the notice
-    // (if the updater itself fails to load, at least the notice still comes)
-    const run = canSelfUpdate() ? await startSelfUpdate().catch(() => checkGitHub) : checkGitHub;
+    // the flatpak cannot replace itself: like mac it gets the notice (if the updater itself fails
+    // to load, at least the notice still comes)
+    const run = portableFile() ? checkPortable : canSelfUpdate() ? await startSelfUpdate().catch(() => checkGitHub) : checkGitHub;
     // the toggle is read on every round, so turning it off stops the next check
     const check = () => (getSettings().checkUpdates ? run() : undefined);
 
@@ -119,6 +148,8 @@ export const startUpdater = async () => {
 
 export const installUpdateNow = async () => {
   if (status.state !== 'downloaded') return;
+  // the portable exe: the new file is in place already, it only has to start
+  if (portableFile()) return restartPortable();
 
   (await loadAutoUpdater()).quitAndInstall();
 };

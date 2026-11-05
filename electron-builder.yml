@@ -63,11 +63,15 @@ nsis:
   perMachine: false
   allowToChangeInstallationDirectory: true
   runAfterFinish: true
+  # the privacy statement (and the MIT license) on a page of the installer: shown during the
+  # installation, as the SignPath Foundation's code signing asks
+  license: build/license.txt
   # file names: Jollyboat-<version>-<platform>-<arch>[-<kind>]; universal = x64 and arm64 in one
   artifactName: ${productName}-${version}-windows-universal-setup.${ext}
 
 # the portable exe: no installer, settings in a Jollyboat-data folder next to it, one per
-# architecture (built in two runs, see dist:win), no self-update (the app shows a notice)
+# architecture (built in two runs, see dist:win); it updates itself from latest-portable.json
+# (src/main/portable-update.ts, written by CI with tools/update-info.cjs)
 portable:
   artifactName: ${productName}-${version}-windows-${arch}-portable.${ext}
 

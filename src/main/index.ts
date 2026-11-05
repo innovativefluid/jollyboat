@@ -20,6 +20,7 @@ import type { TBarState, TTab, TVoiceMember, TVoiceState } from '../shared/types
 import { applySpellcheck, blockDictionaryDownloads } from './privacy';
 import { initScreenAudio, soundAppsSupported, stopPipeWireShare } from './screen-audio';
 import { canSelfUpdate, loadAutoUpdater, startUpdater } from './updater';
+import { cleanPortableLeftovers, portableFile, swapPortable } from './portable-update';
 import { askPrompt } from './prompt';
 import { t } from './lang';
 import { setOverlayHostFocused, setOverlayTheme, setOverlayVoice } from './overlay';
@@ -1097,7 +1098,19 @@ const runSmokeTest = async () => {
     // the installed windows build updates itself: its updater has to load (0.3.1–0.3.8 shipped
     // one that did not)
     const updater = canSelfUpdate() ? await loadAutoUpdater().then(() => 'ok', (err: Error) => `failed: ${err.message}`) : 'n/a';
-    const line = `[smoke] ${process.platform} ${process.arch} | electron ${process.versions.electron} | jollyboat ${__APP_VERSION__} | setup panels ${panels} | bar ${bar} | keys ${keys} | updater ${updater}${PORTABLE ? ' | portable' : ''}${process.env.APPIMAGE ? ' | appimage' : ''}${process.platform === 'win32' ? ` | app sound ${soundAppsSupported() ? 'ok' : 'n/a'}` : ''}`;
+    // the portable update's swap, tried for real by CI (JOLLYBOAT_SMOKE_SWAP: a copy of the exe that
+    // takes the running exe's place while it runs; the next start clears the old one away)
+    let swap = '';
+    const swapWith = process.env.JOLLYBOAT_SMOKE_SWAP;
+    if (PORTABLE && swapWith) {
+      try {
+        swapPortable(portableFile()!, swapWith);
+        swap = ' | swap ok';
+      } catch (err) {
+        swap = ` | swap failed: ${(err as Error).message}`;
+      }
+    }
+    const line = `[smoke] ${process.platform} ${process.arch} | electron ${process.versions.electron} | jollyboat ${__APP_VERSION__} | setup panels ${panels} | bar ${bar} | keys ${keys} | updater ${updater}${PORTABLE ? ' | portable' : ''}${swap}${process.env.APPIMAGE ? ' | appimage' : ''}${process.platform === 'win32' ? ` | app sound ${soundAppsSupported() ? 'ok' : 'n/a'}` : ''}`;
     console.log(line);
     // the portable launcher does not pass the app's output on: the line also goes next to the data
     if (PORTABLE) writeFileSync(join(app.getPath('userData'), 'smoke.log'), `${line}\n`);
@@ -1144,6 +1157,8 @@ if (!app.requestSingleInstanceLock()) {
   });
 
   app.whenReady().then(async () => {
+    // a portable copy that updated itself: the old exe (it ran until the last quit) goes
+    cleanPortableLeftovers();
     // dev only: JOLLYBOAT_NETLOG=/path/log.json records every request; SIGUSR2 writes it out
     if (!app.isPackaged && process.env.JOLLYBOAT_NETLOG) {
       const { netLog } = await import('electron');

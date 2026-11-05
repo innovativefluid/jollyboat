@@ -29,7 +29,7 @@ A desktop app for [Sharkord](https://sharkord.com) servers, for Windows, Linux a
 - **Tray** — in voice, talking, muted, deafened, new messages; its icon matches your theme.
 - **Controllers for plugins** — game controllers reach the page (Flatpak too), and plugins like Jollyplay may light up a DualShock 4 or DualSense.
 - **Light, dark or auto**, **English, German and Polish**, zoom per server.
-- **Private** — talks to your servers, plus GitHub for update checks (one switch to turn off). No telemetry. On Windows, push-to-talk uses a keyboard hook while a hotkey is set: keys are compared with your hotkeys and never stored or sent.
+- **Private** — talks to your servers, plus GitHub for update checks (one switch to turn off). No telemetry. On Windows, push-to-talk uses a keyboard hook while a hotkey is set: keys are compared with your hotkeys and never stored or sent. See the [privacy policy](PRIVACY.md).
 
 ## Jollyboat and Sharkord Desktop
 
@@ -81,7 +81,7 @@ From [releases](../../releases):
 
 | | |
 |---|---|
-| Windows (x64 or ARM) | `Jollyboat-x.y.z-windows-universal-setup.exe`, updates itself; or portable: `Jollyboat-x.y.z-windows-x64-portable.exe` (`arm64`), settings in a `Jollyboat-data` folder next to it |
+| Windows (x64 or ARM) | `Jollyboat-x.y.z-windows-universal-setup.exe`, updates itself; or portable: `Jollyboat-x.y.z-windows-x64-portable.exe` (`arm64`), settings in a `Jollyboat-data` folder next to it, updates itself too |
 | Linux (x64 or ARM) | the AppImage, which updates itself: `Jollyboat-x.y.z-linux-x86_64.AppImage` (`arm64`), make it executable and run it once, it adds itself to the app menu; or `flatpak install ./Jollyboat-x.y.z-linux-x64.flatpak` (`arm64`) |
 | macOS 13+ (Intel or Apple silicon) | `Jollyboat-x.y.z-mac-universal.dmg`. It is not signed by Apple: open it the first time with **System Settings → Privacy & Security → Open Anyway**. It tells you about new releases instead of updating itself |
 
@@ -102,5 +102,18 @@ npm run dist:appimage  # the AppImage; the flatpak is built from source:
 npm run dist:mac       # on a mac
 python3 tools/make-icons.py   # the app and tray icons, from build/pixel/ (needs Pillow)
 ```
+
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+
+The Windows downloads (the installer and the portable exes) are signed from the first release after the project's application to the SignPath Foundation is accepted; earlier releases are unsigned. Only builds made by this repository's GitHub Actions release workflow from its public source are signed, and each release is approved by hand before it is signed.
+
+- Committers and reviewers: [innovativefluid](https://github.com/innovativefluid)
+- Approvers: [innovativefluid](https://github.com/innovativefluid)
+
+Privacy: Jollyboat sends nothing to anyone but the servers you add, and GitHub for update checks while those are on. See the [privacy policy](PRIVACY.md).
+
+## License
 
 MIT — see [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

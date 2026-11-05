@@ -1,0 +1,45 @@
+Jollyboat - a desktop app for Sharkord servers
+
+PRIVACY
+
+Jollyboat collects nothing about you and has no servers of its own. It sends no telemetry, no
+crash reports and no usage statistics. It connects to:
+
+- the Sharkord servers you add (it loads their web app, as a browser would);
+- GitHub (api.github.com, github.com) every six hours to look for updates and download them,
+  while "check for updates on github" is on (setup window -> privacy; on by default). GitHub
+  sees your IP address and nothing else. Turn the switch off and Jollyboat does not contact
+  GitHub at all;
+- Google's dictionary download (redirector.gvt1.com), only while "spellcheck" is on (off by
+  default).
+
+Your servers, logins and settings stay on this computer. On Windows, push-to-talk uses a
+keyboard hook while a hotkey is set: keys are compared with your hotkeys and never stored or
+sent. The full privacy policy:
+https://github.com/innovativefluid/jollyboat/blob/main/PRIVACY.md
+
+To uninstall Jollyboat, use Windows Settings -> Apps -> Installed apps -> Jollyboat.
+
+
+LICENSE
+
+MIT License
+Copyright (c) 2026 innovativefluid
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

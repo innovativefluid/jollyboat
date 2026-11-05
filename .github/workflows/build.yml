@@ -9,6 +9,11 @@ on:
     inputs:
       # the release builds the mac app separately, so a missing macos runner cannot hold it up
       targets: { type: string, default: all, description: 'all | main (windows + linux) | mac' }
+      # the release: windows downloads signed through SignPath (once the SignPath settings are
+      # there: the SIGNPATH_API_TOKEN secret and the SIGNPATH_ORGANIZATION_ID variable)
+      sign: { type: boolean, default: false }
+    secrets:
+      SIGNPATH_API_TOKEN: { required: false }
 
 jobs:
   check:
@@ -25,10 +30,16 @@ jobs:
     needs: check
     if: ${{ inputs.targets != 'mac' }}
     runs-on: windows-latest
+    env:
+      # signing: asked for (a release) and set up (see .signpath/README.md)
+      SIGN: ${{ inputs.sign && secrets.SIGNPATH_API_TOKEN != '' && vars.SIGNPATH_ORGANIZATION_ID != '' }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
         with: { node-version: 22, cache: npm }
+      - name: Version
+        shell: bash
+        run: echo "VERSION=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
       - run: npm ci
       # the helper that records one app's sound for a screen share (native/win-audio), for both
       # architectures; electron-builder puts the matching one next to the app (extraResources)
@@ -52,7 +63,22 @@ jobs:
           New-Item -ItemType Directory -Force build/win-audio/arm64, build/obj-arm64 | Out-Null
           cl /nologo /O2 /EHsc /std:c++17 /W3 /MT /DUNICODE /D_UNICODE native/win-audio/jollyboat-audio.cpp /Fobuild/obj-arm64/ /Fe:build/win-audio/arm64/jollyboat-audio.exe /link ole32.lib mmdevapi.lib
           if ($LASTEXITCODE) { throw 'helper build failed' }
-      - run: npm run dist:win
+      # signed releases name their publisher, so installed copies check that every update comes
+      # from the same one (electron-updater: publisherName in app-update.yml)
+      - name: Build
+        shell: pwsh
+        run: |
+          if ($env:SIGN -eq 'true') {
+            npx electron-vite build
+            if ($LASTEXITCODE) { throw 'build failed' }
+            $pub = '-c.win.signtoolOptions.publisherName=SignPath Foundation'
+            npx electron-builder --win nsis --x64 --arm64 --publish never $pub; if ($LASTEXITCODE) { throw 'nsis failed' }
+            npx electron-builder --win portable --x64 --publish never $pub; if ($LASTEXITCODE) { throw 'portable x64 failed' }
+            npx electron-builder --win portable --arm64 --publish never $pub; if ($LASTEXITCODE) { throw 'portable arm64 failed' }
+          } else {
+            npm run dist:win
+            if ($LASTEXITCODE) { throw 'dist:win failed' }
+          }
       # the packaged app starts, renders the setup window and the bar, and exits (see runSmokeTest)
       - name: Smoke test (x64)
         shell: pwsh
@@ -74,6 +100,75 @@ jobs:
           Write-Output "::notice title=portable smoke::$line"
           if ($line -notmatch '^\[smoke\] win32 x64 .*portable') { throw 'unexpected smoke line' }
           Remove-Item -Recurse -Force (Join-Path $exe.DirectoryName 'Jollyboat-data')
+      # the portable update's swap, for real: a copy of the exe takes the running exe's place (the
+      # running one becomes .old), and the next start clears the .old away
+      - name: Smoke test (portable update swap)
+        shell: pwsh
+        run: |
+          $src = Get-ChildItem dist -Filter '*-windows-x64-portable.exe' | Select-Object -First 1
+          $dir = New-Item -ItemType Directory -Force (Join-Path $env:RUNNER_TEMP 'swap')
+          $exe = Join-Path $dir 'Jollyboat-portable.exe'
+          Copy-Item $src.FullName $exe
+          Copy-Item $src.FullName (Join-Path $dir 'next.exe')
+          $env:JOLLYBOAT_SMOKE = '1'
+          $env:JOLLYBOAT_SMOKE_SWAP = Join-Path $dir 'next.exe'
+          $p = Start-Process -FilePath $exe -PassThru; $null = $p.Handle
+          if (-not $p.WaitForExit(180000)) { $p.Kill(); throw 'swap run timed out' }
+          $log = Join-Path $dir 'Jollyboat-data\smoke.log'
+          for ($i = 0; $i -lt 30 -and -not (Test-Path $log); $i++) { Start-Sleep 1 }
+          $line = Get-Content $log
+          Write-Output $line
+          if ($line -notmatch '\| swap ok') { throw "swap failed: $line" }
+          if (-not (Test-Path "$exe.old")) { throw 'no .old file after the swap' }
+          if (Test-Path (Join-Path $dir 'next.exe')) { throw 'the new file did not move into place' }
+          # the next start: the new file runs, the .old goes
+          Remove-Item Env:JOLLYBOAT_SMOKE_SWAP
+          Start-Sleep 3
+          $p = Start-Process -FilePath $exe -PassThru; $null = $p.Handle
+          if (-not $p.WaitForExit(180000)) { $p.Kill(); throw 'second run timed out' }
+          for ($i = 0; $i -lt 10 -and (Test-Path "$exe.old"); $i++) { Start-Sleep 1 }
+          if (Test-Path "$exe.old") { throw 'the .old file was not cleared on the next start' }
+          Write-Output "::notice title=portable update::swap ok, .old cleared on the next start"
+      # signing (a release, once set up): the three downloads go to SignPath, an approver confirms
+      # the request there, the signed files come back in place of the unsigned ones
+      - name: Unsigned downloads, for SignPath
+        id: unsigned
+        if: ${{ env.SIGN == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-unsigned
+          path: dist/*.exe
+          retention-days: 2
+      - name: Sign (SignPath, waits for an approver)
+        if: ${{ env.SIGN == 'true' }}
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'jollyboat' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG || 'release-signing' }}
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 14400
+          output-artifact-directory: signed
+          parameters: |
+            version: "${{ env.VERSION }}"
+      - name: Signed files in place
+        if: ${{ env.SIGN == 'true' }}
+        shell: pwsh
+        run: |
+          Copy-Item signed/*.exe dist/ -Force
+          $bad = 0
+          foreach ($f in Get-ChildItem dist -Filter *.exe) {
+            $s = Get-AuthenticodeSignature $f.FullName
+            Write-Output "$($f.Name): $($s.Status) | $($s.SignerCertificate.Subject)"
+            if ($s.Status -ne 'Valid') { $bad++ }
+          }
+          if ($bad) { throw "$bad file(s) not validly signed" }
+      # latest.yml and the blockmap as the files are now (signing changes them), and
+      # latest-portable.json for the portable copies' own updates
+      - name: Update info
+        run: node tools/update-info.cjs dist
       - uses: actions/upload-artifact@v7
         with:
           name: windows
@@ -81,6 +176,7 @@ jobs:
             dist/*.exe
             dist/*.blockmap
             dist/latest.yml
+            dist/latest-portable.json
       # for the arm64 smoke test on an arm runner; not part of a release
       - uses: actions/upload-artifact@v7
         with:
