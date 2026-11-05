@@ -45,7 +45,7 @@ Sharkord has its own desktop app now. Both load your servers' own web app; they 
 | Push-to-talk | Linux on Wayland | Windows, Linux with the shortcuts portal |
 | Tray | unread marker | voice state, unread, mute and deafen from the menu |
 | Voice overlay, pop-out stream | — | ✓ |
-| Themes | — | Jollyboat, Water, Retro, Pixel Sky, your own CSS |
+| Themes | — | Jollyboat, Water, Retro, Pixel Sky, Christmas, your own CSS |
 | Saving files behind a proxy login | — | ✓ |
 | Installs | Windows, macOS, Linux AppImage | Windows (also portable, ARM), Linux Flatpak and AppImage (x64, ARM), macOS |
 | Languages of the app itself | 8 | 3 |
@@ -54,13 +54,14 @@ A new Sharkord release can need a Jollyboat release before its desktop mode work
 
 ## Themes
 
-Pick one under **servers and settings**; Water and Retro come in a few colours, picked with the little squares beside the theme menu. The app's own windows (the bar, the setup window, the overlay) follow along, and each theme has its own tray icon.
+Pick one under **servers and settings**; Water, Retro and Christmas come in a few colours, picked with the little squares beside the theme menu. The app's own windows (the bar, the setup window, the overlay) follow along, and each theme has its own tray icon.
 
 - **Sharkord** — Sharkord as it is.
 - **Jollyboat** — an lcd look: pixel type for headings, pill buttons, presence you can tell apart at a glance, a few stepped animations.
 - **Water** — white and blue water under glass; or pink, or black and white. Live water with caustics, ripples and air bubbles runs behind everything; the sidebars, the chat and the bar are frosted glass floating on it, the buttons glass bubbles whose water leans toward the pointer, the channel you are on a pill of water. Sent messages drop into the water, and whoever talks sends rings across it. 60 frames a second in front, 30 behind, and it rests while a Jollyplay game is open; without hardware graphics a lighter version drawn in CSS.
 - **Retro** — a nineties desktop, in pink, in mint and sky blue, or in the classic grey. The sidebars, the chat and the member list are windows with gradient title bars on a pastel desktop; bevelled buttons, sunken fields, old scrollbars, pixel type. Gradients are dithered bands, as a sixteen-colour screen drew them, and everything moves in whole steps: dialogs zoom open through dotted frames over a dithered dark, tooltips and toasts dissolve in, side panels slide in, menus unroll, a title bar glints when the pointer comes into its window, marching ants go round what is under the pointer, new messages print themselves in, and whoever talks gets a blinking frame.
 - **Pixel Sky** — a calm sky over rolling hills, drawn on a real pixel grid: stars drift and twinkle, a shooting star crosses now and then, the moon shows tonight's real phase, and by day the sun is out with clouds. The chat is open sky with every group of messages on its own little panel; the sidebars and fields are pixel panels with stepped corners and dithered shadows, in one ink and the study's own 5 × 7 pixel type. Everything fades by dithering, never by blending. Night with dark mode, day with light. In the setup window Pebble the frog hangs out on the hill; click it.
+- **Christmas** — the glossy, glowing Christmas of mid-2000s desktops ("Frutiger Jolly"), in red and green, in black and gold, or in snow. A scene runs behind everything: a deep glow, soft beams, bokeh drifting up, sparkles twinkling, and glass baubles on gold strings that sway and swing when the pointer brushes past them; pine branches with running lights, ribbons of light and spiral trees of sparkles in gold, two snowmen on a snowy hill in snow (by day the sun's rays, at night falling snow and a spiral tree of light). The sidebars, the chat's messages and the fields are tinted glass, the buttons glossy gel, the titles in Mountains of Christmas; in snow the panels wear snow on top.
 - **Custom** — your own CSS for the Sharkord page, read again whenever the file changes.
 
 ![The Water theme: light on the left, dark on the right](docs/water-theme.png)
@@ -74,6 +75,10 @@ Pick one under **servers and settings**; Water and Retro come in a few colours, 
 ![The Pixel Sky theme: night on the left, day on the right](docs/pixelsky-theme.png)
 
 <sub>Pixel Sky, night (left) and day (right).</sub>
+
+![The Christmas theme: red and green, gold and snow](docs/christmas-theme.png)
+
+<sub>Christmas in red and green (left), gold (middle) and snow (right).</sub>
 
 ## Install
 
