@@ -138,7 +138,7 @@ html.dark, html .dark {
 
 /* the sky is Jollyboat's canvas behind the page; this colour shows only before it is drawn */
 html { background: var(--s-sky); }
-html body { background: transparent; color: var(--s-ink); font-family: 'Jollyboat Sky', 'Jollyboat Pixel', ui-monospace, monospace; font-size: 16px; -webkit-font-smoothing: none; font-smooth: never; }
+html body { background: transparent; color: var(--s-ink); font-family: 'Jollyboat Sky', 'Jollyboat Pixel', ui-monospace, monospace; font-size: 12px; -webkit-font-smoothing: none; font-smooth: never; }
 html .relative > .h-dvh.bg-background { background: transparent; }
 /* a settings screen lies on the same sky: the server view under it steps aside meanwhile (it
    keeps running: calls, streams and plugins go on) */
@@ -186,15 +186,20 @@ html .h-dvh .bg-card.border-r > .h-12.border-b > :first-child::before { content:
 /* the lines inside a panel */
 html .border-r, html .border-l, html .border-b, html .border-t, html .border { border-color: color-mix(in srgb, var(--s-edge) 45%, var(--s-panel)); }
 
-/* ---- type: the 5 x 7 face, one size; big titles through scale2x ------------------------------------ */
+/* ---- type: the 5 x 7 face at the sizes the other themes use, a step smaller (pixel type runs
+   large: its capitals are 7/8 of the size); big titles through scale2x ---------------------- */
 
-html .text-xs, html .text-sm, html .text-base, html .text-md { font-size: 16px; }
-html .text-lg, html .text-xl { font-size: 16px; font-weight: 700; }
-html h1, html .text-2xl, html .text-3xl, html .text-4xl { font-family: 'Jollyboat Sky Display', 'Jollyboat Sky', monospace; font-size: 32px; font-weight: 400; letter-spacing: 0; }
-html h2, html h3, html h4, html .font-semibold, html .font-bold, html .font-medium { font-weight: 700; }
+html .text-xs { font-size: 11px; }
+html .text-sm { font-size: 12px; }
+html .text-base, html .text-md { font-size: 13px; }
+html .text-lg, html .text-xl { font-size: 15px; font-weight: 700; }
+html h1, html .text-2xl, html .text-3xl, html .text-4xl { font-family: 'Jollyboat Sky Display', 'Jollyboat Sky', monospace; font-size: 24px; font-weight: 400; letter-spacing: 0; }
+html h2, html h3, html h4, html .font-semibold, html .font-bold { font-weight: 700; }
+/* (medium stays the regular face: the bold one is two pixels wide and reads a size larger) */
+html .font-medium { font-weight: 400; }
 html [class*="text-muted"] { color: var(--s-dim); }
-html .tiptap.ProseMirror, html textarea, html input { font-family: 'Jollyboat Sky', 'Jollyboat Pixel', monospace; font-size: 16px; }
-html code, html pre, html kbd { font-family: 'Jollyboat Sky', ui-monospace, monospace; font-size: 16px; }
+html .tiptap.ProseMirror, html textarea, html input { font-family: 'Jollyboat Sky', 'Jollyboat Pixel', monospace; font-size: 13px; }
+html code, html pre, html kbd { font-family: 'Jollyboat Sky', ui-monospace, monospace; font-size: 12px; }
 html a { color: var(--s-ink); text-decoration: underline; text-decoration-color: var(--s-focus); text-underline-offset: 3px; text-decoration-thickness: 2px; }
 html ::selection { background: var(--s-ink); color: var(--s-on-fill); }
 
@@ -271,7 +276,7 @@ html [data-slot="hover-card-content"] {
 }
 /* a dialog's title: bold, with the dim # */
 html [data-slot="dialog-title"]::before, html [data-slot="alert-dialog-title"]::before, html [data-slot="sheet-title"]::before { content: '# '; color: var(--s-dim); font-weight: 400; }
-html [data-slot="dialog-title"], html [data-slot="alert-dialog-title"], html [data-slot="sheet-title"] { font-family: 'Jollyboat Sky', monospace; font-size: 16px; font-weight: 700; }
+html [data-slot="dialog-title"], html [data-slot="alert-dialog-title"], html [data-slot="sheet-title"] { font-family: 'Jollyboat Sky', monospace; font-size: 15px; font-weight: 700; }
 /* behind a dialog the page sinks under the night's shade, every other pixel */
 html [data-slot="dialog-overlay"], html [data-slot="alert-dialog-overlay"], html [data-slot="sheet-overlay"] {
   background: var(--s-shade);
@@ -285,7 +290,7 @@ html [data-slot="tooltip-content"] {
   border: 0;
   border-image: var(--k-chip);
   font-family: 'Jollyboat Sky', monospace;
-  font-size: 16px;
+  font-size: 12px;
   padding: 4px 12px;
 }
 html [data-slot="tooltip-content"] svg { display: none; }
@@ -377,7 +382,7 @@ html [data-sonner-toast][data-styled="true"] {
   color: var(--s-on-fill) !important;
   box-shadow: none !important;
   font-family: 'Jollyboat Sky', monospace;
-  font-size: 16px;
+  font-size: 12px;
 }
 html [data-sonner-toast] [data-description] { color: var(--s-on-fill) !important; }
 html [data-sonner-toast] [data-close-button] { border-radius: 0 !important; background: var(--s-on-fill) !important; color: var(--s-ink) !important; border: 0 !important; }

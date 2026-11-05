@@ -2,8 +2,8 @@
    theme/sky/sky.ts: stars, clouds, shooting stars, tonight's moon), and in front of it opaque
    pixel panels: stepped round corners, a 1 px line, a 1 px top light, a dithered shadow (the kit,
    9-slice pictures from tools/make-sky-kit.py). One ink, no accent hue: fill against outline;
-   the warm focus colour only says "you are here". The study's 5 x 7 pixel face, one size; big
-   titles through scale2x. Night (dark) or day (light) with the colour mode, or with the server
+   the warm focus colour only says "you are here". The study's 5 x 7 pixel face, at the sizes the
+   other themes use (a little smaller, as pixel type runs large); big titles through scale2x. Night (dark) or day (light) with the colour mode, or with the server
    page's data-theme in the bar and the overlay. On while <html data-look="sky">. */
 
 @font-face { font-family: 'Jollyboat Sky'; src: url('../fonts/JollyboatSky.ttf') format('truetype'); font-weight: 400; }
@@ -111,7 +111,7 @@
 
 /* ---- the page ---------------------------------------------------------------------------- */
 
-[data-look='sky'] body { background: var(--sk-sky); color: var(--sk-ink); font: 400 16px/22px var(--sk-font); -webkit-font-smoothing: none; }
+[data-look='sky'] body { background: var(--sk-sky); color: var(--sk-ink); font: 400 13px/18px var(--sk-font); -webkit-font-smoothing: none; }
 [data-look='sky'] ::selection { background: var(--sk-ink); color: var(--sk-on-fill); }
 canvas.sky { position: fixed; left: 0; top: 0; z-index: 0; image-rendering: pixelated; }
 [data-look='sky'] .page { padding: 12px 22px 10px; }
@@ -120,7 +120,7 @@ canvas.sky { position: fixed; left: 0; top: 0; z-index: 0; image-rendering: pixe
 
 /* the title: big scale2x letters on the sky, with a 2 px dark shadow (the one text on the sky) */
 [data-look='sky'] .title {
-  font: 400 48px/1 var(--sk-display);
+  font: 400 40px/1 var(--sk-display);
   color: #f4f1ff;
   letter-spacing: 0;
   text-shadow: 2px 2px 0 #1b1640;
@@ -137,7 +137,7 @@ canvas.sky { position: fixed; left: 0; top: 0; z-index: 0; image-rendering: pixe
   border-radius: 0;
   border-image: var(--k-panel);
   box-shadow: none;
-  padding: 14px 18px 16px;
+  padding: 11px 18px 13px;
   gap: 8px;
   animation: none;
 }
@@ -150,7 +150,7 @@ canvas.sky { position: fixed; left: 0; top: 0; z-index: 0; image-rendering: pixe
   100% { translate: 0 0; mask: none; }
 }
 /* a panel's title row: # name, bold */
-[data-look='sky'] .panel-title { font: 700 16px/22px var(--sk-font); color: var(--sk-ink); letter-spacing: 0; }
+[data-look='sky'] .panel-title { font: 700 14px/20px var(--sk-font); color: var(--sk-ink); letter-spacing: 0; }
 [data-look='sky'] .panel-title::before { content: '# '; color: var(--sk-dim); font-weight: 400; }
 /* a title further down: a starline after it, mute dots 6 apart */
 [data-look='sky'] .panel-title:not(:first-child) { display: flex; align-items: center; gap: 8px; }
@@ -160,19 +160,19 @@ canvas.sky { position: fixed; left: 0; top: 0; z-index: 0; image-rendering: pixe
 
 [data-look='sky'] :is(.pill, .seg button) {
   position: relative;
-  height: 30px;
-  padding: 0 16px;
+  height: 34px;
+  padding: 0 14px;
   border: 0;
   border-radius: 0;
   background: transparent;
   border-image: var(--k-pill);
   color: var(--sk-ink);
-  font: 700 16px/1 var(--sk-font);
+  font: 700 13px/1 var(--sk-font);
   box-shadow: none;
   transition: none;
 }
 [data-look='sky'] .pill:not(.minor) { border-image: var(--k-pill-fill); color: var(--sk-on-fill); }
-[data-look='sky'] .pill.small { height: 28px; padding: 0 12px; font-size: 16px; }
+[data-look='sky'] .pill.small { height: 28px; padding: 0 12px; font-size: 12px; }
 [data-look='sky'] :is(.pill, .seg button):hover:not(:disabled) { translate: 0 -2px; }
 [data-look='sky'] .pill.minor:hover:not(:disabled), [data-look='sky'] .seg button:not(.on):hover:not(:disabled) { border-image: var(--k-pill-hi); }
 /* hovered: two warm pixels twinkle at its top right */
@@ -187,31 +187,31 @@ canvas.sky { position: fixed; left: 0; top: 0; z-index: 0; image-rendering: pixe
 [data-look='sky'] :is(.pill, .seg button):focus-visible { outline: 2px dashed var(--sk-focus); outline-offset: 3px; }
 /* a segment row: 3 apart, the chosen one filled */
 [data-look='sky'] .seg { gap: 6px; flex-wrap: wrap; }
-[data-look='sky'] .seg button { height: 30px; padding: 0 14px; border-image: var(--k-seg); }
+[data-look='sky'] .seg button { height: 28px; padding: 0 12px; font-size: 12px; border-image: var(--k-seg); }
 [data-look='sky'] .seg button.on { border-image: var(--k-pill-fill); color: var(--sk-on-fill); }
 
 /* ---- wells: fields ----------------------------------------------------------------------- */
 
 [data-look='sky'] :is(input[type='text'], input[type='password'], input[type='url'], select) {
-  height: 30px;
-  padding: 0 10px;
+  height: 38px;
+  padding: 0 12px;
   border: 0;
   border-radius: 0;
   background: transparent;
   border-image: var(--k-well);
   color: var(--sk-ink);
   box-shadow: none;
-  font: 400 16px/1 var(--sk-font);
+  font: 400 13px/1 var(--sk-font);
 }
 [data-look='sky'] input:focus { border-image: var(--k-well-focus); outline: none; box-shadow: none; }
 [data-look='sky'] input::placeholder { color: var(--sk-mute); }
 [data-look='sky'] input:-webkit-autofill { -webkit-text-fill-color: var(--sk-ink); box-shadow: 0 0 0 100px var(--sk-well) inset; }
-[data-look='sky'] .field > label { font: 400 16px/30px var(--sk-font); color: var(--sk-dim); }
-[data-look='sky'] .field > .control .note { font: 400 16px/22px var(--sk-font); color: var(--sk-dim); }
+[data-look='sky'] .field > label { font: 400 12px/38px var(--sk-font); color: var(--sk-dim); }
+[data-look='sky'] .field > .control .note { font: 400 12px/16px var(--sk-font); color: var(--sk-dim); }
 
 /* ---- checks: a 9-dot box; the tick draws itself pixel by pixel ----------------------------- */
 
-[data-look='sky'] .check { font: 400 16px/22px var(--sk-font); color: var(--sk-ink); }
+[data-look='sky'] .check { font: 400 13px/18px var(--sk-font); color: var(--sk-ink); }
 [data-look='sky'] .check input { width: 18px; height: 18px; border: 0; border-radius: 0; background: transparent; border-image: var(--k-check); box-shadow: none; }
 [data-look='sky'] .check input:checked {
   border-image: none;
@@ -238,16 +238,16 @@ canvas.sky { position: fixed; left: 0; top: 0; z-index: 0; image-rendering: pixe
 
 /* ---- words ------------------------------------------------------------------------------- */
 
-[data-look='sky'] .hint { font: 400 16px/22px var(--sk-font); color: var(--sk-dim); }
+[data-look='sky'] .hint { font: 400 12px/16px var(--sk-font); color: var(--sk-dim); }
 [data-look='sky'] .hint.good, [data-look='sky'] .hint.bad { color: var(--sk-ink); }
 [data-look='sky'] .hint.good::before { content: '> '; color: var(--sk-dim); }
 [data-look='sky'] .hint.bad::before { content: '! '; color: var(--sk-warn); }
-[data-look='sky'] .meta { font: 400 16px/22px var(--sk-font); color: var(--sk-dim); }
+[data-look='sky'] .meta { font: 400 12px/16px var(--sk-font); color: var(--sk-dim); }
 [data-look='sky'] button.link { color: var(--sk-ink); font: inherit; text-decoration: underline; text-decoration-color: var(--sk-focus); text-decoration-thickness: 2px; text-underline-offset: 3px; }
 /* list rows: the open one a filled row */
 [data-look='sky'] .item { border: 0; border-radius: 0; padding: 6px 10px; gap: 10px; }
 [data-look='sky'] .item:hover { border-image: var(--k-row-hi); }
-[data-look='sky'] .item .name { font: 700 16px/22px var(--sk-font); }
+[data-look='sky'] .item .name { font: 700 13px/18px var(--sk-font); }
 [data-look='sky'] .item.on { border-image: var(--k-row); color: var(--sk-on-fill); background: transparent; }
 [data-look='sky'] .item.on .meta { color: var(--sk-on-fill); }
 [data-look='sky'] .col::-webkit-scrollbar, [data-look='sky'] .grid::-webkit-scrollbar { width: 8px; }
@@ -260,7 +260,7 @@ canvas.sky { position: fixed; left: 0; top: 0; z-index: 0; image-rendering: pixe
   padding: 4px 12px;
   background: transparent;
   border-image: var(--k-chip);
-  font: 400 16px/22px var(--sk-font);
+  font: 400 12px/18px var(--sk-font);
   color: var(--sk-dim);
 }
 
@@ -272,7 +272,7 @@ canvas.sky { position: fixed; left: 0; top: 0; z-index: 0; image-rendering: pixe
   background: transparent;
   border-image: var(--k-pill-fill);
   color: var(--sk-on-fill);
-  font: 700 16px/34px var(--sk-font);
+  font: 700 13px/34px var(--sk-font);
   box-shadow: none;
   transition: opacity 160ms steps(3, end), translate 240ms steps(4, jump-none);
 }
@@ -286,13 +286,13 @@ canvas.sky { position: fixed; left: 0; top: 0; z-index: 0; image-rendering: pixe
 [data-look='sky'] .source { background: transparent; border: 0; border-radius: 0; border-image: var(--k-chip); box-shadow: none; color: var(--sk-ink); }
 [data-look='sky'] .source.on { border-image: var(--k-chip-fill); color: var(--sk-on-fill); }
 [data-look='sky'] .source img.thumb { border-radius: 0; background: var(--sk-well); }
-[data-look='sky'] .source .label { font: 400 16px/1.2 var(--sk-font); }
+[data-look='sky'] .source .label { font: 400 12px/1.2 var(--sk-font); }
 
 /* the theme menu: a well, its list a floating panel */
-[data-look='sky'] select { padding-right: 28px; }
-[data-look='sky'] select::picker-icon { content: '▼'; color: var(--sk-ink); font: 400 16px/1 var(--sk-font); margin-left: auto; }
+[data-look='sky'] select { height: 32px; padding-right: 28px; }
+[data-look='sky'] select::picker-icon { content: '▼'; color: var(--sk-ink); font: 400 12px/1 var(--sk-font); margin-left: auto; }
 [data-look='sky'] select::picker(select) { border: 0; border-radius: 0; padding: 6px; background: transparent; border-image: var(--k-float); }
-[data-look='sky'] select option { font: 400 16px/1 var(--sk-font); padding: 6px 10px; color: var(--sk-ink); }
+[data-look='sky'] select option { font: 400 13px/1 var(--sk-font); padding: 6px 10px; color: var(--sk-ink); }
 [data-look='sky'] select option:hover, [data-look='sky'] select option:focus-visible { border-image: var(--k-row); color: var(--sk-on-fill); outline: none; }
 [data-look='sky'] select option:checked { font-weight: 700; }
 [data-look='sky'] select option::checkmark { content: '★'; }
