@@ -13,6 +13,8 @@ The tray has one set per theme, each from the theme's dark scheme (resources/tra
 - sharkord  Sharkord itself (and custom css): the same pixel boat in Sharkord's dark greys, its
             green for talking and its red for a muted mic
 - retro     the Retro theme: the pixel boat in a dark purple window with a hot pink frame
+- sky       the Pixel Sky theme: the pixel boat on a night panel under a few stars, the sail
+            star-white at rest and the warm focus light while you talk
 - water     the Water theme: a smooth glass tile of deep water with a glass boat on two waves,
             drawn at 8x and scaled down for every size (not pixel art)
 States: normal, voice (in a call: the sail hollow), talking (the sail lit / full of water),
@@ -110,6 +112,12 @@ PIXEL_SETS = {
                        cut=hexc('#ffd84d'), dot=hexc('#ffd84d'), ring=hexc('#0a0a0c'), radius=2),
     'retro-green': dict(bg=hexc('#10292b'), ink=hexc('#6fe3b4'), hull=hexc('#2f7d76'), sail=hexc('#d6fff0'), talk=hexc('#2fd08e'),
                         cut=hexc('#ffd84d'), dot=hexc('#ffd84d'), ring=hexc('#06161a'), radius=2),
+    # the pixel sky's night: the boat on a night panel (radius 6, its edge the frame), a sparkle
+    # and two stars in the free top right, the sail star-white, warm while you talk
+    'sky': dict(bg=hexc('#141a4a'), ink=hexc('#b9c0ff'), hull=hexc('#5d66c6'), sail=hexc('#fff6d8'), talk=hexc('#ffd35c'),
+                cut=hexc('#ffd35c'), dot=hexc('#ffd35c'), ring=hexc('#070920'), radius=6,
+                stars=[(25, 6, '#fff6d8'), (24, 6, '#9fb0ff'), (26, 6, '#9fb0ff'), (25, 5, '#9fb0ff'), (25, 7, '#9fb0ff'),
+                       (29, 10, '#b9c0ff'), (20, 3, '#7d86d8')]),
     'sharkord': dict(bg=hexc('#171717'), ink=hexc('#e5e5e5'), hull=hexc('#525252'), sail=hexc('#fafafa'), talk=hexc('#86efac'),
                      cut=hexc('#ef4444'), dot=hexc('#fafafa'), ring=hexc('#0a0a0a')),
 }
@@ -124,6 +132,8 @@ def tray_pixel(out, c):
         r = c.get('radius', 6)
         rrect(px, 0, 0, 31, 31, r, c['ink'])
         rrect(px, 1, 1, 30, 30, max(0, r - 1), c['bg'])
+        for x, y, col in c.get('stars', []):
+            px[x, y] = hexc(col)
         ink = {'#': c['ink'], 'g': c['hull'], 'w': c['sail']}
         rows = [r for r in (ROOT / 'build' / 'pixel' / 'tray-32.txt').read_text().split('\n') if r]
         for y, row in enumerate(rows):

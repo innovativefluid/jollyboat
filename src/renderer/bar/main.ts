@@ -1,6 +1,7 @@
 // the bar above a server page: which server, zoom, the way to the app's own window, and a menu
 // for the rest. follows the system's light/dark setting (css), the mark too
 
+import { createSky, type TSky } from '../theme/sky/sky';
 import boatMap from '../../../build/pixel/icon-16.txt?raw';
 import { t, translatePage } from '../i18n';
 import { createWater, type TWater } from '../theme/water/engine';
@@ -32,9 +33,11 @@ document.body.classList.add(`part-${part}`);
 let mergedNow = part === 'right';
 document.body.classList.toggle('merged', mergedNow);
 let lookNow = window.shell.look;
+const dark = window.matchMedia('(prefers-color-scheme: dark)');
 
 let waterAs = '';
-const startWater = (look: 'lcd' | 'water' | 'retro') => {
+let barSky: TSky | null = null;
+const startWater = (look: 'lcd' | 'water' | 'retro' | 'sky') => {
   lookNow = look;
   // (already running as wanted: left alone)
   const as = `${look}:${mergedNow}`;
@@ -44,10 +47,26 @@ const startWater = (look: 'lcd' | 'water' | 'retro') => {
   waterCanvas?.remove();
   water = null;
   waterCanvas = null;
+  barSky?.stop();
+  barSky = null;
   document.documentElement.classList.remove('gl', 'no-gl');
   // merged, the page under the bar draws the bar's glass slab over its own water: this end
   // draws only its buttons' glass (with their water) on a see-through canvas
   document.querySelector('.bar')?.classList.toggle('slab', !mergedNow);
+  // the pixel sky: a strip of the night (or day) sky with its stars behind the chips; merged,
+  // the page's own sky shows through instead
+  if (look === 'sky') {
+    if (mergedNow) return;
+    waterCanvas = document.createElement('canvas');
+    waterCanvas.className = 'sky';
+    document.body.prepend(waterCanvas);
+    barSky = createSky(waterCanvas, {
+      scheme: () => (document.documentElement.dataset.theme === 'light' ? 'day' : document.documentElement.dataset.theme === 'dark' ? 'night' : dark.matches ? 'night' : 'day'),
+      focused: window.shell.windowFocused,
+      fps: { calm: 10, busy: 60 }
+    });
+    return;
+  }
   if (look !== 'water') return;
   waterCanvas = document.createElement('canvas');
   waterCanvas.className = 'water';
@@ -84,7 +103,6 @@ const startWater = (look: 'lcd' | 'water' | 'retro') => {
 startWater(window.shell.look);
 window.shell.onLook(startWater);
 if (window.shell.platform === 'darwin') document.body.classList.add('mac');
-const dark = window.matchMedia('(prefers-color-scheme: dark)');
 
 // the mark: the boat from the icon map bobbing a pixel on a line of water that drifts by.
 // a few redraws a second of a 14 px canvas; nothing while the window is hidden

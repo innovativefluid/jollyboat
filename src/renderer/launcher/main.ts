@@ -341,6 +341,7 @@ const renderSettings = async () => {
     { value: 'jollyboat', label: 'Jollyboat' },
     { value: 'water', label: t('Water') },
     { value: 'retro', label: t('Retro') },
+    { value: 'pixelsky', label: 'Pixel Sky' },
     { value: 'custom', label: t('Custom') }
   ];
   themeSelect.replaceChildren(...themes.map((o) => new Option(o.label, o.value, false, o.value === settings.theme)));

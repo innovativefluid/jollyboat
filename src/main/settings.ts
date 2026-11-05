@@ -67,7 +67,7 @@ const sanitize = (raw: unknown): TSettings => {
   }
 
   if (r.colorMode === 'auto' || r.colorMode === 'dark' || r.colorMode === 'light') out.colorMode = r.colorMode;
-  if (r.theme === 'none' || r.theme === 'jollyboat' || r.theme === 'water' || r.theme === 'retro' || r.theme === 'custom') out.theme = r.theme;
+  if (r.theme === 'none' || r.theme === 'jollyboat' || r.theme === 'water' || r.theme === 'retro' || r.theme === 'pixelsky' || r.theme === 'custom') out.theme = r.theme;
   const pal = (r.palettes ?? {}) as Record<string, unknown>;
   const pick = <K extends keyof typeof PALETTES>(k: K, v: unknown): TPalettes[K] => ((PALETTES[k] as readonly unknown[]).includes(v) ? (v as TPalettes[K]) : (PALETTES[k][0] as TPalettes[K]));
   out.palettes = { retro: pick('retro', pal.retro), water: pick('water', pal.water) };

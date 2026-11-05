@@ -6,17 +6,20 @@
 
 import { createPaper } from './paper';
 import { createDesk } from './retro';
+import { createSky } from './sky/sky';
 import { createSparks } from './sparks';
 import { createStrip } from './strip';
 import { createWater, type TWater } from './water/engine';
 import { createGlassDom, type TGlassDom } from './water/glass-dom';
 import { waterTokens } from './water/tokens';
 
-type TLook = 'lcd' | 'water' | 'retro';
+type TLook = 'lcd' | 'water' | 'retro' | 'sky';
 type TBackdrop = { stop: () => void; water?: TWater; dom?: TGlassDom };
 
 // the hook a toast uses to make its bubble jiggle when it pops in
 let onToast: ((el: Element) => void) | null = null;
+// the pixel sky's shooting star at a point (open sky clicked)
+let skyWish: ((x: number, y: number) => void) | null = null;
 const allowSoftGl = () => {
   try {
     return localStorage.getItem('jollyboat-soft-gl') === '1';
@@ -27,7 +30,7 @@ const allowSoftGl = () => {
 
 const lookNow = (): TLook => {
   const look = document.documentElement.dataset.look;
-  return look === 'water' || look === 'retro' ? look : 'lcd';
+  return look === 'water' || look === 'retro' || look === 'sky' ? look : 'lcd';
 };
 
 export const bootTheme = ({ boat = false, fps, pool }: { boat?: boolean; fps?: { focused: number; blurred: number }; pool?: () => { view: [number, number]; offset: [number, number] } } = {}) => {
@@ -42,6 +45,7 @@ export const bootTheme = ({ boat = false, fps, pool }: { boat?: boolean; fps?: {
   const startBackdrop = (look: TLook) => {
     backdrop?.stop();
     backdropCanvas?.remove();
+    skyWish = null;
     backdrop = null;
     backdropCanvas = null;
     document.documentElement.classList.remove('no-gl', 'gl');
@@ -72,6 +76,20 @@ export const bootTheme = ({ boat = false, fps, pool }: { boat?: boolean; fps?: {
         const r = el.getBoundingClientRect();
         dom.poke(el, r.width / 2, r.height / 2, 1);
       };
+    } else if (look === 'sky') {
+      // the pixel sky: stars, clouds, the moon (or the sun), hills; panels stand in front of it
+      onToast = null;
+      canvas.className = 'sky';
+      const dark = matchMedia('(prefers-color-scheme: dark)');
+      const sky = createSky(canvas, {
+        scheme: () => {
+          const t = document.documentElement.dataset.theme;
+          return (t ? t === 'dark' : dark.matches) ? 'night' : 'day';
+        }
+      });
+      // a click on open sky: a shooting star (a wish)
+      skyWish = (x, y) => sky.wish(x, y);
+      backdrop = { stop: sky.stop };
     } else if (look === 'retro') {
       // the retro desktop: a pattern, scattered pixel hearts and stars, the boat as an icon
       onToast = null;
@@ -125,6 +143,11 @@ export const bootTheme = ({ boat = false, fps, pool }: { boat?: boolean; fps?: {
     const panel = target.closest('.panel, .footer, .source');
     if (panel && !target.closest('button, input, label, a')) {
       poke(panel, e, 0.55);
+      return;
+    }
+    // a tap on open sky: a shooting star
+    if (skyWish && !target.closest('button, input, label, select, .panel, .footer, .title-block, .toast, a')) {
+      skyWish(e.clientX, e.clientY);
       return;
     }
     // a tap on open water: pop an air bubble, else a drop

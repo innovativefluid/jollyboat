@@ -12,7 +12,7 @@ export type { TLook, TPalette };
 
 export const currentLook = (): TLook => {
   const { theme } = getSettings();
-  return theme === 'water' ? 'water' : theme === 'retro' ? 'retro' : 'lcd';
+  return theme === 'water' ? 'water' : theme === 'retro' ? 'retro' : theme === 'pixelsky' ? 'sky' : 'lcd';
 };
 
 /** the current theme's colours, picked beside the theme menu (lcd has none: blue, unused) */
@@ -33,16 +33,18 @@ export const windowBackground = (dark = nativeTheme.shouldUseDarkColors) => {
   const palette = currentPalette();
   if (look === 'water') return BACKGROUNDS.water[palette as 'blue']?.[dark ? 1 : 0] ?? BACKGROUNDS.water.blue[dark ? 1 : 0];
   if (look === 'retro') return BACKGROUNDS.retro[palette as 'pink']?.[dark ? 1 : 0] ?? BACKGROUNDS.retro.pink[dark ? 1 : 0];
+  // the pixel sky: the top of its sky, night or day
+  if (look === 'sky') return dark ? '#070920' : '#3e8ee4';
   return dark ? '#18201c' : '#a6b08a';
 };
 
-/** tells every open page of ours, and saved server pages whether the water runs behind them */
+/** tells every open page of ours, and saved server pages whether the water (or the pixel sky) runs behind them */
 export const broadcastLook = () => {
   const look = currentLook();
   const palette = currentPalette();
   for (const wc of webContents.getAllWebContents()) {
     if (wc.isDestroyed()) continue;
     if (isOwnPageUrl(wc.getURL())) wc.send('shell:look', look, palette);
-    else if (findServerByUrl(wc.getURL())) wc.send('shell:water', look === 'water', palette);
+    else if (findServerByUrl(wc.getURL())) wc.send('shell:water', look === 'water', palette, look);
   }
 };

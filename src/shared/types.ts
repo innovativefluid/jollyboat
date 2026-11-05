@@ -1,8 +1,8 @@
 // Types shared by main, preload and renderer. Keep this file free of imports.
 
 /** the look of the app's own windows */
-export type TLook = 'lcd' | 'water' | 'retro';
-export const LOOKS: readonly TLook[] = ['lcd', 'water', 'retro'];
+export type TLook = 'lcd' | 'water' | 'retro' | 'sky';
+export const LOOKS: readonly TLook[] = ['lcd', 'water', 'retro', 'sky'];
 /** a theme's colours (theme tints): the same theme in a few palettes, picked beside the theme
  *  menu. the first of each list is the theme's own (the default) */
 export const PALETTES = { retro: ['pink', 'green', 'grey'], water: ['blue', 'pink', 'mono'] } as const;
@@ -71,8 +71,8 @@ export type TSettings = {
   colorMode: 'auto' | 'dark' | 'light';
   /** a theme on the server page: none, the app's own lcd look, the water look, the retro look,
    *  or custom.css next to the settings. the app's own windows take the water look with 'water',
-   *  the retro look with 'retro', else the lcd one */
-  theme: 'none' | 'jollyboat' | 'water' | 'retro' | 'custom';
+   *  the retro look with 'retro', the pixel sky with 'pixelsky', else the lcd one */
+  theme: 'none' | 'jollyboat' | 'water' | 'retro' | 'pixelsky' | 'custom';
   /** each tintable theme's palette */
   palettes: TPalettes;
   /** where the overlay was left (top-left corner), null = top left of the main display */

@@ -7,6 +7,7 @@ import { contextBridge, ipcRenderer, webFrame } from 'electron';
 import { ALL_PALETTES, LOOKS, type TLook, type TPalette } from '../shared/types';
 import type { TBarState, TOverlayState, TPickerResult, TServerInput, TSettings, TUpdateStatus, TVoiceMember, TVoiceReport } from '../shared/types';
 import { startPageWater } from './water';
+import { startPageSky } from './sky';
 import { startSaveButtons } from './save-buttons';
 import { exposeDesktopBridge } from './desktop-bridge';
 import { createT } from '../shared/i18n';
@@ -567,7 +568,7 @@ html.dark[data-jb-bar='lcd'] ${TOPBAR} { background: #18201c !important; border-
     root.style.setProperty('--jb-bar-h', px(bar.h));
     root.style.setProperty('--jb-bar-l', px(bar.l));
     root.style.setProperty('--jb-bar-r', px(bar.r));
-    root.setAttribute('data-jb-bar', bar.look === 'water' || bar.look === 'retro' ? bar.look : 'lcd');
+    root.setAttribute('data-jb-bar', bar.look === 'water' || bar.look === 'retro' || bar.look === 'sky' ? bar.look : 'lcd');
   });
 
   // (a view shown by a class change brings no new nodes: looked at once a second as well)
@@ -643,9 +644,28 @@ html.dark[data-jb-bar='lcd'] ${TOPBAR} { background: #18201c !important; border-
   const PLAYING = 'data-jollyplay-playing';
   const playing = () => document.documentElement?.hasAttribute(PLAYING) ?? false;
   const watchPlaying = () =>
-    new MutationObserver(() => pageWater?.rest(playing())).observe(document.documentElement, { attributes: true, attributeFilter: [PLAYING] });
+    new MutationObserver(() => {
+      pageWater?.rest(playing());
+      pageSky?.rest(playing());
+    }).observe(document.documentElement, { attributes: true, attributeFilter: [PLAYING] });
   if (document.documentElement) watchPlaying();
   else window.addEventListener('DOMContentLoaded', watchPlaying, { once: true });
+
+  // the pixel sky theme: its sky behind the page (rests with the water's rules: hidden tab, a game)
+  let pageSky: ReturnType<typeof startPageSky> = null;
+  let wantSky = boot.isSavedServer && boot.look === 'sky';
+  const setSky = () => {
+    const on = wantSky && shown;
+    if (on && !pageSky && document.body) {
+      pageSky = startPageSky(hasFocus);
+      if (playing()) pageSky?.rest(true);
+    }
+    if (!on && pageSky) {
+      pageSky.stop();
+      pageSky = null;
+    }
+  };
+  window.addEventListener('DOMContentLoaded', setSky, { once: true });
 
   const setWater = (want: boolean) => {
     const on = want && shown;
@@ -662,14 +682,21 @@ html.dark[data-jb-bar='lcd'] ${TOPBAR} { background: #18201c !important; border-
   // the water's colours (the theme's palette): read by the water every frame
   let waterPalette: TPalette = boot.palette;
   window.addEventListener('DOMContentLoaded', () => setWater(wantWater), { once: true });
-  ipcRenderer.on('shell:water', (_e, on: unknown, palette: unknown) => {
+  ipcRenderer.on('shell:water', (_e, on: unknown, palette: unknown, look: unknown) => {
     wantWater = on === true;
+    wantSky = boot.isSavedServer && look === 'sky';
     if (ALL_PALETTES.includes(palette as TPalette)) waterPalette = palette as TPalette;
-    if (document.body) setWater(wantWater);
+    if (document.body) {
+      setWater(wantWater);
+      setSky();
+    }
   });
   ipcRenderer.on('shell:shown', (_e, on: unknown) => {
     shown = on !== false;
-    if (document.body) setWater(wantWater);
+    if (document.body) {
+      setWater(wantWater);
+      setSky();
+    }
   });
 
   // the page's light/dark sits as a class on <html>; the bar above takes it over

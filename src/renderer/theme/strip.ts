@@ -1,7 +1,8 @@
 // the strip under the title. lcd: the plasma, 3 px cells, 3 rows, bg → fg by 0.55 + (v − .5)·1.1
 // plus dither. water: the glass renderer draws it (a tube of water streaming along); only
 // without webgl2 (html.no-gl) is it drawn here, as a flat tube. retro: an old progress bar whose
-// blocks march along, eight steps a second.
+// blocks march along, eight steps a second. sky: the study's starline, mute dots 6 apart with a
+// small warm star running along that lifts the dots it passes.
 
 import { lcdScheme } from './scheme';
 import { css, waterTokens } from './water/tokens';
@@ -23,11 +24,11 @@ export const createStrip = (canvas: HTMLCanvasElement) => {
 
   const lookNow = () => {
     const l = document.documentElement.dataset.look;
-    return l === 'water' || l === 'retro' ? l : 'lcd';
+    return l === 'water' || l === 'retro' || l === 'sky' ? l : 'lcd';
   };
   const resize = () => {
     look = lookNow();
-    if (look === 'water' || look === 'retro') {
+    if (look === 'water' || look === 'retro' || look === 'sky') {
       dpr = window.devicePixelRatio || 1;
       canvas.width = Math.round((canvas.clientWidth || 300) * dpr);
       canvas.height = Math.round((canvas.clientHeight || 9) * dpr);
@@ -116,10 +117,44 @@ export const createStrip = (canvas: HTMLCanvasElement) => {
     ctx.fillRect(w - 1, 0, 1, h);
   };
 
+  // sky: one design pixel is 2 css px; dots every 6 of them, the star 22 pixels a second
+  const starline = (t: number) => {
+    const css = getComputedStyle(document.documentElement);
+    const D = 2;
+    const w = canvas.width / dpr;
+    const h = canvas.height / dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    const mute = css.getPropertyValue('--sk-mute').trim() || '#7078bf';
+    const ink = css.getPropertyValue('--sk-ink').trim() || '#f4f1ff';
+    const focus = css.getPropertyValue('--sk-focus').trim() || '#ffd35c';
+    const n = Math.floor(w / D / 6);
+    const y = Math.max(D, Math.round(h / D / 2) * D);
+    const span = n * 6;
+    const head = reduce.matches ? -99 : ((t * 22) % (span + 40)) - 20;
+    for (let i = 0; i <= n; i++) {
+      const near = Math.abs(i * 6 - head) < 9;
+      ctx.fillStyle = near ? ink : mute;
+      ctx.fillRect(i * 6 * D, y - (near && !reduce.matches ? D : 0), D, D);
+    }
+    if (head > 0 && head < span) {
+      const x = Math.round(head) * D;
+      ctx.fillStyle = focus;
+      ctx.fillRect(x - D, y, D * 3, D);
+      ctx.fillRect(x, y - D, D, D * 3);
+    }
+  };
+
   const frame = () => {
     const now = lookNow();
     if (now !== look) resize();
     const t = ((performance.now() - start) / 1000) * (reduce.matches ? 0 : 1);
+
+    if (look === 'sky') {
+      starline(t);
+      window.setTimeout(() => requestAnimationFrame(frame), 45);
+      return;
+    }
 
     if (look === 'retro') {
       blocks(t);

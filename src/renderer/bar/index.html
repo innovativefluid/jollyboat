@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="../theme/theme.css" />
     <link rel="stylesheet" href="../theme/water.css" />
     <link rel="stylesheet" href="../theme/retro.css" />
+    <link rel="stylesheet" href="../theme/sky.css" />
     <style>
       /* the bar above a server: the lcd look (dark tokens in theme.css), dark when the sharkord
          page below is (data-theme), else with the colour mode */
@@ -168,6 +169,49 @@
       [data-look='retro'] .tab svg.voice .w2 { animation: r-wave2 1.2s steps(1, end) infinite; }
       @keyframes r-wave { 0% { opacity: 0; } 33% { opacity: 1; } }
       @keyframes r-wave2 { 0% { opacity: 0; } 66% { opacity: 1; } }
+      /* the pixel sky: the bar is a strip of the sky (its stars twinkling, now and then a shooting
+         star); everything on it stands on chips, never on the sky itself. merged, the page's
+         own sky shows through the bar's ends */
+      :root[data-look='sky'] body { background: var(--sk-sky); border-bottom: 0; }
+      [data-look='sky'] .bar { position: relative; z-index: 1; padding-left: 8px; gap: 6px; }
+      [data-look='sky'] .name { font: 700 16px/1 var(--sk-font); color: var(--sk-ink); padding: 5px 12px; border-image: var(--k-chip); }
+      [data-look='sky'] .name .app { color: var(--sk-dim); font-weight: 400; }
+      [data-look='sky'] .chip {
+        position: relative; height: 26px; padding: 0 12px; border: 0; border-radius: 0; font: 700 16px/1 var(--sk-font);
+        background: transparent; color: var(--sk-ink); border-image: var(--k-chip);
+      }
+      [data-look='sky'] .chip:hover { border-image: var(--k-chip-hi); translate: 0 -2px; }
+      [data-look='sky'] .chip:hover::after {
+        content: ''; position: absolute; right: 8px; top: -4px; width: 2px; height: 2px; pointer-events: none;
+        background: var(--sk-focus); box-shadow: 4px 2px 0 var(--sk-focus); animation: sk-twinkle 0.5s steps(1, end) infinite;
+      }
+      [data-look='sky'] .chip:active { transform: none; translate: 0 2px; }
+      [data-look='sky'] .chip.fill { border-image: var(--k-chip-fill); color: var(--sk-on-fill); }
+      [data-look='sky'] .zoom { gap: 4px; }
+      [data-look='sky'] .zoom span { font: 400 16px/1 var(--sk-font); color: var(--sk-ink); min-width: 52px; padding: 5px 0; border-image: var(--k-chip); }
+      [data-look='sky'] .controls { border-left: 0; gap: 4px; align-items: center; padding: 0 8px 0 4px; }
+      [data-look='sky'] .controls button { width: 26px; height: 24px; background: transparent; color: var(--sk-ink); border-image: var(--k-chip); }
+      [data-look='sky'] .controls button:hover { background: transparent; color: var(--sk-ink); border-image: var(--k-chip-hi); }
+      [data-look='sky'] .controls button#close:hover { background: transparent; color: var(--sk-on-fill); border-image: var(--k-chip-fill); }
+      [data-look='sky'] .controls svg { width: 10px; height: 10px; }
+      [data-look='sky'] .tabs { gap: 6px; padding: 4px 2px 3px; }
+      [data-look='sky'] .tabs .chip { padding: 0 12px 0 6px; }
+      [data-look='sky'] .tab .ico { border-radius: 0; background: var(--sk-panel-hi); color: var(--sk-ink); -webkit-mask-box-image: var(--k-mask); }
+      [data-look='sky'] .tab.fill .ico { background: var(--sk-on-fill); color: var(--sk-ink); }
+      [data-look='sky'] .tab .unread { border-radius: 0; width: 6px; height: 6px; background: var(--sk-focus); }
+      [data-look='sky'] .tab .count { border-radius: 0; height: 18px; line-height: 18px; font: 700 16px/18px var(--sk-font); padding: 0 6px; background: var(--sk-focus); color: #1b1640; }
+      [data-look='sky'] .tab.fill .count { background: var(--sk-focus); color: #1b1640; }
+      [data-look='sky'] .tab.off { opacity: 1; color: var(--sk-mute); }
+      /* a new tab dithers in, a new unread mark blinks, the speaker sends its waves out */
+      [data-look='sky'] .tab.born { animation: sk-dither 300ms steps(1, end) backwards; }
+      [data-look='sky'] .tab .unread, [data-look='sky'] .tab .count { animation: r-blink 360ms steps(2, jump-none) 3; }
+      [data-look='sky'] .tab svg.voice .w1 { animation: r-wave 1.2s steps(1, end) infinite; }
+      [data-look='sky'] .tab svg.voice .w2 { animation: r-wave2 1.2s steps(1, end) infinite; }
+      /* a dialog over the page below: the bar's ends sink under the same dithered shade */
+      [data-look='sky'] body.merged.dim::after { background: var(--sk-shade); mask: var(--sk-d8); }
+      @media (prefers-reduced-motion: reduce) {
+        [data-look='sky'] .tab.born, [data-look='sky'] .tab .unread, [data-look='sky'] .tab .count, [data-look='sky'] .tab svg.voice path, [data-look='sky'] .chip::after { animation: none; }
+      }
       @media (prefers-reduced-motion: reduce) {
         [data-look='retro'] .tab.born, [data-look='retro'] .tab .unread, [data-look='retro'] .tab .count, [data-look='retro'] .tab svg.voice path { animation: none; }
       }
