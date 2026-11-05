@@ -85,7 +85,9 @@ export const bootTheme = ({ boat = false, fps, pool }: { boat?: boolean; fps?: {
         scheme: () => {
           const t = document.documentElement.dataset.theme;
           return (t ? t === 'dark' : dark.matches) ? 'night' : 'day';
-        }
+        },
+        // the setup window: Pebble the frog hangs out on the hill in the lower left
+        frog: boat ? 0.09 : undefined
       });
       // a click on open sky: a shooting star (a wish)
       skyWish = (x, y) => sky.wish(x, y);

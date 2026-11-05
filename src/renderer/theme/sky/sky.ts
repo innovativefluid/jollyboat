@@ -10,6 +10,8 @@
 // One canvas per window, fixed behind the page. Shared by the Sharkord page (preload) and the
 // app's own windows (theme/ui.ts).
 
+import { frogFrame } from './frog';
+
 export type TSkyScheme = 'night' | 'day';
 export type TSky = {
   stop: () => void;
@@ -89,6 +91,8 @@ export type TSkyOptions = {
   focused?: () => boolean;
   /** where the moon (or the sun) stands, as a share of the width (the study: 88 px from the right) */
   orb?: number;
+  /** Pebble the frog hangs out on the near hill, this share of the width from the left */
+  frog?: number;
 };
 
 const mk = (w: number, h: number) => {
@@ -125,6 +129,31 @@ export const createSky = (canvas: HTMLCanvasElement, o: TSkyOptions): TSky => {
   const hillFar = (x: number) => H - GROUND - 50 + 9 * Math.sin(x * 0.012 + 1.1) + 6 * Math.sin(x * 0.031 + 2.3) + 3 * Math.sin(x * 0.07);
   const hillMid = (x: number) => H - GROUND - 24 + 8 * Math.sin(x * 0.01 + 3.0) + 5 * Math.sin(x * 0.024 + 0.4);
   const hillNear = (x: number) => H - GROUND + 7 * Math.sin(x * 0.008 + 0.6) + 5 * Math.sin(x * 0.019 + 1.9) + 2 * Math.sin(x * 0.045 + 0.3);
+
+  // ---- Pebble: breath every ~1 s, a blink of 0.14 s every 4.2 s, happy while a star shoots;
+  // clicked, a hop (6 px, a half sine over 0.38 s) and a wave
+  const FROG_SEED = 0.79;
+  let frogHop = -9;
+  let frogWave = -9;
+  const frogX = () => (o.frog === undefined || GROUND < -100 ? null : Math.round(W * o.frog));
+  const frogFeet = (x: number) => Math.round(hillNear(x)) + 2;
+  const frogBusy = (now: number) => now - frogHop < 0.38 || now - frogWave < 1.4;
+  const drawFrog = (now: number) => {
+    const x = frogX();
+    if (x === null) return;
+    const calm = reduce.matches || resting;
+    const flying = meteors.length > 0;
+    const waving = !calm && now - frogWave < 1.4;
+    const frame = frogFrame({
+      hd: calm ? 0 : ((T * 1.05 + FROG_SEED) % 1) < 0.5 ? 0 : 1,
+      eyes: ((now + FROG_SEED * 3.1) % 4.2) < 0.14 ? 'closed' : flying || waving ? 'happy' : 'open',
+      mouth: flying || waving ? 'open' : 'smile',
+      arm: waving ? (((now * 3) % 1) < 0.5 ? 'up' : 'up2') : 'down'
+    });
+    const ht = now - frogHop;
+    const hy = ht < 0.38 && !calm ? -Math.round(Math.sin((Math.PI * ht) / 0.38) * 6) : 0;
+    g.drawImage(frame, x - 16, frogFeet(x) - 31 + hy);
+  };
 
   // ---- the grid: the short side of the screen near 360 sky pixels, whole device pixels each
   // (the screen, not the window: every window of the app draws its sky in the same pixel size)
@@ -273,6 +302,7 @@ export const createSky = (canvas: HTMLCanvasElement, o: TSkyOptions): TSky => {
       hill(hillNear, SC.hillNear, SC.hillNearRim);
       for (let i = 0; i < Math.round((9 * W) / 640); i++) {
         const tx = 20 + R() * (W - 40);
+        if (frogX() !== null && Math.abs(tx - frogX()!) < 24) continue;
         tree(tx, Math.round(hillNear(tx)) + 2, SC.tree);
       }
     }
@@ -376,6 +406,7 @@ export const createSky = (canvas: HTMLCanvasElement, o: TSkyOptions): TSky => {
       if (p > 0.55 && bay(X, Y) < ((p - 0.55) / 0.45) * 16) continue;
       px(g, X, Y, s.col);
     }
+    drawFrog(performance.now() / 1000);
   };
 
   const update = (dt: number) => {
@@ -417,7 +448,7 @@ export const createSky = (canvas: HTMLCanvasElement, o: TSkyOptions): TSky => {
     if (stopped) return;
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
-    const busy = meteors.length > 0 || sparks.length > 0;
+    const busy = meteors.length > 0 || sparks.length > 0 || frogBusy(now / 1000);
     const focused = o.focused?.() ?? true;
     const rate = busy ? fps.busy : focused ? fps.calm : Math.min(fps.calm, 6);
     update(dt);
@@ -485,6 +516,21 @@ export const createSky = (canvas: HTMLCanvasElement, o: TSkyOptions): TSky => {
     wish: (x, y) => {
       if (resting || reduce.matches) return;
       const dpr = window.devicePixelRatio || 1;
+      // a click on Pebble: a hop and a wave instead of a shooting star
+      const fx = frogX();
+      if (fx !== null && x !== undefined && y !== undefined) {
+        const sx = (x * dpr) / S;
+        const sy = (y * dpr) / S;
+        const feet = frogFeet(fx);
+        if (Math.abs(sx - fx) <= 13 && sy >= feet - 30 && sy <= feet + 1) {
+          const now = performance.now() / 1000;
+          frogHop = now;
+          frogWave = now;
+          last = performance.now();
+          schedule();
+          return;
+        }
+      }
       spawn(x === undefined ? undefined : (x * dpr) / S, y === undefined ? undefined : (y * dpr) / S);
       schedule();
     }
