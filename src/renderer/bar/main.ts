@@ -182,7 +182,8 @@ $('more').onclick = () => {
 // --- the server tabs ------------------------------------------------------------------------
 const tabsEl = $('tabs');
 const moreTabs = $('more-tabs');
-const VOICE = '<svg class="voice" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 4h2l3-3v10L3 8H1z M8 3.5q2 2.5 0 5 M9.5 2q3.5 4 0 8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" /></svg>';
+// (the waves apart from the speaker: the retro look sends them out one after the other)
+const VOICE = '<svg class="voice" viewBox="0 0 12 12" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><path d="M1 4h2l3-3v10L3 8H1z" /><path class="w1" d="M8 3.5q2 2.5 0 5" /><path class="w2" d="M9.5 2q3.5 4 0 8" /></g></svg>';
 const initials = (name: string) =>
   name
     .split(/\s+/)
@@ -214,9 +215,13 @@ const renderTabs = (list: TTab[]) => {
       el = document.createElement('button');
       el.className = 'chip tab';
       el.dataset.id = tab.id;
+      // new: the retro look unrolls it (the class goes again once that is over)
+      el.classList.add('born');
+      setTimeout(() => el?.classList.remove('born'), 600);
       el.innerHTML = `<span class="ico"></span><span class="tname"></span><span class="mark"></span><span class="x" role="button" aria-label="${t('Close tab')}" title="${t('Close tab')}"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 2l6 6M8 2l-6 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /></svg></span>`;
     }
-    tabsEl.append(el); // in order
+    // in order; one already in its place stays put (moved, its animations would start over)
+    if (tabsEl.children[i] !== el) tabsEl.insertBefore(el, tabsEl.children[i] ?? null);
     el.classList.toggle('fill', tab.active);
     el.classList.toggle('off', tab.loading || tab.connection === 'disconnected' || tab.connection === 'signed-out');
     const ico = el.querySelector<HTMLElement>('.ico')!;

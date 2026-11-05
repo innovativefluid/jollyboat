@@ -144,7 +144,10 @@ html main.bg-background > .h-12.border-b {
   margin: 3px 3px 0;
   height: 32px;
   border: 0 !important;
-  background: linear-gradient(90deg, var(--r-title-a), var(--r-title-b));
+  /* (a glint waits off to the left: it runs across when the pointer comes into the window) */
+  background:
+    linear-gradient(115deg, transparent 45%, rgba(255, 255, 255, 0.55) 45% 47%, transparent 47% 49%, rgba(255, 255, 255, 0.35) 49% 50%, transparent 50%) 100% 0 / 300% 100% no-repeat,
+    linear-gradient(90deg, var(--r-title-a), var(--r-title-b));
   color: var(--r-title-ink);
   text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.25);
 }
@@ -246,12 +249,25 @@ html [data-slot="checkbox"][data-state="checked"] { background: var(--r-field); 
 html [data-testid="channel-item"] { border-radius: 0; }
 html [data-testid="channel-item"].bg-accent { background: var(--r-sel); color: var(--r-sel-ink); }
 html [data-testid="channel-item"].bg-accent svg { color: var(--r-sel-ink); }
+/* the one under the pointer: marching ants round it, the old way of saying "this one" */
 html [data-testid="channel-item"]:not(.bg-accent):hover,
-html [data-testid="member-item"]:hover { background: transparent; outline: 1px dotted var(--r-ink); outline-offset: -2px; }
+html [data-testid="member-item"]:hover {
+  background-color: transparent;
+  background-image:
+    linear-gradient(90deg, var(--r-ink) 50%, transparent 50%), linear-gradient(90deg, var(--r-ink) 50%, transparent 50%),
+    linear-gradient(0deg, var(--r-ink) 50%, transparent 50%), linear-gradient(0deg, var(--r-ink) 50%, transparent 50%);
+  background-size: 4px 1px, 4px 1px, 1px 4px, 1px 4px;
+  background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+  background-position: 0 0, 0 100%, 0 0, 100% 0;
+  animation: jb-ants 0.6s steps(4, end) infinite;
+}
+@keyframes jb-ants { to { background-position: 4px 0, -4px 100%, 0 -4px, 100% 4px; } }
 html [data-testid="member-item"] { border-radius: 0; }
 /* a message that mentions you: a pink wash and a pink edge */
 html .bg-primary\/5 { background: color-mix(in srgb, var(--r-sel) 14%, transparent); }
 html [data-slot="badge"] { border-radius: 0; }
+/* unread counts: square, in pixel type */
+html [data-testid="unread-count"] { border-radius: 0; font-family: 'Jollyboat Pixel', monospace; box-shadow: inset -1px -1px rgba(0, 0, 0, 0.3), inset 1px 1px rgba(255, 255, 255, 0.35); }
 
 /* avatars: square, set into the window */
 html [data-slot="avatar"], html [data-slot="avatar-fallback"], html [data-slot="avatar-image"] { border-radius: 0; }
@@ -312,16 +328,88 @@ html :focus-visible:not(input):not(textarea):not(.ProseMirror):not([data-slot="i
 /* cards (settings, profiles): windows too */
 html [data-slot="card"] { border: 0; border-radius: 0; background: var(--r-face); box-shadow: var(--r-raised), 3px 3px 0 var(--r-drop); }
 
-/* menus, popovers and dialogs open in a few steps, like an old desktop drawing them */
+/* ---- motion: everything moves in a few whole steps, as an old desktop drew it --------------- */
+
+/* menus and popovers unroll from their corner; they roll back up when they close */
 html [data-slot="popover-content"][data-state="open"], html [data-slot="dropdown-menu-content"][data-state="open"],
-html [data-slot="context-menu-content"][data-state="open"], html [data-slot="select-content"][data-state="open"],
-html [data-slot="dialog-content"][data-state="open"], html [data-slot="alert-dialog-content"][data-state="open"] {
+html [data-slot="context-menu-content"][data-state="open"], html [data-slot="select-content"][data-state="open"] {
   animation: jb-open 160ms steps(3, jump-none) both;
 }
+html [data-slot="popover-content"][data-state="closed"], html [data-slot="dropdown-menu-content"][data-state="closed"],
+html [data-slot="context-menu-content"][data-state="closed"], html [data-slot="select-content"][data-state="closed"] {
+  animation: jb-open 100ms steps(2, jump-none) reverse both;
+}
 @keyframes jb-open { from { opacity: 0; clip-path: inset(0 100% 100% 0); } to { opacity: 1; clip-path: inset(0); } }
+/* a dialog zooms open from the middle, its frame dotted until it stands (a zoom rectangle);
+   closing, it zooms back (transform, not scale: sharkord centres it with translate) */
+html [data-slot="dialog-content"][data-state="open"], html [data-slot="alert-dialog-content"][data-state="open"] {
+  animation: jb-zoom 200ms steps(4, jump-none) both;
+}
+html [data-slot="dialog-content"][data-state="closed"], html [data-slot="alert-dialog-content"][data-state="closed"] {
+  animation: jb-zoom 120ms steps(3, jump-none) reverse both;
+}
+@keyframes jb-zoom {
+  from { transform: scale(0.25); outline: 2px dotted var(--r-ink); outline-offset: 2px; }
+  75% { outline: 2px dotted var(--r-ink); outline-offset: 2px; }
+  to { transform: none; outline: 2px dotted transparent; outline-offset: 2px; }
+}
+/* behind a dialog the desktop is greyed the old way: every other pixel darkened */
+html [data-slot="dialog-overlay"], html [data-slot="alert-dialog-overlay"], html [data-slot="sheet-overlay"] {
+  background: repeating-conic-gradient(color-mix(in srgb, var(--r-dark) 50%, transparent) 0 25%, transparent 0 50%) 0 0 / 2px 2px;
+}
+html [data-slot$="-overlay"][data-state="open"] { animation: jb-fade 120ms steps(2, jump-none) both; }
+html [data-slot$="-overlay"][data-state="closed"] { animation: jb-fade 100ms steps(2, jump-none) reverse both; }
+@keyframes jb-fade { from { opacity: 0; } to { opacity: 1; } }
+/* side panels (the user panel) slide in from their edge in four strides, and out in three */
+html [data-slot="sheet-content"].right-0[data-state="open"] { animation: jb-slide-r 220ms steps(4, jump-none) both; }
+html [data-slot="sheet-content"].right-0[data-state="closed"] { animation: jb-slide-r 150ms steps(3, jump-none) reverse both; }
+html [data-slot="sheet-content"].left-0[data-state="open"] { animation: jb-slide-l 220ms steps(4, jump-none) both; }
+html [data-slot="sheet-content"].left-0[data-state="closed"] { animation: jb-slide-l 150ms steps(3, jump-none) reverse both; }
+@keyframes jb-slide-r { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes jb-slide-l { from { transform: translateX(-100%); } to { transform: none; } }
+/* a settings screen opens from the middle of the desktop */
+html div:not(.relative) > .h-dvh.bg-background { animation: jb-screen 200ms steps(4, jump-none) backwards; }
+@keyframes jb-screen { from { clip-path: inset(45% 45%); } to { clip-path: inset(0); } }
+/* tooltips just appear, a moment later, in two steps */
+html [data-slot="tooltip-content"] { animation: jb-open 80ms steps(2, jump-none) both; }
+
+/* a window's title bar glints once when the pointer comes in */
+html .h-dvh .bg-card.border-r:hover > .h-12.border-b,
+html .h-dvh .bg-card.border-l:hover > .h-12.border-b,
+html main.bg-background:hover > .h-12.border-b { animation: jb-glint 600ms steps(12, end) both; }
+@keyframes jb-glint { from { background-position: 100% 0, 0 0; } to { background-position: -10% 0, 0 0; } }
+
+/* the newest message prints itself in from the top, like an old printer's lines */
+html .space-y-4 > :last-child div.rounded-md:last-child > [data-testid="message-item"] { animation: jb-type 240ms steps(4, jump-none) backwards; }
+@keyframes jb-type { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0); } }
+/* a new unread count blinks three times, like a new-mail flag */
+html [data-testid="unread-count"] { animation: jb-blink 360ms steps(2, jump-none) 3; }
+@keyframes jb-blink { from { opacity: 0; } to { opacity: 1; } }
+
+/* spinners turn in eight frames, loading placeholders blink between two shades, the typing dots
+   hop as square pixels */
+html .animate-spin { animation-timing-function: steps(8, end); }
+html .animate-pulse { animation-timing-function: steps(2, jump-none); }
+html .animate-bounce { animation-name: jb-hop; animation-duration: 0.9s; animation-timing-function: steps(1, end); border-radius: 0; }
+@keyframes jb-hop { 0% { translate: 0 0; } 33% { translate: 0 -3px; } 66% { translate: 0 0; } }
+
+/* toasts: small windows that slide in by whole steps */
+html [data-sonner-toast][data-styled="true"] {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--r-face) !important;
+  color: var(--r-ink) !important;
+  box-shadow: var(--r-raised), 4px 4px 0 var(--r-drop) !important;
+  font-family: 'Jollyboat Dot', 'Jollyboat Pixel', monospace;
+  transition-timing-function: steps(4, jump-none) !important;
+}
+html [data-sonner-toast] [data-close-button] { border-radius: 0 !important; background: var(--r-face) !important; color: var(--r-ink) !important; border: 0 !important; box-shadow: var(--r-raised) !important; }
 
 @media (prefers-reduced-motion: reduce) {
-  html .speaking-effect-medium, html .speaking-effect-high, html [data-state="open"] { animation: none; }
+  html .speaking-effect-medium, html .speaking-effect-high, html [data-state], html [data-slot="tooltip-content"],
+  html div:not(.relative) > .h-dvh.bg-background, html .h-12.border-b, html [data-testid="message-item"],
+  html [data-testid="unread-count"], html .animate-bounce { animation: none !important; }
+  html [data-testid="channel-item"]:not(.bg-accent):hover, html [data-testid="member-item"]:hover { animation: none; }
 }
 
 /* ---- scrollbars: the old kind, a pink check for the track ------------------------------- */

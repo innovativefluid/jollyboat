@@ -82,6 +82,12 @@
   </keywords>
 
   <releases>
+    <release version="0.4.5" date="2026-11-05">
+      <description>
+        <p>Retro theme: more pixel motion, all in whole steps. Dialogs zoom open through a dotted frame over a dithered desktop and zoom shut again; side panels slide in from their edge; menus unroll and roll back up; settings screens open from the middle; a window's title bar glints when the pointer comes in; marching ants go round the channel or member under the pointer; the newest message prints itself in; new unread counts blink three times; spinners turn in eight frames and the typing dots hop as square pixels; toasts are small windows.</p>
+        <p>The bar in the Retro theme: a new tab unrolls, a new unread mark blinks, and the speaker of a call sends out its waves.</p>
+      </description>
+    </release>
     <release version="0.4.4" date="2026-11-01">
       <description>
         <p>One bar on top: opening a menu (like the server menu) no longer brings Sharkord's top bar back in its own row. A side panel (the user panel from the member list) or a dialog reaching under the bar puts the bar back in its own row, so its close button is never under the window buttons.</p>

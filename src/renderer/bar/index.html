@@ -157,6 +157,20 @@
       [data-look='retro'] .tab .count { border-radius: 0; background: var(--r-accent); color: #fff; }
       [data-look='retro'] .tab.fill .count { background: var(--r-face); color: var(--r-accent); }
       [data-look='retro'] .tab.fill:active { padding: 0 8px 0 4px; }
+      /* retro motion, in whole steps: a new tab unrolls, a new unread mark blinks three times, the
+         speaker of a call sends its waves out one after the other */
+      [data-look='retro'] .tab .unread { border-radius: 0; width: 6px; height: 6px; }
+      [data-look='retro'] .tab.born { animation: r-unroll 180ms steps(3, jump-none) backwards; }
+      @keyframes r-unroll { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+      [data-look='retro'] .tab .unread, [data-look='retro'] .tab .count { animation: r-blink 360ms steps(2, jump-none) 3; }
+      @keyframes r-blink { from { opacity: 0; } to { opacity: 1; } }
+      [data-look='retro'] .tab svg.voice .w1 { animation: r-wave 1.2s steps(1, end) infinite; }
+      [data-look='retro'] .tab svg.voice .w2 { animation: r-wave2 1.2s steps(1, end) infinite; }
+      @keyframes r-wave { 0% { opacity: 0; } 33% { opacity: 1; } }
+      @keyframes r-wave2 { 0% { opacity: 0; } 66% { opacity: 1; } }
+      @media (prefers-reduced-motion: reduce) {
+        [data-look='retro'] .tab.born, [data-look='retro'] .tab .unread, [data-look='retro'] .tab .count, [data-look='retro'] .tab svg.voice path { animation: none; }
+      }
     </style>
   </head>
   <body>
