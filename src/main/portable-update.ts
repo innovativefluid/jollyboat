@@ -6,16 +6,20 @@
 //
 // The checked file waits next to the exe as <name>.update. The running exe cannot be renamed or
 // replaced (the portable launcher holds its own file until it has cleaned up after the app), so
-// the files trade places after the app has quit: a small powershell script, not tied to the app,
-// waits until the launcher lets go, puts the old exe aside, gives the new one its name (so
+// the files trade places after the app has quit: a small powershell script waits until the
+// launcher lets go, puts the old exe aside, gives the new one its name (so
 // shortcuts and the Jollyboat-data folder next to it stay as they are) and clears the old one
 // away. That happens on every quit while an update waits; "click to install" also starts the new
 // version. A release without latest-portable.json (before 0.4.5) keeps the old notice.
+//
+// The script is started through WMI (Win32_Process.Create), not as a child of the app: a child
+// would go down with the app and its launcher (CI showed a detached child never getting to run),
+// a process WMI creates belongs to nobody of ours. Quitting waits the moment that takes.
 
 import { app, net } from 'electron';
-import { spawn, execFile } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { closeSync, createWriteStream, existsSync, openSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { createWriteStream, existsSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { log } from './log';
 
@@ -81,7 +85,7 @@ export const pendingFile = (exe: string) => `${exe}.update`;
 /** the swap, run after the app quits: waits (up to a minute) until the launcher lets go of the
  *  exe, puts it aside, moves the update into its place, clears the old one away; and with
  *  `start`, starts the new version */
-export const swapAfterQuit = (exe: string, start: boolean) => {
+export const swapAfterQuit = (exe: string, start: boolean): Promise<string> => {
   const q = (p: string) => `'${p.replace(/'/g, "''")}'`;
   const name = basename(exe);
   // (a script file, not a -Command line: powershell takes a file as it is)
@@ -115,18 +119,21 @@ export const swapAfterQuit = (exe: string, start: boolean) => {
     start ? "Say 'starting the new version'; Start-Process -FilePath $exe" : ''
   ].join('\r\n');
   writeFileSync(file, `${script}\r\n`);
-  // (its own output and errors go to update-swap.out, for when it does not get as far as its log)
-  const out = openSync(join(dir, 'update-swap.out'), 'w');
-  const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', file], {
-    detached: true,
-    stdio: ['ignore', out, out],
-    windowsHide: true,
-    cwd: dir
-  });
-  child.on('error', (err) => log('portable-update', 'swap script did not start', err.message));
-  child.unref();
-  closeSync(out);
-  log('portable-update', 'swap after quit', start ? '(and start)' : '');
+  const q2 = (p: string) => p.replace(/'/g, "''");
+  const command = `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "${file}"`;
+  const launcher = [
+    '$si = New-CimInstance -ClassName Win32_ProcessStartup -ClientOnly -Property @{ ShowWindow = [uint16]0 }',
+    `$r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = '${q2(command)}'; CurrentDirectory = '${q2(dir)}'; ProcessStartupInformation = $si }`,
+    '"$($r.ReturnValue) $($r.ProcessId)"'
+  ].join('; ');
+  return new Promise<string>((resolve) =>
+    // (encoded: no quoting on the way through the command line)
+    execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', Buffer.from(launcher, 'utf16le').toString('base64')], { windowsHide: true, timeout: 30000 }, (err, stdout) => {
+      const result = err ? `failed: ${err.message}` : stdout.trim().startsWith('0 ') ? 'started' : `failed: ${stdout.trim()}`;
+      log('portable-update', 'swap after quit', start ? '(and start)' : '', result);
+      resolve(result);
+    })
+  );
 };
 
 /** the new release's portable exe for this architecture, or null when that release has none */
@@ -176,14 +183,16 @@ export const downloadPortable = async (version: string, file: { name: string; si
 // the swap is on its way (from "click to install"): the quit does not start another
 let swapStarted = false;
 
-/** an update waits: on quit the files trade places (registered once, at start) */
+/** an update waits: on quit the files trade places (registered once, at start); the quit waits
+ *  until the swap script is on its way */
 export const swapOnQuit = () => {
   const exe = portableFile();
   if (!exe) return;
-  app.on('will-quit', () => {
+  app.on('will-quit', (e) => {
     if (swapStarted || !existsSync(pendingFile(exe))) return;
     swapStarted = true;
-    swapAfterQuit(exe, false);
+    e.preventDefault();
+    void swapAfterQuit(exe, false).finally(() => app.quit());
   });
 };
 
@@ -192,6 +201,5 @@ export const restartPortable = () => {
   const exe = portableFile();
   if (!exe || !existsSync(pendingFile(exe))) return;
   swapStarted = true;
-  swapAfterQuit(exe, true);
-  app.quit();
+  void swapAfterQuit(exe, true).finally(() => app.quit());
 };

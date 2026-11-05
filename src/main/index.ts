@@ -1105,10 +1105,10 @@ const runSmokeTest = async () => {
     if (PORTABLE && swapWith) {
       try {
         renameSync(swapWith, pendingFile(portableFile()!));
-        swapAfterQuit(portableFile()!, false);
+        const started = await swapAfterQuit(portableFile()!, false);
         // (the script says so in its log within a moment, while it waits for the exe)
-        await new Promise((r) => setTimeout(r, 4000));
-        swap = ` | swap waiting | script ${existsSync(join(app.getPath('userData'), 'update-swap.log')) ? 'started' : 'silent'}`;
+        for (let i = 0; i < 20 && !existsSync(join(app.getPath('userData'), 'update-swap.log')); i++) await new Promise((r) => setTimeout(r, 500));
+        swap = ` | swap waiting | script ${started}, ${existsSync(join(app.getPath('userData'), 'update-swap.log')) ? 'running' : 'silent'}`;
       } catch (err) {
         swap = ` | swap failed: ${(err as Error).message}`;
       }
