@@ -161,6 +161,8 @@ export const comboToPortalTrigger = (combo: string): { trigger: string } | { err
 
   if (!sym) return { error: `unsupported key ${key}` };
 
-  const parts = [...(mods.ctrl ? ['CTRL'] : []), ...(mods.alt ? ['ALT'] : []), ...(mods.shift ? ['SHIFT'] : []), ...(mods.meta ? ['LOGO'] : []), sym];
+  // (kde reads KP_7 as the plain 7 of the top row; only NUM, num lock in the spec, which the
+  // keypad's digits need on anyway, keeps it on the keypad. sharkord's desktop app does the same)
+  const parts = [...(mods.ctrl ? ['CTRL'] : []), ...(mods.alt ? ['ALT'] : []), ...(mods.shift ? ['SHIFT'] : []), ...(mods.meta ? ['LOGO'] : []), ...(sym.startsWith('KP_') ? ['NUM'] : []), sym];
   return { trigger: parts.join('+') };
 };

@@ -47,8 +47,9 @@ export type TDesktopHotkeyReason = 'unsupported' | 'needs-modifier' | 'taken' | 
 
 /** a key source's reason in the words of sharkord's desktop bridge */
 export const desktopReason = (reason: string): TDesktopHotkeyReason =>
-  /modifier alone/.test(reason) ? 'needs-modifier'
-  : /refused this key/.test(reason) ? 'taken'
+  // (a modifier alone: 'unsupported', as sharkord's own app says since 0.0.30; 'needs-modifier'
+  // leaves the bridge with its next version)
+  /refused this key/.test(reason) ? 'taken'
   : /desktop|dialog|assigned/.test(reason) ? 'declined'
   : 'unsupported';
 

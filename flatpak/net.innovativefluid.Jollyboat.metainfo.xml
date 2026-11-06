@@ -82,6 +82,13 @@
   </keywords>
 
   <releases>
+    <release version="0.4.7" date="2026-11-06">
+      <description>
+        <p>Checked against Sharkord 0.0.30: desktop mode, hotkeys, voice, notifications and every theme work as before.</p>
+        <p>Hotkeys on the number pad stay on the number pad on KDE (as in Sharkord's own app). A modifier key alone is now reported as unsupported, the way Sharkord's own app reports it.</p>
+        <p>Pixel Sky: switches that are on now look on (a lit block at the right); before, on and off looked alike, which Sharkord 0.0.30's always-on "Enable hotkeys" switch made obvious.</p>
+      </description>
+    </release>
     <release version="0.4.6" date="2026-11-05">
       <description>
         <p>Christmas theme: it runs at 60 frames a second in front and 30 behind, like the Water theme, and costs far less: the panels are tinted glass without a live blur of the moving scene, and the scene draws its light beams, sun rays, flares and snow much more cheaply.</p>

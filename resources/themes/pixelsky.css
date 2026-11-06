@@ -257,9 +257,10 @@ html .tiptap p.is-editor-empty:first-child::before { color: var(--s-mute); }
 
 /* switches and checks */
 html [data-slot="switch"] { border: 0; border-radius: 0; background: transparent; border-image: var(--k-check); }
-html [data-slot="switch"][data-state="checked"] { border-image: var(--k-check-on); }
-html [data-slot="switch-thumb"] { border-radius: 0; background: var(--s-ink); transition: transform 120ms steps(3, jump-none); }
-html [data-slot="switch"][data-state="checked"] [data-slot="switch-thumb"] { background: var(--s-on-fill); }
+/* (off: a dim block at the left; on: a lit block at the right. a filled track with a dark block
+   looked just like an empty one with a light block) */
+html [data-slot="switch-thumb"] { border-radius: 0; background: var(--s-mute); transition: transform 120ms steps(3, jump-none); }
+html [data-slot="switch"][data-state="checked"] [data-slot="switch-thumb"] { background: var(--s-focus); box-shadow: 0 0 0 1px var(--s-ink); }
 html [data-slot="checkbox"] { border: 0; border-radius: 0; background: transparent; border-image: var(--k-check); }
 html [data-slot="checkbox"][data-state="checked"] { border-image: var(--k-check-on); color: var(--s-on-fill); }
 
