@@ -80,8 +80,8 @@ modules:
       # venmic's C++ dependencies, at the versions its CMake files ask for
       - type: git
         url: https://github.com/Curve/rohrkabel.git
-        tag: v13.1.1
-        commit: ac952ebecc27c7dc36c7d95d9bc8b4660d5efbe5
+        tag: v13.2.0
+        commit: fe01a2df17509a4a4d3159c36ed2807ac1431754
         dest: venmic-deps/rohrkabel
       - type: git
         url: https://github.com/Curve/channel.git
