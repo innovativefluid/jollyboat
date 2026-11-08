@@ -82,6 +82,13 @@
   </keywords>
 
   <releases>
+    <release version="0.4.9" date="2026-11-08">
+      <description>
+        <p>Lighter in calls: while someone speaks, Jollyboat no longer measures the page on every change of the voice list (it did, to keep the merged bar right), which saves a good share of a CPU core during a call.</p>
+        <p>The Christmas theme on computers without a working graphics driver (software rendering): its background runs at half the frame rate and a little softer, at about half the CPU it took before.</p>
+        <p>Updated to Electron 45 (Chromium 156) and newer build tools.</p>
+      </description>
+    </release>
     <release version="0.4.8" date="2026-11-08">
       <description>
         <p>Role badges (in a member's card and the moderation side panel) are readable in every theme: they are the theme's own chips with its own text colour, and the role's colour is a small dot in front of the name. Before, light or dark role colours could vanish into the badge, worst in Pixel Sky.</p>
