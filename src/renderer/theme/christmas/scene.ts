@@ -10,8 +10,11 @@
 //
 // Light or dark follows the page. One canvas behind the page (or the app's window), drawn at no
 // more than 1.25 device pixels per css pixel (it is all soft light); the still parts are drawn
-// once per size into a layer. 60 frames a second in front, 30 behind (the water's); it rests while a game is
+// once per size into a layer. 60 frames a second in front, 30 behind (the water's); half that,
+// at three quarters of the resolution, without a gpu (theme/gpu.ts); it rests while a game is
 // open over the page, and stands still with reduced motion.
+
+import { softwareRendering } from '../gpu';
 
 export type TXmasPalette = 'classic' | 'gold' | 'snow';
 export type TXmasScene = {
@@ -495,6 +498,7 @@ type TFlake = { x: number; y: number; r: number; v: number; sway: number; ph: nu
 export const createXmasScene = (canvas: HTMLCanvasElement, o: TXmasOptions): TXmasScene => {
   const g = canvas.getContext('2d', { alpha: false })!;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  const soft = softwareRendering();
   let W = 0;
   let H = 0;
   let res = 1;
@@ -740,7 +744,8 @@ export const createXmasScene = (canvas: HTMLCanvasElement, o: TXmasOptions): TXm
   // ---- size, palette, everything that moves ------------------------------------------------------
   const fit = () => {
     // (all soft light: at most 1.25 device pixels per css pixel, and at most ~2.4 million in all)
-    res = Math.min(window.devicePixelRatio || 1, 1.25, Math.sqrt(2.4e6 / Math.max(1, window.innerWidth * window.innerHeight)));
+    // (without a gpu every pixel is the cpu's: three quarters of a css pixel then, a little softer)
+    res = Math.min(window.devicePixelRatio || 1, soft ? 0.75 : 1.25, Math.sqrt((soft ? 1.2e6 : 2.4e6) / Math.max(1, window.innerWidth * window.innerHeight)));
     W = Math.max(1, Math.round(window.innerWidth * res));
     H = Math.max(1, Math.round(window.innerHeight * res));
     short = window.innerHeight < 200;
@@ -1070,7 +1075,8 @@ export const createXmasScene = (canvas: HTMLCanvasElement, o: TXmasOptions): TXm
     raf = 0;
     if (stopped) return;
     schedule();
-    const rate = (o.focused?.() ?? true) ? 60 : 30;
+    // (without a gpu: half of that, which is all a cpu keeps up with anyway)
+    const rate = ((o.focused?.() ?? true) ? 60 : 30) / (soft ? 2 : 1);
     const interval = 1000 / rate;
     budget = Math.min(budget + (prevTick ? now - prevTick : interval), interval * 2);
     prevTick = now;

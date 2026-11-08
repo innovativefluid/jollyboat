@@ -575,10 +575,24 @@ html.dark[data-jb-bar='lcd'] ${TOPBAR} { background: #18201c !important; border-
   // (a view shown by a class change brings no new nodes: looked at once a second as well)
   setInterval(() => document.body && reportTopbar(), 1000);
 
+  // the top bar's check measures the page (a forced layout and three hit tests): it runs when
+  // nodes come or go (a dialog, a sheet, a view) and once a second, not on the class changes of
+  // the voice rows, which come many times a second while someone speaks
+  let topbarQueued = false;
+  const scheduleTopbar = () => {
+    if (topbarQueued) return;
+    topbarQueued = true;
+    const run = () => {
+      topbarQueued = false;
+      if (document.body) reportTopbar();
+    };
+    if (document.hidden) setTimeout(run, 100);
+    else requestAnimationFrame(run);
+  };
+
   let scheduled = false;
   const report = () => {
     scheduled = false;
-    reportTopbar();
     const state = readVoice();
     const key = JSON.stringify(state);
     if (key === last) return;
@@ -757,12 +771,14 @@ html.dark[data-jb-bar='lcd'] ${TOPBAR} { background: #18201c !important; border-
     new MutationObserver(() => {
       rescope();
       schedule();
+      scheduleTopbar();
       scheduleScheme();
     }).observe(document.body, { subtree: true, childList: true });
     // a stream video starting or stopping is not a mutation
     for (const ev of ['playing', 'emptied', 'ended', 'loadeddata']) document.addEventListener(ev, schedule, true);
     rescope();
     schedule();
+    scheduleTopbar();
     const head = document.querySelector('head');
     if (head) new MutationObserver(reportTitle).observe(head, { subtree: true, childList: true, characterData: true });
     reportTitle();
