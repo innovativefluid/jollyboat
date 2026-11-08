@@ -82,6 +82,11 @@
   </keywords>
 
   <releases>
+    <release version="0.4.8" date="2026-11-08">
+      <description>
+        <p>Role badges (in a member's card and the moderation side panel) are readable in every theme: they are the theme's own chips with its own text colour, and the role's colour is a small dot in front of the name. Before, light or dark role colours could vanish into the badge, worst in Pixel Sky.</p>
+      </description>
+    </release>
     <release version="0.4.7" date="2026-11-06">
       <description>
         <p>Checked against Sharkord 0.0.30: desktop mode, hotkeys, voice, notifications and every theme work as before.</p>

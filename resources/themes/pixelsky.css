@@ -307,6 +307,14 @@ html [data-slot$="menu-separator"] { background: color-mix(in srgb, var(--s-edge
 html [data-slot="card"] { border: 0; border-radius: 0; background: transparent; box-shadow: none; border-image: var(--k-panel); }
 html [data-slot="badge"] { border-radius: 0; border: 0; background: transparent; border-image: var(--k-chip); color: var(--s-ink); }
 html [data-slot="badge"].bg-primary { border-image: var(--k-chip-fill); color: var(--s-on-fill); }
+/* role badges (user popover, moderation view, invites): sharkord paints them in the role's own
+   colour, text on a 12 % tint of it, which a light or dark role colour turns unreadable on any
+   theme. here they are the theme's own chip with its own ink, and the role's colour is a dot in
+   front of the name (the dot takes the colour from the badge's border, which keeps it; the border
+   itself is not drawn) */
+html [data-slot="badge"][style*="border-color"] { gap: 6px; background: transparent !important; border-image: var(--k-chip); color: var(--s-ink); }
+html [data-slot="badge"][style*="border-color"] > span, html [data-slot="badge"][style*="border-color"] button { color: var(--s-ink) !important; }
+html [data-slot="badge"][style*="border-color"]::before { content: ''; flex: none; width: 8px; height: 8px; box-sizing: border-box; border: 4px solid; border-color: inherit; box-shadow: 0 0 0 2px var(--s-ink); margin: 0 2px; }
 
 /* ---- channels, members, messages ---------------------------------------------------------- */
 

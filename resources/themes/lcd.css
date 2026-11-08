@@ -153,6 +153,14 @@ html div:has(> [class*="tiptap"][class*="relative"]):focus-within { border-color
 html [data-slot="switch"] { border: 2px solid var(--jb-dim); border-radius: 4px; background: transparent; box-shadow: none; }
 html [data-slot="switch"][data-state="checked"] { background: var(--jb-ink); border-color: var(--jb-ink); }
 html [data-slot="switch-thumb"] { border-radius: 2px; background: var(--jb-ink); }
+/* role badges (user popover, moderation view, invites): sharkord paints them in the role's own
+   colour, text on a 12 % tint of it, which a light or dark role colour turns unreadable on any
+   theme. here they are the theme's own chip with its own ink, and the role's colour is a dot in
+   front of the name (the dot takes the colour from the badge's border, which keeps it; the border
+   itself is not drawn) */
+html [data-slot="badge"][style*="border-color"] { border-width: 0; border-radius: 4px; gap: 6px; background: transparent !important; box-shadow: inset 0 0 0 2px var(--jb-dim); color: var(--jb-ink); }
+html [data-slot="badge"][style*="border-color"] > span, html [data-slot="badge"][style*="border-color"] button { color: var(--jb-ink) !important; }
+html [data-slot="badge"][style*="border-color"]::before { content: ''; flex: none; width: 8px; height: 8px; box-sizing: border-box; border: 4px solid; border-color: inherit; border-radius: 1px; box-shadow: 0 0 0 1px var(--jb-ink); }
 html [data-slot="switch"][data-state="checked"] [data-slot="switch-thumb"] { background: var(--background); }
 html [data-slot="checkbox"] { border: 2px solid var(--jb-dim); border-radius: 3px; }
 html [data-slot="checkbox"][data-state="checked"] { background: var(--jb-ink); border-color: var(--jb-ink); }
