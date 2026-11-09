@@ -192,6 +192,11 @@ def tray_pixel(out, c):
             img.save(out / f'{name}{suffix}.png')
             ico([nearest(img, 16), img, nearest(img, 64)], out / f'{name}{suffix}.ico')
 
+    # the app's own icon in this set (the taskbar, the dock, the window): the plain boat, 8x
+    app = fin()
+    nearest(app, 256).save(out / 'app.png')
+    ico([nearest(app, 16), nearest(app, 24), app, nearest(app, 48), nearest(app, 64), nearest(app, 128), nearest(app, 256)], out / 'app.ico')
+
     overlay = Image.new('RGBA', (16, 16), CLEAR)
     px = overlay.load()
     for y in range(16):
@@ -337,6 +342,9 @@ def tray_water(out, C):
             big = water_icon(32, name, unread, C)
             big.save(out / f'{name}{suffix}.png')
             ico([water_icon(16, name, unread, C), water_icon(24, name, unread, C), big, water_icon(64, name, unread, C)], out / f'{name}{suffix}.ico')
+    # the app's own icon in this set (the taskbar, the dock, the window), drawn at each size
+    water_icon(256, 'normal', False, C).save(out / 'app.png')
+    ico([water_icon(n, 'normal', False, C) for n in (16, 24, 32, 48, 64, 128, 256)], out / 'app.ico')
     # the taskbar overlay: the bubble alone
     ss = 8
     S = 16 * ss

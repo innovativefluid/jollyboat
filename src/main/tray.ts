@@ -1,13 +1,14 @@
 // The tray shows the voice state (mic muted, deafened) and whether there are unread messages,
 // and lets the user toggle mic / deafen from its menu (the preload clicks the buttons).
 
-import { app, Menu, nativeImage, Tray, type BaseWindow } from 'electron';
+import { app, BaseWindow, Menu, nativeImage, Tray } from 'electron';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PALETTES, type TVoiceState } from '../shared/types';
 import { log } from './log';
 import { t, whenLanguageChanges } from './lang';
 import { getSettings } from './settings';
+import { iconPath } from './paths';
 
 type TTrayActions = {
   toggle: () => void;
@@ -207,7 +208,26 @@ export const clearUnread = () => {
 };
 
 /** the theme changed: its icons (the tray's, the taskbar overlay) */
+/** the app's icon in the current theme (the window, the taskbar, the dock): the Jollyboat theme
+ *  keeps the app's own icon, every other theme its tray set's boat (app.png / app.ico, from
+ *  tools/make-icons.py) */
+export const appIconFile = () => {
+  const set = traySet();
+  if (set === 'lcd') return iconPath();
+  return join(__dirname, `../../resources/tray/${set}/app.${process.platform === 'win32' ? 'ico' : 'png'}`);
+};
+
+/** every window (and the mac dock) takes the theme's icon */
+const refreshAppIcon = () => {
+  const file = appIconFile();
+  const img = nativeImage.createFromPath(file);
+  if (img.isEmpty()) return;
+  for (const win of BaseWindow.getAllWindows()) if (!win.isDestroyed()) win.setIcon(img);
+  if (process.platform === 'darwin') app.dock?.setIcon(nativeImage.createFromPath(file.replace(/\.ico$/, '.png')));
+};
+
 export const refreshTrayTheme = () => {
+  refreshAppIcon();
   if (!tray) return;
   renderIcon();
   renderBadge();

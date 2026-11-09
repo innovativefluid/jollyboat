@@ -10,7 +10,8 @@ import { log } from './log';
 import { t } from './lang';
 import { getScreenAudioMode, listSoundApps, loopbackForRequest, markShareGranted, setShareSound, soundAppsSupported } from './screen-audio';
 import { getSettings, saveSettings } from './settings';
-import { pageUrl, preloadPath, iconPath } from './paths';
+import { pageUrl, preloadPath } from './paths';
+import { appIconFile } from './tray';
 import { windowBackground } from './look';
 
 const isWaylandSession = () =>
@@ -33,7 +34,7 @@ const openPicker = (parent: BaseWindow | undefined, sources: TCaptureSource[], s
       modal: !!parent,
       show: false,
       autoHideMenuBar: true,
-      icon: iconPath(),
+      icon: appIconFile(),
       title: t('Share your screen'),
       backgroundColor: windowBackground(),
       webPreferences: { preload: preloadPath(), sandbox: true, contextIsolation: true }

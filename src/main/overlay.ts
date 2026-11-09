@@ -10,7 +10,8 @@
 import { BrowserWindow, screen } from 'electron';
 import type { TOverlayState, TVoiceMember, TVoiceState } from '../shared/types';
 import { t } from './lang';
-import { iconPath, pageUrl, preloadPath } from './paths';
+import { appIconFile } from './tray';
+import { pageUrl, preloadPath } from './paths';
 import { getSettings, saveSettings } from './settings';
 
 const WIDTH = 240;
@@ -82,7 +83,7 @@ const create = () => {
     skipTaskbar: true,
     alwaysOnTop: true,
     title: 'Jollyboat voice',
-    icon: iconPath(),
+    icon: appIconFile(),
     webPreferences: { preload: preloadPath(), sandbox: true, contextIsolation: true, backgroundThrottling: false }
   });
 

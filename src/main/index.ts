@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { installBasicAuth, refreshBasicAuth } from './basic-auth';
 import { getBridgeStatus, setHotkeyRanking, startBridge, stopBridge } from './hotkeys/bridge';
 import { registerIpc } from './ipc';
-import { iconPath, isOwnPageUrl, originOf, pageUrl, preloadPath } from './paths';
+import { isOwnPageUrl, originOf, pageUrl, preloadPath } from './paths';
 import { currentLook, windowBackground } from './look';
 import { installDisplayMediaHandler } from './screen-share';
 import { installContextMenu, installDownloads, isServerFile, saveUrl } from './downloads';
@@ -14,7 +14,7 @@ import { refreshAutoStart } from './autostart';
 import { claimLinksIfFree, findDeepLink, parseDeepLink, PROTOCOL } from './deeplinks';
 import { findServerByUrl, getSettings, onServersChanged, saveSettings } from './settings';
 import { log } from './log';
-import { addUnread, clearUnread, createTray, hasTray, setServerName, setTitleUnread, setVoiceState } from './tray';
+import { addUnread, clearUnread, createTray, hasTray, setServerName, setTitleUnread, setVoiceState, appIconFile } from './tray';
 import { installDesktopBridge, sendListVisible, type TConnection } from './desktop';
 import type { TBarState, TTab, TVoiceMember, TVoiceState } from '../shared/types';
 import { applySpellcheck, blockDictionaryDownloads } from './privacy';
@@ -441,7 +441,7 @@ const createMainWindow = () => {
     // no system title bar: our bar is the title bar, with its own window buttons. on mac the
     // native traffic lights stay, centred in our bar, and the bar leaves room for them
     ...(process.platform === 'darwin' ? { titleBarStyle: 'hidden' as const, trafficLightPosition: { x: 12, y: 10 } } : { frame: false }),
-    icon: iconPath(),
+    icon: appIconFile(),
     title: 'Jollyboat',
     backgroundColor: windowBackground(dark)
   });
@@ -838,7 +838,7 @@ const createLauncherWindow = () => {
     minHeight: 680,
     show: false,
     autoHideMenuBar: true,
-    icon: iconPath(),
+    icon: appIconFile(),
     title: 'Jollyboat',
     backgroundColor: windowBackground(),
     webPreferences

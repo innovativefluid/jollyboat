@@ -1,7 +1,8 @@
 // a modal yes/no window in the app's own look (src/renderer/prompt), replacing native message boxes
 
 import { BrowserWindow, ipcMain, type BaseWindow } from 'electron';
-import { iconPath, isOwnPageUrl, pageUrl, preloadPath } from './paths';
+import { appIconFile } from './tray';
+import { isOwnPageUrl, pageUrl, preloadPath } from './paths';
 import { windowBackground } from './look';
 
 type TPrompt = { message: string; detail?: string; yes: string; no: string };
@@ -27,7 +28,7 @@ export const askPrompt = (parent: BaseWindow | undefined, prompt: TPrompt) =>
       minimizable: false,
       maximizable: false,
       autoHideMenuBar: true,
-      icon: iconPath(),
+      icon: appIconFile(),
       title: 'Jollyboat',
       backgroundColor: windowBackground(),
       webPreferences: { preload: preloadPath(), sandbox: true, contextIsolation: true }

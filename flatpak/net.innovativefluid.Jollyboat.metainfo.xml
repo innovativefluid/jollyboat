@@ -85,6 +85,7 @@
     <release version="0.4.10" date="2026-11-09">
       <description>
         <p>Pixel Sky comes in a second colour, Sunset, in amber and pink: by day the sun sets behind the hills under a rose and gold sky, its lower half cut in bands, and the panels are warm cream with plum text; in dark mode it is dusk, the sky running from indigo through violet to a coral glow over plum hills, with the moon and the first stars out. Pick it with the squares beside the theme menu; the bar, the setup window, the overlay and the tray icon follow along.</p>
+        <p>The app's icon follows the theme too: the windows (and with them the taskbar, and the dock on a Mac) wear the theme's boat, the same as the tray. The Jollyboat theme keeps the app's own icon.</p>
       </description>
     </release>
     <release version="0.4.9" date="2026-11-08">
