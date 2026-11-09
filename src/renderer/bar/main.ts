@@ -1,7 +1,7 @@
 // the bar above a server page: which server, zoom, the way to the app's own window, and a menu
 // for the rest. follows the system's light/dark setting (css), the mark too
 
-import { createSky, type TSky } from '../theme/sky/sky';
+import { createSky, skyScheme, type TSky } from '../theme/sky/sky';
 import { createXmasScene } from '../theme/christmas/scene';
 import boatMap from '../../../build/pixel/icon-16.txt?raw';
 import { t, translatePage } from '../i18n';
@@ -62,7 +62,7 @@ const startWater = (look: 'lcd' | 'water' | 'retro' | 'sky' | 'xmas') => {
     waterCanvas.className = 'sky';
     document.body.prepend(waterCanvas);
     barSky = createSky(waterCanvas, {
-      scheme: () => (document.documentElement.dataset.theme === 'light' ? 'day' : document.documentElement.dataset.theme === 'dark' ? 'night' : dark.matches ? 'night' : 'day'),
+      scheme: () => skyScheme(document.documentElement.dataset.theme === 'light' ? false : document.documentElement.dataset.theme === 'dark' ? true : dark.matches, document.documentElement.dataset.palette),
       focused: window.shell.windowFocused,
       fps: { calm: 10, busy: 60 }
     });

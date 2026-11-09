@@ -368,6 +368,10 @@ const renderSettings = async () => {
       { value: 'classic', label: t('Red and green'), colours: ['#d8231a', '#e2a82c', '#3f9a36', '#05280e'] },
       { value: 'gold', label: t('Gold'), colours: ['#ffe39a', '#e2a82c', '#2f9e3a', '#160d03'] },
       { value: 'snow', label: t('Snow'), colours: ['#ffffff', '#ff8a24', '#7ab8ea', '#0a2266'] }
+    ],
+    pixelsky: [
+      { value: 'blue', label: t('Blue'), colours: ['#fff6d8', '#3e8ee4', '#2a2c73', '#070920'] },
+      { value: 'sunset', label: t('Sunset'), colours: ['#ffe6a6', '#f48f84', '#9c336a', '#100a2c'] }
     ]
   };
   const showTints = (theme: TSettings['theme']) => {

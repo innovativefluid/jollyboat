@@ -35,7 +35,7 @@ export const windowBackground = (dark = nativeTheme.shouldUseDarkColors) => {
   if (look === 'water') return BACKGROUNDS.water[palette as 'blue']?.[dark ? 1 : 0] ?? BACKGROUNDS.water.blue[dark ? 1 : 0];
   if (look === 'retro') return BACKGROUNDS.retro[palette as 'pink']?.[dark ? 1 : 0] ?? BACKGROUNDS.retro.pink[dark ? 1 : 0];
   // the pixel sky: the top of its sky, night or day
-  if (look === 'sky') return dark ? '#070920' : '#3e8ee4';
+  if (look === 'sky') return palette === 'sunset' ? (dark ? '#100a2c' : '#d9577f') : dark ? '#070920' : '#3e8ee4';
   if (look === 'xmas') return BACKGROUNDS.christmas[palette as 'classic']?.[dark ? 1 : 0] ?? BACKGROUNDS.christmas.classic[dark ? 1 : 0];
   return dark ? '#18201c' : '#a6b08a';
 };

@@ -12,7 +12,8 @@
 
 import { frogFrame } from './frog';
 
-export type TSkyScheme = 'night' | 'day';
+/** day and night, and the sunset palette's two: the sun going down (light), dusk (dark) */
+export type TSkyScheme = 'night' | 'day' | 'sunset' | 'dusk';
 export type TSky = {
   stop: () => void;
   /** stand still (a game open over the page, the page hidden): the sky is drawn once and waits */
@@ -29,7 +30,15 @@ type TScheme = {
   meteor: string[];
   orb: string; orbDark: string; orbShadow: string; halo: string;
   cloud: string; cloudHi: string; cloudLo: string;
+  /** the sun (else the moon, in its phase, and every star) */
+  sun: boolean;
+  /** the sun low over the hills, larger, its lower half cut in bands (a sunset) */
+  low?: boolean;
 };
+
+/** the scheme for light or dark in a palette (blue: day / night, sunset: sunset / dusk) */
+export const skyScheme = (dark: boolean, palette: string | undefined): TSkyScheme =>
+  palette === 'sunset' ? (dark ? 'dusk' : 'sunset') : dark ? 'night' : 'day';
 
 export const SKY_SCHEMES: Record<TSkyScheme, TScheme> = {
   night: {
@@ -39,7 +48,8 @@ export const SKY_SCHEMES: Record<TSkyScheme, TScheme> = {
     starFar: ['#2c3479', '#3e4793'], starMid: ['#7d86d8', '#b9c0ff', '#fff6d8'], starNear: '#fff6d8', starArm: '#9fb0ff', starWarm: '#ffd88a',
     meteor: ['#ffffff', '#fff6d8', '#b9c0ff', '#6c74c4'],
     orb: '#fff1c9', orbDark: '#e3cf9f', orbShadow: '#262c78', halo: '#2a3183',
-    cloud: '#1b215f', cloudHi: '#252c73', cloudLo: '#141950'
+    cloud: '#1b215f', cloudHi: '#252c73', cloudLo: '#141950',
+    sun: false
   },
   day: {
     sky: ['#3e8ee4', '#4f9cea', '#62abf0', '#79baf5', '#92c9f8', '#acd7fa', '#c8e5fb', '#e6f2f5'],
@@ -48,7 +58,33 @@ export const SKY_SCHEMES: Record<TSkyScheme, TScheme> = {
     starFar: ['#a9d2f6', '#bfe0fa'], starMid: ['#cfe6fb', '#e8f4fe', '#ffffff'], starNear: '#ffffff', starArm: '#d6ecfc', starWarm: '#fff3c4',
     meteor: ['#ffffff', '#ffffff', '#e8f4fe', '#bfe0fa'],
     orb: '#fff6c2', orbDark: '#ffe28a', orbShadow: '#fff6c2', halo: '#a3d3fa',
-    cloud: '#ffffff', cloudHi: '#ffffff', cloudLo: '#d9eafa'
+    cloud: '#ffffff', cloudHi: '#ffffff', cloudLo: '#d9eafa',
+    sun: true
+  },
+  // the sunset palette, light: rose above, through peach to gold at the hills; the sun low and
+  // large behind them, the hills mauve to plum against the glow, clouds lit pink from below
+  sunset: {
+    sky: ['#d9577f', '#e4667f', '#ee7a82', '#f48f84', '#f79d86', '#f9ad86', '#fbbd88', '#fccb8e'],
+    hillFar: '#d58aa6', hillFarRim: '#eaa8b8', hillMid: '#a7608f', hillMidRim: '#c27a9f', hillNear: '#764078', hillNearRim: '#90558c',
+    tree: '#5e2f66', house: '#fbd9bb', window: '#ff9f3d',
+    starFar: ['#f4a3a8', '#f8b7aa'], starMid: ['#fbc6b2', '#ffe0c6', '#fff4e0'], starNear: '#fff4e0', starArm: '#ffd2bc', starWarm: '#ffe08a',
+    meteor: ['#ffffff', '#fff4e0', '#ffd2bc', '#f4a3a8'],
+    orb: '#fff6b8', orbDark: '#ffc53d', orbShadow: '#fff6b8', halo: '#ffe08a',
+    cloud: '#ffc4b0', cloudHi: '#ffe2c6', cloudLo: '#e57a98',
+    sun: true,
+    low: true
+  },
+  // the sunset palette, dark: the sun just gone, indigo above, through violet and magenta to a
+  // coral glow over plum hills; the moon and the first stars
+  dusk: {
+    sky: ['#100a2c', '#1a0f3c', '#28144c', '#3a1a5a', '#521f66', '#74266c', '#9c336a', '#cc5560'],
+    hillFar: '#3e1b52', hillFarRim: '#5c2b68', hillMid: '#2b1242', hillMidRim: '#401b57', hillNear: '#1c0b2e', hillNearRim: '#2d1343',
+    tree: '#150722', house: '#2b1339', window: '#ffb04a',
+    starFar: ['#3d2a6a', '#55387f'], starMid: ['#9a7ad0', '#d8b8ff', '#ffe6c8'], starNear: '#ffe6c8', starArm: '#c49ae8', starWarm: '#ffb36b',
+    meteor: ['#ffffff', '#ffe6c8', '#d8b8ff', '#8a5ab0'],
+    orb: '#ffe9c4', orbDark: '#e8c49a', orbShadow: '#3a1a5a', halo: '#4a2266',
+    cloud: '#4a1f5c', cloudHi: '#5e2a6c', cloudLo: '#b0486a',
+    sun: false
   }
 };
 
@@ -157,6 +193,12 @@ export const createSky = (canvas: HTMLCanvasElement, o: TSkyOptions): TSky => {
 
   // ---- the grid: the short side of the screen near 360 sky pixels, whole device pixels each
   // (the screen, not the window: every window of the app draws its sky in the same pixel size)
+  // the moon or the sun high at the right; a setting sun low over the far hill, half behind it
+  const placeOrb = () => {
+    const x = o.orb === undefined ? W - 88 : Math.round(W * o.orb);
+    ORB = SC.low && GROUND > -100 ? { x, y: H - GROUND - 70, r: 17 } : { x, y: Math.min(56, Math.round(H * 0.16)), r: 13 };
+  };
+
   const fit = () => {
     const dpr = window.devicePixelRatio || 1;
     const screenShort = Math.min(screen.width, screen.height) * dpr;
@@ -167,7 +209,7 @@ export const createSky = (canvas: HTMLCanvasElement, o: TSkyOptions): TSky => {
     H = Math.ceil(devH / S);
     // a short window (the bar) keeps the top of the sky: its hills would be off the window
     GROUND = H < 200 ? -400 : Math.min(o.ground ?? 78, Math.round(H * 0.22));
-    ORB = { x: o.orb === undefined ? W - 88 : Math.round(W * o.orb), y: Math.min(56, Math.round(H * 0.16)), r: 13 };
+    placeOrb();
     canvas.width = W;
     canvas.height = H;
     canvas.style.width = `${(W * S) / dpr}px`;
@@ -233,7 +275,7 @@ export const createSky = (canvas: HTMLCanvasElement, o: TSkyOptions): TSky => {
       }
     }
     x.putImageData(img, 0, 0);
-    const day = schemeName === 'day';
+    const day = SC.sun;
     const phase = moonPhase();
     // (no room for the moon in a short window: only its stars)
     if (H < 100) {
@@ -241,8 +283,9 @@ export const createSky = (canvas: HTMLCanvasElement, o: TSkyOptions): TSky => {
       return c;
     }
     // the halo, dithered out, then the orb
-    for (let y = ORB.y - 26; y <= ORB.y + 26; y++)
-      for (let xx = ORB.x - 26; xx <= ORB.x + 26; xx++) {
+    const reach = ORB.r + 13;
+    for (let y = ORB.y - reach; y <= ORB.y + reach; y++)
+      for (let xx = ORB.x - reach; xx <= ORB.x + reach; xx++) {
         const dd = Math.hypot(xx + 0.5 - ORB.x, y + 0.5 - ORB.y);
         if (dd > ORB.r + 1 && dd < ORB.r + 12) {
           const lv = (1 - (dd - ORB.r - 1) / 11) * (day ? 10 : 7);
@@ -255,6 +298,8 @@ export const createSky = (canvas: HTMLCanvasElement, o: TSkyOptions): TSky => {
         const X = xx + 0.5;
         const Y = y + 0.5;
         if (X * X + Y * Y > ORB.r * ORB.r) continue;
+        // (a setting sun: its lower half in bands, wider gaps further down)
+        if (SC.low && y > 1 && (y + 1) % 4 >= 4 - Math.min(2, Math.floor(y / 6))) continue;
         let col = SC.orb;
         if (!day) {
           const k = Math.cos(2 * Math.PI * phase);
@@ -365,11 +410,12 @@ export const createSky = (canvas: HTMLCanvasElement, o: TSkyOptions): TSky => {
     if (now !== schemeName) {
       schemeName = now;
       SC = SKY_SCHEMES[now];
+      placeOrb();
       bg = null;
       clouds.clear();
     }
     g.drawImage(background(), 0, 0);
-    const day = schemeName === 'day';
+    const day = SC.sun;
     const t = T;
     for (const s of stars) {
       if (day && (s.L === 0 || s.ph > 4.5)) continue;

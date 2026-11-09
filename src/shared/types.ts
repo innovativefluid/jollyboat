@@ -5,11 +5,11 @@ export type TLook = 'lcd' | 'water' | 'retro' | 'sky' | 'xmas';
 export const LOOKS: readonly TLook[] = ['lcd', 'water', 'retro', 'sky', 'xmas'];
 /** a theme's colours (theme tints): the same theme in a few palettes, picked beside the theme
  *  menu. the first of each list is the theme's own (the default) */
-export const PALETTES = { retro: ['pink', 'green', 'grey'], water: ['blue', 'pink', 'mono'], christmas: ['classic', 'gold', 'snow'] } as const;
+export const PALETTES = { retro: ['pink', 'green', 'grey'], water: ['blue', 'pink', 'mono'], christmas: ['classic', 'gold', 'snow'], pixelsky: ['blue', 'sunset'] } as const;
 export type TTintedTheme = keyof typeof PALETTES;
 export type TPalettes = { [K in TTintedTheme]: (typeof PALETTES)[K][number] };
 export type TPalette = TPalettes[TTintedTheme];
-export const ALL_PALETTES: readonly TPalette[] = [...new Set<TPalette>([...PALETTES.retro, ...PALETTES.water, ...PALETTES.christmas])];
+export const ALL_PALETTES: readonly TPalette[] = [...new Set<TPalette>([...PALETTES.retro, ...PALETTES.water, ...PALETTES.christmas, ...PALETTES.pixelsky])];
 export const isTinted = (theme: string): theme is TTintedTheme => theme in PALETTES;
 
 export type TServerEntry = {

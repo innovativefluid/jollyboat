@@ -681,7 +681,7 @@ html.dark[data-jb-bar='lcd'] ${TOPBAR} { background: #18201c !important; border-
     }
     skyAs = on;
     if (on && !pageSky && document.body) {
-      pageSky = on === 'sky' ? startPageSky(hasFocus) : startPageXmas(hasFocus, () => waterPalette);
+      pageSky = on === 'sky' ? startPageSky(hasFocus, () => waterPalette) : startPageXmas(hasFocus, () => waterPalette);
       if (playing()) pageSky?.rest(true);
     }
   };

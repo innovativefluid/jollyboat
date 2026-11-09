@@ -41,8 +41,8 @@ const icons = new Map<string, Electron.NativeImage>();
 // one set of icons per theme, each from the theme's dark scheme (tools/make-icons.py): the lcd
 // pixel boat for the Jollyboat theme, the same boat in Sharkord's greys for Sharkord itself (and
 // custom css), a glass tile of water for the Water theme, a pink pixel window for Retro, a green one for Retro in green,
-// a glass tile like the water's for Christmas
-type TTraySet = 'lcd' | 'sharkord' | 'water' | 'water-pink' | 'water-mono' | 'retro' | 'retro-green' | 'retro-grey' | 'sky' | 'christmas' | 'christmas-gold' | 'christmas-snow';
+// a glass tile like the water's for Christmas, the pixel night (or dusk) for Pixel Sky
+type TTraySet = 'lcd' | 'sharkord' | 'water' | 'water-pink' | 'water-mono' | 'retro' | 'retro-green' | 'retro-grey' | 'sky' | 'sky-sunset' | 'christmas' | 'christmas-gold' | 'christmas-snow';
 const traySet = (): TTraySet => {
   const theme = getSettings().theme;
   // tinted themes: the first palette's set has the theme's name, the others theme-palette
@@ -50,7 +50,7 @@ const traySet = (): TTraySet => {
     const palette = getSettings().palettes[theme];
     return (palette === PALETTES[theme][0] ? theme : `${theme}-${palette}`) as TTraySet;
   }
-  if (theme === 'pixelsky') return 'sky';
+  if (theme === 'pixelsky') return getSettings().palettes.pixelsky === 'sunset' ? 'sky-sunset' : 'sky';
   return theme === 'jollyboat' ? 'lcd' : 'sharkord';
 };
 

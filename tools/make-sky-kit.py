@@ -7,7 +7,8 @@ the design is --dot (2 px) on screen.
 
 Writes the variables, night and day, between the `kit:start` and `kit:end` markers of
 resources/themes/pixelsky.css (the Sharkord page) and src/renderer/theme/sky.css (the app's own
-windows), each under its own selectors.
+windows), each under its own selectors; the sunset palette's (sunset and dusk) into
+resources/themes/pixelsky-sunset.css and, under [data-palette='sunset'], into sky.css.
 
   python3 tools/make-sky-kit.py
 """
@@ -25,6 +26,12 @@ SCHEMES = {
                   focus='#ffd35c', well='#0c1036', track='#2b3380', shade='#03041a'),
     'day': dict(panel='#fbfdff', panelHi='#ffffff', edge='#5b74b8', ink='#1b2552', dim='#46568f', mute='#8796c8', onFill='#fbfdff',
                 focus='#ff9a2e', well='#e7effc', track='#c4d4f0', shade='#24508f'),
+    # the sunset palette: plum ink on warm cream under a rose and gold sky (light), and dusk:
+    # peach ink on deep plum panels under an indigo to coral sky (dark)
+    'sunset': dict(panel='#fff6ee', panelHi='#ffffff', edge='#c0607e', ink='#4a1838', dim='#7e3d63', mute='#b98aa3', onFill='#fff6ee',
+                   focus='#ff7a1a', well='#fde8e0', track='#f4c6c6', shade='#8a2f5a'),
+    'dusk': dict(panel='#24103a', panelHi='#3a1a52', edge='#b0507a', ink='#ffe9dc', dim='#e0a8bc', mute='#a06a92', onFill='#24103a',
+                 focus='#ffb04a', well='#180a2a', track='#4a2258', shade='#0a0414'),
 }
 
 
@@ -157,12 +164,23 @@ if __name__ == '__main__':
         block('html:root, html .light', SCHEMES['day']),
         block('html.dark, html .dark', SCHEMES['night']),
     ])
+    sunset_page = '\n'.join([
+        block('html:root, html .light', SCHEMES['sunset']),
+        block('html.dark, html .dark', SCHEMES['dusk']),
+    ])
+    sun = ":root[data-look='sky'][data-palette='sunset']"
     app = '\n'.join([
         block(":root[data-look='sky']", SCHEMES['day']),
         block(":root[data-look='sky'][data-theme='dark']", SCHEMES['night']),
         '@media (prefers-color-scheme: dark) {',
         block(":root[data-look='sky']:not([data-theme])", SCHEMES['night']),
         '}',
+        block(sun, SCHEMES['sunset']),
+        block(f"{sun}[data-theme='dark']", SCHEMES['dusk']),
+        '@media (prefers-color-scheme: dark) {',
+        block(f"{sun}:not([data-theme])", SCHEMES['dusk']),
+        '}',
     ])
     put('resources/themes/pixelsky.css', page)
+    put('resources/themes/pixelsky-sunset.css', sunset_page)
     put('src/renderer/theme/sky.css', app)

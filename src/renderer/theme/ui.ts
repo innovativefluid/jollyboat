@@ -6,7 +6,7 @@
 
 import { createPaper } from './paper';
 import { createDesk } from './retro';
-import { createSky } from './sky/sky';
+import { createSky, skyScheme } from './sky/sky';
 import { createXmasScene } from './christmas/scene';
 import { createSparks } from './sparks';
 import { createStrip } from './strip';
@@ -85,7 +85,7 @@ export const bootTheme = ({ boat = false, fps, pool }: { boat?: boolean; fps?: {
       const sky = createSky(canvas, {
         scheme: () => {
           const t = document.documentElement.dataset.theme;
-          return (t ? t === 'dark' : dark.matches) ? 'night' : 'day';
+          return skyScheme(t ? t === 'dark' : dark.matches, document.documentElement.dataset.palette);
         },
         // the setup window: Pebble the frog hangs out on the hill in the lower left
         frog: boat ? 0.09 : undefined

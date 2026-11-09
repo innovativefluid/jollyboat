@@ -55,12 +55,11 @@ const themeCss = () => {
   const { theme } = getSettings();
   if (theme === 'jollyboat') return readFile(themePath('lcd'));
   // tinted themes: another palette is a file of colours put after the theme
-  if (theme === 'retro' || theme === 'water' || theme === 'christmas') {
+  if (theme === 'retro' || theme === 'water' || theme === 'christmas' || theme === 'pixelsky') {
     const palette = getSettings().palettes[theme];
     const base = readFile(themePath(theme));
     return palette === PALETTES[theme][0] ? base : `${base}\n${readFile(themePath(`${theme}-${palette}`))}`;
   }
-  if (theme === 'pixelsky') return readFile(themePath('pixelsky'));
   if (theme === 'custom') return readFile(cssPath());
   return '';
 };

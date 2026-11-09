@@ -118,6 +118,11 @@ PIXEL_SETS = {
                 cut=hexc('#ffd35c'), dot=hexc('#ffd35c'), ring=hexc('#070920'), radius=6,
                 stars=[(25, 6, '#fff6d8'), (24, 6, '#9fb0ff'), (26, 6, '#9fb0ff'), (25, 5, '#9fb0ff'), (25, 7, '#9fb0ff'),
                        (29, 10, '#b9c0ff'), (20, 3, '#7d86d8')]),
+    # pixel sky in its sunset palette: dusk plum, coral and amber
+    'sky-sunset': dict(bg=hexc('#2b1242'), ink=hexc('#ffd2bc'), hull=hexc('#a8396a'), sail=hexc('#ffe6c8'), talk=hexc('#ffb04a'),
+                       cut=hexc('#ffb04a'), dot=hexc('#ffb04a'), ring=hexc('#100a2c'), radius=6,
+                       stars=[(25, 6, '#ffe6c8'), (24, 6, '#d8b8ff'), (26, 6, '#d8b8ff'), (25, 5, '#d8b8ff'), (25, 7, '#d8b8ff'),
+                              (29, 10, '#ffd2bc'), (20, 3, '#9a7ad0')]),
     'sharkord': dict(bg=hexc('#171717'), ink=hexc('#e5e5e5'), hull=hexc('#525252'), sail=hexc('#fafafa'), talk=hexc('#86efac'),
                      cut=hexc('#ef4444'), dot=hexc('#fafafa'), ring=hexc('#0a0a0a')),
 }

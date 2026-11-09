@@ -17,7 +17,7 @@ const DEFAULTS: TSettings = {
   overlay: false,
   overlayOpacity: 75,
   theme: 'none',
-  palettes: { retro: 'pink', water: 'blue', christmas: 'classic' },
+  palettes: { retro: 'pink', water: 'blue', christmas: 'classic', pixelsky: 'blue' },
   colorMode: 'auto',
   language: 'system',
   overlayPosition: null,
@@ -70,7 +70,7 @@ const sanitize = (raw: unknown): TSettings => {
   if (r.theme === 'none' || r.theme === 'jollyboat' || r.theme === 'water' || r.theme === 'retro' || r.theme === 'pixelsky' || r.theme === 'christmas' || r.theme === 'custom') out.theme = r.theme;
   const pal = (r.palettes ?? {}) as Record<string, unknown>;
   const pick = <K extends keyof typeof PALETTES>(k: K, v: unknown): TPalettes[K] => ((PALETTES[k] as readonly unknown[]).includes(v) ? (v as TPalettes[K]) : (PALETTES[k][0] as TPalettes[K]));
-  out.palettes = { retro: pick('retro', pal.retro), water: pick('water', pal.water), christmas: pick('christmas', pal.christmas) };
+  out.palettes = { retro: pick('retro', pal.retro), water: pick('water', pal.water), christmas: pick('christmas', pal.christmas), pixelsky: pick('pixelsky', pal.pixelsky) };
   if (r.language === 'system' || r.language === 'en' || r.language === 'de' || r.language === 'pl') out.language = r.language;
   if (r.onClose === 'minimize' || r.onClose === 'tray' || r.onClose === 'quit') out.onClose = r.onClose;
   for (const key of ['spellcheck', 'checkUpdates', 'notifyTray', 'autostart', 'overlay', 'serverTabs', 'reopenTabs'] as const) {
