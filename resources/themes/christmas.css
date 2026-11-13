@@ -111,7 +111,9 @@ html .relative > .h-dvh.bg-background { background: transparent; }
 /* a settings screen lies over the same scene: the server view under it steps aside meanwhile
    (it keeps running: calls, streams and plugins go on) */
 html div:not(.relative) > .h-dvh.bg-background { background: transparent; }
-html:has(div:not(.relative) > .h-dvh.bg-background) .relative > .h-dvh { visibility: hidden; }
+/* (Jollyboat puts data-jb-settings on <html> while a settings screen is open; html:has(...) here
+   made every class change in the page restyle half of it) */
+html[data-jb-settings] .relative > .h-dvh { visibility: hidden; }
 
 /* the big panels: the top bar, the two sidebars, the chat's title row, the message box, the
    settings screen's parts: tinted glass */
@@ -228,6 +230,8 @@ html [data-slot="checkbox"][data-state="checked"] { background: var(--x-gel); bo
 
 /* ---- floating: menus, popovers, dialogs, side panels: thick glass over the scene -------------- */
 
+/* (sharkord 0.0.31's formatting menu over selected text is a plain div on the body: it floats too) */
+html body > div.z-50.bg-card.shadow-md,
 html [data-slot="popover-content"], html [data-slot="dropdown-menu-content"], html [data-slot="context-menu-content"],
 html [data-slot="dialog-content"], html [data-slot="select-content"], html [data-slot="sheet-content"], html [data-slot="alert-dialog-content"],
 html [data-slot="hover-card-content"] {

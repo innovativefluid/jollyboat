@@ -106,6 +106,8 @@ html [data-slot="avatar"] { border: 2px solid var(--jb-dim); box-sizing: border-
 html [data-slot="avatar-image"] { object-fit: cover; }
 
 /* panels that float: popovers, menus, dialogs, tooltips. the setup window's panel shape */
+/* (sharkord 0.0.31's formatting menu over selected text is a plain div on the body: it floats too) */
+html body > div.z-50.bg-card.shadow-md,
 html [data-slot="popover-content"], html [data-slot="dropdown-menu-content"], html [data-slot="context-menu-content"],
 html [data-slot="dialog-content"], html [data-slot="select-content"], html [data-slot="sheet-content"], html [data-slot="alert-dialog-content"] {
   border: 2px solid var(--jb-ink);

@@ -767,13 +767,29 @@ html.dark[data-jb-bar='lcd'] ${TOPBAR} { background: #18201c !important; border-
     if (bar) barObserver.observe(sidebarOf(bar), { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
   };
 
+  // a settings screen is open (it lies over the server view): said on <html>, for the themes that
+  // let the scene show through and hide the server view under it meanwhile. the themes asked this
+  // themselves, with html:has(...): but then every class change anywhere in the page (a speaking
+  // ring, many times a second) made the browser look at every span and every [data-slot] again
+  let settingsOpen = false;
+  const markSettings = () => {
+    const open = !!document.querySelector('div:not(.relative) > .h-dvh.bg-background');
+    if (open === settingsOpen) return;
+    settingsOpen = open;
+    document.documentElement.toggleAttribute('data-jb-settings', open);
+  };
+
   window.addEventListener('DOMContentLoaded', () => {
+    // (a mutation observer runs before the next paint: the server view is hidden in the same
+    // frame the settings screen shows)
     new MutationObserver(() => {
+      markSettings();
       rescope();
       schedule();
       scheduleTopbar();
       scheduleScheme();
     }).observe(document.body, { subtree: true, childList: true });
+    markSettings();
     // a stream video starting or stopping is not a mutation
     for (const ev of ['playing', 'emptied', 'ended', 'loadeddata']) document.addEventListener(ev, schedule, true);
     rescope();

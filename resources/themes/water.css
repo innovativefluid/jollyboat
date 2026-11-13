@@ -151,7 +151,9 @@ html[data-jollyplay-playing] body::before { animation-play-state: paused; }
 html .h-dvh.bg-background { background: transparent; }
 /* a settings screen lies over the server view, both see-through to the water: the server view
    steps aside meanwhile (it keeps running: calls, streams and plugins go on) */
-html:has(div:not(.relative) > .h-dvh.bg-background) .relative > .h-dvh { visibility: hidden; }
+/* (Jollyboat puts data-jb-settings on <html> while a settings screen is open; html:has(...) here
+   made every class change in the page restyle half of it) */
+html[data-jb-settings] .relative > .h-dvh { visibility: hidden; }
 html .h-dvh > .bg-card.border-b,
 html .h-dvh .bg-card.border-r,
 html .h-dvh .bg-card.border-l {
@@ -195,6 +197,8 @@ html .h-dvh { text-shadow: 0 1px 0 rgba(var(--w-text-glow), calc(var(--w-text-gl
 
 /* ---- floating glass: popovers, menus, dialogs, tooltips --------------------------------- */
 
+/* (sharkord 0.0.31's formatting menu over selected text is a plain div on the body: it floats too) */
+html body > div.z-50.bg-card.shadow-md,
 html [data-slot="popover-content"], html [data-slot="dropdown-menu-content"], html [data-slot="context-menu-content"],
 html [data-slot="dialog-content"], html [data-slot="select-content"], html [data-slot="sheet-content"], html [data-slot="alert-dialog-content"] {
   background: linear-gradient(to bottom, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 34px), var(--popover);

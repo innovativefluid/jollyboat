@@ -82,6 +82,12 @@
   </keywords>
 
   <releases>
+    <release version="0.4.11" date="2026-11-14">
+      <description>
+        <p>Checked against Sharkord 0.0.31: desktop mode, hotkeys, voice (with the new call timer, reconnect and call transfer), the redesigned plugin settings and every theme work as before. The new formatting menu over selected text wears each theme's look.</p>
+        <p>Lighter in calls with the Water, Retro, Pixel Sky and Christmas themes: a speaking ring changing no longer makes the browser restyle most of the page (the themes asked the page whether a settings screen is open in a way that did; Jollyboat now tells them). About half the style work in a call.</p>
+      </description>
+    </release>
     <release version="0.4.10" date="2026-11-09">
       <description>
         <p>Pixel Sky comes in a second colour, Sunset, in amber and pink: by day the sun sets behind the hills under a rose and gold sky, its lower half cut in bands, and the panels are warm cream with plum text; in dark mode it is dusk, the sky running from indigo through violet to a coral glow over plum hills, with the moon and the first stars out. Pick it with the squares beside the theme menu; the bar, the setup window, the overlay and the tray icon follow along.</p>

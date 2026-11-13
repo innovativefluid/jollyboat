@@ -126,7 +126,9 @@ html .relative > .h-dvh.bg-background { background: transparent; }
 /* the settings pages lie on the same desktop: the server view under them steps aside meanwhile
    (it keeps running: calls, streams and plugins go on) */
 html div:not(.relative) > .h-dvh.bg-background { background: transparent; }
-html:has(div:not(.relative) > .h-dvh.bg-background) .relative > .h-dvh { visibility: hidden; }
+/* (Jollyboat puts data-jb-settings on <html> while a settings screen is open; html:has(...) here
+   made every class change in the page restyle half of it) */
+html[data-jb-settings] .relative > .h-dvh { visibility: hidden; }
 html .h-dvh > .bg-card.border-b,
 html .h-dvh .bg-card.border-r:not(.w-0),
 html .h-dvh .bg-card.border-l:not(.w-0),
@@ -199,6 +201,8 @@ html ::selection { background: var(--r-sel); color: var(--r-sel-ink); }
 
 /* ---- floating windows: popovers, menus, dialogs; tooltips like old ones ------------------- */
 
+/* (sharkord 0.0.31's formatting menu over selected text is a plain div on the body: it floats too) */
+html body > div.z-50.bg-card.shadow-md,
 html [data-slot="popover-content"], html [data-slot="dropdown-menu-content"], html [data-slot="context-menu-content"],
 html [data-slot="dialog-content"], html [data-slot="select-content"], html [data-slot="sheet-content"], html [data-slot="alert-dialog-content"] {
   border: 0;
