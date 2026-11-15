@@ -8,8 +8,6 @@ import { isOwnPageUrl } from './paths';
 import { isTinted, type TLook, type TPalette } from '../shared/types';
 import { findServerByUrl, getSettings } from './settings';
 
-export type { TLook, TPalette };
-
 export const currentLook = (): TLook => {
   const { theme } = getSettings();
   return theme === 'water' ? 'water' : theme === 'retro' ? 'retro' : theme === 'pixelsky' ? 'sky' : theme === 'christmas' ? 'xmas' : 'lcd';

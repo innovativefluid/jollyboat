@@ -359,9 +359,9 @@ html [class*="bg-black/"] [class*="text-red-"] { color: #ff9aa6; }
 
 html [data-slot="dropdown-menu-item"], html [data-slot="context-menu-item"], html [data-slot="select-item"] { border-radius: 0; }
 html [data-slot="dropdown-menu-item"][data-highlighted], html [data-slot="context-menu-item"][data-highlighted],
-html [data-slot="select-item"][data-highlighted], html [data-slot="command-item"][data-selected="true"] { background: var(--r-sel); color: var(--r-sel-ink); }
+html [data-slot="select-item"][data-highlighted] { background: var(--r-sel); color: var(--r-sel-ink); }
 html [data-slot="dropdown-menu-item"][data-highlighted] svg, html [data-slot="context-menu-item"][data-highlighted] svg,
-html [data-slot="select-item"][data-highlighted] svg, html [data-slot="command-item"][data-selected="true"] svg { color: var(--r-sel-ink); }
+html [data-slot="select-item"][data-highlighted] svg { color: var(--r-sel-ink); }
 html [data-slot$="menu-item"][data-variant="destructive"][data-highlighted] { background: var(--r-warn); color: #fff; }
 /* where the keyboard is: the old dotted line */
 html :focus-visible:not(input):not(textarea):not(.ProseMirror):not([data-slot="input"]):not([data-slot$="-item"]) { outline: 1px dotted var(--r-ink); outline-offset: 1px; }

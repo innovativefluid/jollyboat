@@ -18,9 +18,9 @@
   --sk-sky: #3e8ee4; --sk-panel: #fbfdff; --sk-panel-hi: #ffffff; --sk-edge: #5b74b8; --sk-ink: #1b2552; --sk-dim: #46568f; --sk-mute: #8796c8;
   --sk-on-fill: #fbfdff; --sk-focus: #ff9a2e; --sk-well: #e7effc; --sk-track: #c4d4f0; --sk-shade: #24508f; --sk-warn: #c0304a; --sk-good: #3fb24c;
   /* the lcd tokens, for the bits of the pages that use them directly */
-  --px: var(--sk-font); --body: var(--sk-font); --cnt: var(--sk-font);
+  --px: var(--sk-font); --body: var(--sk-font);
   --bg: var(--sk-panel); --panel: var(--sk-panel); --fg: var(--sk-ink); --dim: var(--sk-dim); --mute: var(--sk-mute);
-  --faint: var(--sk-well); --line: var(--sk-edge); --spark: var(--sk-focus);
+  --faint: var(--sk-well); --spark: var(--sk-focus);
   --fg-rgb: 27, 37, 82; --dim-rgb: 70, 86, 143; --shadow: var(--sk-shade); --shadow-dim: var(--sk-shade);
   color-scheme: light;
 }

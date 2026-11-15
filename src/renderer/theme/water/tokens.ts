@@ -42,7 +42,7 @@ export type TWaterTokens = {
 
 const hex = (h: string): TRgb => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 
-export const DAY: TWaterTokens = {
+const DAY: TWaterTokens = {
   day: true,
   poolTop: hex('#e8f6ff'),
   poolMid: hex('#9fd8f6'),
@@ -75,7 +75,7 @@ export const DAY: TWaterTokens = {
   irid: 0.35
 };
 
-export const DEEP: TWaterTokens = {
+const DEEP: TWaterTokens = {
   day: false,
   poolTop: hex('#0b3358'),
   poolMid: hex('#06203c'),
@@ -248,8 +248,5 @@ export const waterTokensFor = (palette: string | undefined, dark: boolean) => (P
 
 /** the app's own pages: the palette is on <html data-palette> */
 export const waterTokens = () => waterTokensFor(document.documentElement.dataset.palette, isDark());
-
-/** a token as 0..1 floats, for a shader */
-export const unit = (c: TRgb) => [c[0] / 255, c[1] / 255, c[2] / 255] as const;
 
 export const css = (c: TRgb, a = 1) => (a >= 1 ? `rgb(${c[0]},${c[1]},${c[2]})` : `rgba(${c[0]},${c[1]},${c[2]},${a})`);

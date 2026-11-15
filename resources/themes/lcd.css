@@ -5,7 +5,7 @@
    dark in .dark), the rest restyles its building blocks (data-slot) by hand.
 
    As custom.css you can edit all of it; the file is read again whenever it changes.
-   url("jollyboat-font:Name") loads one of the app's own fonts: PixelifySans, Fredoka, Jersey10.
+   url("jollyboat-font:Name") loads one of the app's own fonts: PixelifySans, Fredoka.
    (Any other url() in custom.css is fetched by the page like an image on a web page would be:
    keep to the app's fonts and data urls if you want nothing to leave the computer.)
    (Sharkord puts .dark / .light on <html> and on its main view; the html-prefixed selectors are
@@ -234,11 +234,11 @@ html [data-testid="member-item"]:has([data-status="offline"]) [data-slot="avatar
 html [data-testid="channel-item"]:not(.bg-accent):hover,
 html [data-testid="member-item"]:hover { background: transparent; box-shadow: inset 0 0 0 2px var(--jb-dim); }
 html [data-slot="dropdown-menu-item"][data-highlighted], html [data-slot="context-menu-item"][data-highlighted],
-html [data-slot="select-item"][data-highlighted], html [data-slot="command-item"][data-selected="true"] {
+html [data-slot="select-item"][data-highlighted] {
   background: var(--jb-ink); color: var(--background);
 }
 html [data-slot="dropdown-menu-item"][data-highlighted] svg, html [data-slot="context-menu-item"][data-highlighted] svg,
-html [data-slot="select-item"][data-highlighted] svg, html [data-slot="command-item"][data-selected="true"] svg { color: var(--background); }
+html [data-slot="select-item"][data-highlighted] svg { color: var(--background); }
 html [data-slot$="menu-item"][data-variant="destructive"][data-highlighted] { background: var(--destructive); color: var(--background); }
 /* where the keyboard is: a dashed ink line, the setup window's */
 html :focus-visible:not(input):not(textarea):not(.ProseMirror):not([data-slot="input"]):not([data-slot$="-item"]) { outline: 2px dashed var(--jb-ink); outline-offset: 2px; }

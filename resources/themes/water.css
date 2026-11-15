@@ -50,8 +50,8 @@ html .light {
   /* the aqua tokens as rgb triplets (design_handoff_aqua.md §3) */
   --w-pool-top: 232, 246, 255; --w-pool-mid: 159, 216, 246; --w-pool-bot: 47, 136, 216;
   --w-light: 255, 255, 255; --w-light-a: 0.8;
-  --w-fg: 10, 47, 82; --w-dim: 43, 81, 112; --w-mute: 120, 152, 178;
-  --w-glass: 242, 249, 255; --w-glass-a: 0.54;
+  --w-fg: 10, 47, 82; --w-dim: 43, 81, 112;
+  --w-glass: 242, 249, 255;
   --w-well: 255, 255, 255; --w-well-a: 0.62;
   --w-btn: 255, 255, 255; --w-btn-a: 0.34;
   --w-edge: 42, 106, 163; --w-edge-a: 0.42;
@@ -99,8 +99,8 @@ html .dark {
   --sidebar-ring: rgba(63, 212, 255, 0.8);
   --w-pool-top: 11, 51, 88; --w-pool-mid: 6, 32, 60; --w-pool-bot: 1, 8, 18;
   --w-light: 134, 226, 255; --w-light-a: 0.5;
-  --w-fg: 228, 245, 255; --w-dim: 156, 197, 226; --w-mute: 105, 144, 174;
-  --w-glass: 10, 33, 56; --w-glass-a: 0.66;
+  --w-fg: 228, 245, 255; --w-dim: 156, 197, 226;
+  --w-glass: 10, 33, 56;
   --w-well: 5, 20, 37; --w-well-a: 0.7;
   --w-btn: 16, 52, 88; --w-btn-a: 0.44;
   --w-edge: 143, 216, 255; --w-edge-a: 0.34;
@@ -425,13 +425,13 @@ html [class*="bg-[#ec4245]"] {
 
 html [data-slot="dropdown-menu-item"], html [data-slot="context-menu-item"], html [data-slot="select-item"] { border-radius: 10px 7px 10px 7px; }
 html [data-slot="dropdown-menu-item"][data-highlighted], html [data-slot="context-menu-item"][data-highlighted],
-html [data-slot="select-item"][data-highlighted], html [data-slot="command-item"][data-selected="true"] {
+html [data-slot="select-item"][data-highlighted] {
   color: #fff;
   background: linear-gradient(to bottom, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0) 50%), linear-gradient(to top, rgb(var(--w-liq-b)), rgb(var(--w-liq-a)));
   text-shadow: 0 1px 1px rgba(var(--w-on-liq-shade), 0.9);
 }
 html [data-slot="dropdown-menu-item"][data-highlighted] svg, html [data-slot="context-menu-item"][data-highlighted] svg,
-html [data-slot="select-item"][data-highlighted] svg, html [data-slot="command-item"][data-selected="true"] svg { color: #fff; }
+html [data-slot="select-item"][data-highlighted] svg { color: #fff; }
 html [data-slot$="menu-item"][data-variant="destructive"][data-highlighted] { background: linear-gradient(to top, #8e1f33, #d9576b); }
 /* where the keyboard is: a halo of light */
 html :focus-visible:not(input):not(textarea):not(.ProseMirror):not([data-slot="input"]):not([data-slot$="-item"]) { outline: 2px solid rgba(var(--w-glow), 0.85); outline-offset: 2px; }

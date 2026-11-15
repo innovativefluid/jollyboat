@@ -27,7 +27,7 @@
   --w-warm: 178, 52, 74;
   /* the lcd tokens, for the bits of the pages that use them directly */
   --bg: rgb(var(--w-pool-mid)); --panel: rgba(var(--w-glass), 0.8); --fg: rgb(var(--w-fg)); --dim: rgb(var(--w-dim));
-  --mute: rgb(var(--w-mute)); --faint: rgba(var(--w-edge), 0.3); --line: rgba(var(--w-edge), 0.22); --spark: rgb(var(--w-spark));
+  --mute: rgb(var(--w-mute)); --faint: rgba(var(--w-edge), 0.3); --spark: rgb(var(--w-spark));
   --fg-rgb: var(--w-fg); --dim-rgb: var(--w-dim); --shadow: rgba(var(--w-shade), var(--w-shade-a)); --shadow-dim: rgba(var(--w-shade), 0.2);
   color-scheme: light;
 }

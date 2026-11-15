@@ -8,7 +8,7 @@ import { log } from './log';
 import { t } from './lang';
 
 export type TValue = string | number | boolean | bigint | TValue[] | Map<string, TValue> | TVariant;
-export type TVariant = { sig: string; value: TValue };
+type TVariant = { sig: string; value: TValue };
 
 export const variant = (sig: string, value: TValue): TVariant => ({ sig, value });
 

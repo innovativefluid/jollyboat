@@ -85,7 +85,6 @@ export const startPageWater = (allowSoftware: boolean, focused: () => boolean, p
   // fire for every message and presence change)
   let parts: TPart[] = [];
   let partsAt = -1e9;
-  let current: HTMLElement | null = null;
   let eager = 0;
   const wake = () => (eager = 24);
   window.addEventListener('resize', wake);

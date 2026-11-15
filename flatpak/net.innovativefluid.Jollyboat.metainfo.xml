@@ -82,6 +82,12 @@
   </keywords>
 
   <releases>
+    <release version="0.4.12" date="2026-11-15">
+      <description>
+        <p>Updated the parts Jollyboat is built from (Electron 45.3.2 among them) and cleaned up: unused code, styles and files are gone, among them the Jersey 10 font that no theme used any more. Nothing changes in how Jollyboat looks or works.</p>
+        <p>If your own custom.css loads "jollyboat-font:Jersey10", that font is no longer there; pick one of the others (PixelifySans, Fredoka, Nunito, DotGothic16).</p>
+      </description>
+    </release>
     <release version="0.4.11" date="2026-11-14">
       <description>
         <p>Checked against Sharkord 0.0.31: desktop mode, hotkeys, voice (with the new call timer, reconnect and call transfer), the redesigned plugin settings and every theme work as before. The new formatting menu over selected text wears each theme's look.</p>

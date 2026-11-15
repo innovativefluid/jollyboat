@@ -12,7 +12,7 @@ import { getSettings } from './settings';
 import { PALETTES } from '../shared/types';
 
 const MAX_BYTES = 1024 * 1024;
-const FONTS = ['PixelifySans', 'Fredoka', 'Jersey10', 'Nunito', 'DotGothic16', 'JollyboatSky', 'JollyboatSkyBold', 'JollyboatSkyDisplay', 'MountainsOfChristmas'];
+const FONTS = ['PixelifySans', 'Fredoka', 'Nunito', 'DotGothic16', 'JollyboatSky', 'JollyboatSkyBold', 'JollyboatSkyDisplay', 'MountainsOfChristmas'];
 
 const cssPath = () => join(app.getPath('userData'), 'custom.css');
 const themePath = (name = 'lcd') => join(__dirname, `../../resources/themes/${name}.css`);
@@ -132,7 +132,7 @@ export const editCustomCss = async () => {
 };
 
 /** puts the lcd theme in place of custom.css, as a starting point */
-export const useExample = () => {
+const useExample = () => {
   try {
     copyFileSync(themePath(), cssPath());
   } catch (err) {

@@ -18,13 +18,13 @@
   --r-dot-a: #ffffff; --r-dot-b: #ff8cc6; --r-dot-c: #a98bff;
   --r-face: #ffe9f4; --r-light: #ffffff; --r-mid: #ffd3e9; --r-shadow: #d58fb6; --r-dark: #6e2d5c;
   --r-ink: #3a1530; --r-dim: #7a4568; --r-mute: #a87a96;
-  --r-title-a: #ff5fae; --r-title-b: #a77bff; --r-title-ink: #ffffff; --r-title-off: #cfa6c2;
+  --r-title-a: #ff5fae; --r-title-b: #a77bff; --r-title-ink: #ffffff;
   --r-sel: #e8338d; --r-sel-ink: #ffffff; --r-field: #ffffff; --r-accent: #d6337f; --r-accent-hi: #ff8cc6; --r-warn: #c4223d;
   --r-drop: rgba(110, 45, 92, 0.32);
   /* the lcd tokens and fonts, for the bits of the pages that use them directly */
-  --px: var(--r-title-font); --body: var(--r-font); --cnt: var(--r-font);
+  --px: var(--r-title-font); --body: var(--r-font);
   --bg: var(--r-face); --panel: var(--r-face); --fg: var(--r-ink); --dim: var(--r-dim); --mute: var(--r-mute);
-  --faint: var(--r-mid); --line: var(--r-shadow); --spark: #ffffff;
+  --faint: var(--r-mid); --spark: #ffffff;
   --fg-rgb: 58, 21, 48; --dim-rgb: 122, 69, 104; --shadow: var(--r-drop); --shadow-dim: var(--r-drop);
   color-scheme: light;
 }
@@ -34,7 +34,7 @@
   --r-dot-a: #ffd6ee; --r-dot-b: #ff4fa3; --r-dot-c: #8f6bff;
   --r-face: #2d1b3d; --r-light: #6a4688; --r-mid: #43295a; --r-shadow: #170c22; --r-dark: #07030b;
   --r-ink: #ffe3f3; --r-dim: #d9aacb; --r-mute: #a77f9c;
-  --r-title-a: #ff3fa4; --r-title-b: #6f45f0; --r-title-ink: #ffffff; --r-title-off: #5a4068;
+  --r-title-a: #ff3fa4; --r-title-b: #6f45f0; --r-title-ink: #ffffff;
   --r-sel: #ff3fa4; --r-sel-ink: #ffffff; --r-field: #1a0f24; --r-accent: #d42a83; --r-accent-hi: #ff8fcf; --r-warn: #ff6f8a;
   --r-drop: rgba(0, 0, 0, 0.45);
   --spark: #ffe3f3; --fg-rgb: 255, 227, 243; --dim-rgb: 217, 170, 203;
@@ -46,7 +46,7 @@
     --r-dot-a: #ffd6ee; --r-dot-b: #ff4fa3; --r-dot-c: #8f6bff;
     --r-face: #2d1b3d; --r-light: #6a4688; --r-mid: #43295a; --r-shadow: #170c22; --r-dark: #07030b;
     --r-ink: #ffe3f3; --r-dim: #d9aacb; --r-mute: #a77f9c;
-    --r-title-a: #ff3fa4; --r-title-b: #6f45f0; --r-title-ink: #ffffff; --r-title-off: #5a4068;
+    --r-title-a: #ff3fa4; --r-title-b: #6f45f0; --r-title-ink: #ffffff;
     --r-sel: #ff3fa4; --r-sel-ink: #ffffff; --r-field: #1a0f24; --r-accent: #d42a83; --r-accent-hi: #ff8fcf; --r-warn: #ff6f8a;
     --r-drop: rgba(0, 0, 0, 0.45);
     --spark: #ffe3f3; --fg-rgb: 255, 227, 243; --dim-rgb: 217, 170, 203;
@@ -60,7 +60,7 @@
   --r-dot-a: #ffffff; --r-dot-b: #3fcf95; --r-dot-c: #5a9cf0;
   --r-face: #eafaf3; --r-light: #ffffff; --r-mid: #cdeedf; --r-shadow: #82bfa8; --r-dark: #1d5446;
   --r-ink: #0e3a31; --r-dim: #3d6c60; --r-mute: #79a497;
-  --r-title-a: #19a974; --r-title-b: #3b78e7; --r-title-ink: #ffffff; --r-title-off: #a6c9bd;
+  --r-title-a: #19a974; --r-title-b: #3b78e7; --r-title-ink: #ffffff;
   --r-sel: #0f8060; --r-sel-ink: #ffffff; --r-field: #ffffff; --r-accent: #0f7d5a; --r-accent-hi: #6fdfb2; --r-warn: #c4223d;
   --r-drop: rgba(29, 84, 70, 0.32);
   --spark: #ffffff; --fg-rgb: 14, 58, 49; --dim-rgb: 61, 108, 96;
@@ -71,7 +71,7 @@
   --r-dot-a: #d6fff0; --r-dot-b: #2fd08e; --r-dot-c: #4f8ff0;
   --r-face: #133130; --r-light: #2f6b62; --r-mid: #1c4642; --r-shadow: #07181a; --r-dark: #020809;
   --r-ink: #dcfff2; --r-dim: #98cfbe; --r-mute: #6f9f92;
-  --r-title-a: #12a56c; --r-title-b: #2a5bd4; --r-title-ink: #ffffff; --r-title-off: #3a5a55;
+  --r-title-a: #12a56c; --r-title-b: #2a5bd4; --r-title-ink: #ffffff;
   --r-sel: #108a60; --r-sel-ink: #ffffff; --r-field: #0a1c1c; --r-accent: #0e7f57; --r-accent-hi: #6fe3b4; --r-warn: #ff6f8a;
   --r-drop: rgba(0, 0, 0, 0.45);
   --spark: #dcfff2; --fg-rgb: 220, 255, 242; --dim-rgb: 152, 207, 190;
@@ -83,7 +83,7 @@
     --r-dot-a: #d6fff0; --r-dot-b: #2fd08e; --r-dot-c: #4f8ff0;
     --r-face: #133130; --r-light: #2f6b62; --r-mid: #1c4642; --r-shadow: #07181a; --r-dark: #020809;
     --r-ink: #dcfff2; --r-dim: #98cfbe; --r-mute: #6f9f92;
-    --r-title-a: #12a56c; --r-title-b: #2a5bd4; --r-title-ink: #ffffff; --r-title-off: #3a5a55;
+    --r-title-a: #12a56c; --r-title-b: #2a5bd4; --r-title-ink: #ffffff;
     --r-sel: #108a60; --r-sel-ink: #ffffff; --r-field: #0a1c1c; --r-accent: #0e7f57; --r-accent-hi: #6fe3b4; --r-warn: #ff6f8a;
     --r-drop: rgba(0, 0, 0, 0.45);
     --spark: #dcfff2; --fg-rgb: 220, 255, 242; --dim-rgb: 152, 207, 190;
@@ -103,7 +103,7 @@
   --r-dot-a: #ffffff; --r-dot-b: #1084d0; --r-dot-c: #dfdfdf;
   --r-face: #c0c0c0; --r-light: #ffffff; --r-mid: #dfdfdf; --r-shadow: #808080; --r-dark: #000000;
   --r-ink: #000000; --r-dim: #404040; --r-mute: #6b6b6b;
-  --r-title-a: #000080; --r-title-b: #1084d0; --r-title-ink: #ffffff; --r-title-off: #808080;
+  --r-title-a: #000080; --r-title-b: #1084d0; --r-title-ink: #ffffff;
   --r-sel: #000080; --r-sel-ink: #ffffff; --r-field: #ffffff; --r-accent: #10308a; --r-accent-hi: #6a9ad8; --r-warn: #c4223d;
   --r-drop: rgba(0, 0, 0, 0.3);
   --spark: #ffffff; --fg-rgb: 0, 0, 0; --dim-rgb: 64, 64, 64;
@@ -114,7 +114,7 @@
   --r-dot-a: #e0e0e0; --r-dot-b: #3a6ea5; --r-dot-c: #8a8a90;
   --r-face: #3a3a3e; --r-light: #6e6e74; --r-mid: #4a4a50; --r-shadow: #202024; --r-dark: #050506;
   --r-ink: #ececec; --r-dim: #b0b0b6; --r-mute: #85858c;
-  --r-title-a: #0a246a; --r-title-b: #3a6ea5; --r-title-ink: #ffffff; --r-title-off: #4a4a50;
+  --r-title-a: #0a246a; --r-title-b: #3a6ea5; --r-title-ink: #ffffff;
   --r-sel: #3a6ea5; --r-sel-ink: #ffffff; --r-field: #1e1e22; --r-accent: #2f5d9a; --r-accent-hi: #8ab4e8; --r-warn: #ff6f8a;
   --r-drop: rgba(0, 0, 0, 0.45);
   --spark: #ececec; --fg-rgb: 236, 236, 236; --dim-rgb: 176, 176, 182;
@@ -126,7 +126,7 @@
     --r-dot-a: #e0e0e0; --r-dot-b: #3a6ea5; --r-dot-c: #8a8a90;
     --r-face: #3a3a3e; --r-light: #6e6e74; --r-mid: #4a4a50; --r-shadow: #202024; --r-dark: #050506;
     --r-ink: #ececec; --r-dim: #b0b0b6; --r-mute: #85858c;
-    --r-title-a: #0a246a; --r-title-b: #3a6ea5; --r-title-ink: #ffffff; --r-title-off: #4a4a50;
+    --r-title-a: #0a246a; --r-title-b: #3a6ea5; --r-title-ink: #ffffff;
     --r-sel: #3a6ea5; --r-sel-ink: #ffffff; --r-field: #1e1e22; --r-accent: #2f5d9a; --r-accent-hi: #8ab4e8; --r-warn: #ff6f8a;
     --r-drop: rgba(0, 0, 0, 0.45);
     --spark: #ececec; --fg-rgb: 236, 236, 236; --dim-rgb: 176, 176, 182;

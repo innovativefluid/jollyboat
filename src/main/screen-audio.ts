@@ -29,7 +29,7 @@ type TPatchBay = {
 };
 
 /** an app playing sound, as the picker's sound menu offers it */
-export type TSoundApp = { id: string; name: string };
+type TSoundApp = { id: string; name: string };
 
 // what the next share carries: 'all' (everything but our own call), 'none', or 'app:<id>' (one
 // app, see listSoundApps); chosen in the picker for each share
@@ -287,7 +287,7 @@ export const listSoundApps = async (): Promise<TSoundApp[]> => {
 };
 
 /** links every app's output except ours into the virtual mic (or the one app the picker chose) */
-export const startPipeWireShare = () => {
+const startPipeWireShare = () => {
   if (mode !== 'pipewire' || !patchBay) return false;
   // only right after a share the user picked; a page cannot route system audio on its own
   if (Date.now() - shareGrantedAt > 15_000) {

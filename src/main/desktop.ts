@@ -10,9 +10,9 @@
 import { ipcMain, nativeImage, Notification, session, type IpcMainEvent, type IpcMainInvokeEvent, type WebContents } from 'electron';
 import { clearDesktopHotkeys, hotkeyCapabilities, setDesktopHotkeys } from './hotkeys/bridge';
 import { log } from './log';
-import { findServerByUrl, getSettings } from './settings';
+import { findServerByUrl } from './settings';
 
-export const DESKTOP_BRIDGE_VERSION = 1;
+const DESKTOP_BRIDGE_VERSION = 1;
 
 export type TConnection = 'connecting' | 'connected' | 'signed-out' | 'disconnected';
 type TTarget = { type: 'message'; channelId: number; messageId: number; parentMessageId?: number; isDm: boolean } | { type: 'plugin'; pluginId: string; data?: unknown };

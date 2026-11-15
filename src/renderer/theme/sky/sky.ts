@@ -40,7 +40,7 @@ type TScheme = {
 export const skyScheme = (dark: boolean, palette: string | undefined): TSkyScheme =>
   palette === 'sunset' ? (dark ? 'dusk' : 'sunset') : dark ? 'night' : 'day';
 
-export const SKY_SCHEMES: Record<TSkyScheme, TScheme> = {
+const SKY_SCHEMES: Record<TSkyScheme, TScheme> = {
   night: {
     sky: ['#070920', '#0b0e2c', '#10153c', '#171d4e', '#1f2561', '#2a2c73', '#3a3583', '#4f3f91'],
     hillFar: '#2b2768', hillFarRim: '#3d3786', hillMid: '#1f1c52', hillMidRim: '#2c2867', hillNear: '#15123d', hillNearRim: '#221d55',
@@ -115,7 +115,7 @@ const CLOUDS = [
   { x: 600, y: 84, w: 38, s: 3.6 }
 ];
 
-export type TSkyOptions = {
+type TSkyOptions = {
   scheme: () => TSkyScheme;
   /** frames a second while nothing flies (twinkles are steps anyway), and while a star shoots */
   fps?: { calm: number; busy: number };

@@ -233,8 +233,7 @@ html [data-slot="checkbox"][data-state="checked"] { background: var(--x-gel); bo
 /* (sharkord 0.0.31's formatting menu over selected text is a plain div on the body: it floats too) */
 html body > div.z-50.bg-card.shadow-md,
 html [data-slot="popover-content"], html [data-slot="dropdown-menu-content"], html [data-slot="context-menu-content"],
-html [data-slot="dialog-content"], html [data-slot="select-content"], html [data-slot="sheet-content"], html [data-slot="alert-dialog-content"],
-html [data-slot="hover-card-content"] {
+html [data-slot="dialog-content"], html [data-slot="select-content"], html [data-slot="sheet-content"], html [data-slot="alert-dialog-content"] {
   border: 1px solid var(--x-edge);
   border-radius: 14px;
   background: var(--x-gloss), var(--x-glass-hi);
@@ -250,9 +249,9 @@ html [data-slot="tooltip-content"] svg { display: none; }
 /* menu items: the one under the pointer or the keys gel */
 html [data-slot="dropdown-menu-item"], html [data-slot="context-menu-item"], html [data-slot="select-item"] { border-radius: 9px; }
 html [data-slot="dropdown-menu-item"][data-highlighted], html [data-slot="context-menu-item"][data-highlighted],
-html [data-slot="select-item"][data-highlighted], html [data-slot="command-item"][data-selected="true"] { background: var(--x-gel); color: var(--x-on-gel); }
+html [data-slot="select-item"][data-highlighted] { background: var(--x-gel); color: var(--x-on-gel); }
 html [data-slot="dropdown-menu-item"][data-highlighted] svg, html [data-slot="context-menu-item"][data-highlighted] svg,
-html [data-slot="select-item"][data-highlighted] svg, html [data-slot="command-item"][data-selected="true"] svg { color: var(--x-on-gel); }
+html [data-slot="select-item"][data-highlighted] svg { color: var(--x-on-gel); }
 html [data-slot$="menu-item"][data-variant="destructive"] { color: var(--x-warn); }
 /* cards (settings, profiles): glass too */
 html [data-slot="card"] { border: 1px solid var(--x-edge); border-radius: 14px; background: var(--x-gloss), var(--x-glass); box-shadow: 0 0 0 1px var(--x-edge-out), var(--x-shadow); }

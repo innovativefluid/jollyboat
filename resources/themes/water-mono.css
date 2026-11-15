@@ -31,8 +31,8 @@ html .light {
   --sidebar-ring: rgba(120, 120, 120, 0.7);
   --w-pool-top: 255, 255, 255; --w-pool-mid: 230, 230, 230; --w-pool-bot: 154, 154, 154;
   --w-light: 255, 255, 255; --w-light-a: 0.8;
-  --w-fg: 20, 20, 20; --w-dim: 74, 74, 74; --w-mute: 130, 130, 130;
-  --w-glass: 255, 255, 255; --w-glass-a: 0.54;
+  --w-fg: 20, 20, 20; --w-dim: 74, 74, 74;
+  --w-glass: 255, 255, 255;
   --w-well: 255, 255, 255; --w-well-a: 0.62;
   --w-btn: 255, 255, 255; --w-btn-a: 0.34;
   --w-edge: 90, 90, 90; --w-edge-a: 0.42;
@@ -75,8 +75,8 @@ html .dark {
   --sidebar-ring: rgba(255, 255, 255, 0.6);
   --w-pool-top: 42, 42, 42; --w-pool-mid: 18, 18, 18; --w-pool-bot: 0, 0, 0;
   --w-light: 224, 224, 224; --w-light-a: 0.45;
-  --w-fg: 242, 242, 242; --w-dim: 180, 180, 180; --w-mute: 128, 128, 128;
-  --w-glass: 20, 20, 20; --w-glass-a: 0.66;
+  --w-fg: 242, 242, 242; --w-dim: 180, 180, 180;
+  --w-glass: 20, 20, 20;
   --w-well: 10, 10, 10; --w-well-a: 0.7;
   --w-btn: 42, 42, 42; --w-btn-a: 0.44;
   --w-edge: 216, 216, 216; --w-edge-a: 0.3;

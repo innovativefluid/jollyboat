@@ -4,7 +4,7 @@
 
 type TRgb = [number, number, number];
 
-export type TLcdScheme = {
+type TLcdScheme = {
   bg: TRgb;
   fg: TRgb;
   spark: TRgb;
@@ -19,7 +19,7 @@ export type TLcdScheme = {
   boatInk: Record<string, number>;
 };
 
-export const LCD: TLcdScheme = {
+const LCD: TLcdScheme = {
   bg: [0xa6, 0xb0, 0x8a],
   fg: [0x1a, 0x22, 0x1c],
   spark: [0xec, 0xf4, 0xd4],
@@ -32,7 +32,7 @@ export const LCD: TLcdScheme = {
   boatInk: { '#': 60, g: 32, w: -22 }
 };
 
-export const LCD_DARK: TLcdScheme = {
+const LCD_DARK: TLcdScheme = {
   bg: [0x18, 0x20, 0x1c],
   fg: [0xc4, 0xd6, 0xa6],
   spark: [0xec, 0xf8, 0xce],
@@ -53,9 +53,3 @@ export const isDark = () => {
 };
 
 export const lcdScheme = () => (isDark() ? LCD_DARK : LCD);
-
-/** calls back when light / dark may have changed (the colour mode or the page's data-theme) */
-export const onSchemeChange = (cb: () => void) => {
-  darkQuery.addEventListener('change', cb);
-  new MutationObserver(cb).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-};

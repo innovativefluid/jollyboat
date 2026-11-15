@@ -21,14 +21,13 @@
   --xm-gel-a: #ff7a64; --xm-gel-b: #c8140e; --xm-gel-edge: #8a0a06; --xm-on-gel: #ffffff;
   --xm-accent: #e2a82c; --xm-accent-hi: #fff0a8; --xm-good: #2f9e3a; --xm-warn: #c8140e;
   --xm-title: linear-gradient(#fff8d0, #f4c64a 55%, #c88a1a);
-  --xm-title-shadow: 0 2px 0 #7a4a06, 0 0 18px rgba(255, 230, 140, 0.8);
   --xm-shadow: 0 10px 30px rgba(10, 50, 15, 0.28);
   --xm-cane-a: #d8231a; --xm-cane-b: #fff6ea;
   --xm-snow: none;
   /* the lcd tokens, for the bits of the pages that use them directly */
-  --px: var(--xm-font); --body: var(--xm-font); --cnt: var(--xm-font);
+  --px: var(--xm-font); --body: var(--xm-font);
   --bg: var(--xm-bg); --panel: var(--xm-glass-hi); --fg: var(--xm-ink); --dim: var(--xm-dim); --mute: var(--xm-mute);
-  --faint: var(--xm-well); --line: var(--xm-well-edge); --spark: var(--xm-accent);
+  --faint: var(--xm-well); --spark: var(--xm-accent);
   --fg-rgb: 16, 57, 26; --dim-rgb: 47, 107, 53; --shadow: rgba(10, 50, 15, 0.3); --shadow-dim: rgba(10, 50, 15, 0.15);
   color-scheme: light;
 }
@@ -62,7 +61,6 @@
   --xm-gel-a: #fff0b0; --xm-gel-b: #c8881c; --xm-gel-edge: #7a4e08; --xm-on-gel: #3a2404;
   --xm-accent: #2f9e3a; --xm-accent-hi: #b8f5a0; --xm-good: #2f9e3a; --xm-warn: #c8140e;
   --xm-title: linear-gradient(#fffbe6, #f2cf6a 55%, #b0761c);
-  --xm-title-shadow: 0 2px 0 #4a2e04, 0 0 20px rgba(255, 236, 170, 0.9);
   --xm-shadow: 0 10px 30px rgba(60, 36, 4, 0.3);
   --xm-cane-a: #e2a82c; --xm-cane-b: #fffbe8;
   --fg-rgb: 58, 36, 4; --dim-rgb: 122, 84, 24;
@@ -95,7 +93,6 @@
   --xm-gel-a: #a6dcff; --xm-gel-b: #2f86d8; --xm-gel-edge: #164f92; --xm-on-gel: #ffffff;
   --xm-accent: #ff8a24; --xm-accent-hi: #ffd0a0; --xm-good: #2f9e6a; --xm-warn: #d8231a;
   --xm-title: linear-gradient(#ffffff, #e4f4ff 55%, #9cc8f0);
-  --xm-title-shadow: 0 2px 0 #2a5a9a, 0 0 18px rgba(255, 255, 255, 0.9);
   --xm-shadow: 0 10px 30px rgba(20, 60, 120, 0.25);
   --xm-cane-a: #4fa8ec; --xm-cane-b: #ffffff;
   --xm-snow: radial-gradient(10px 7px at 50% 0, #fff 96%, transparent) 0 -1px / 22px 7px repeat-x,

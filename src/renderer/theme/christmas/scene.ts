@@ -16,7 +16,7 @@
 
 import { softwareRendering } from '../gpu';
 
-export type TXmasPalette = 'classic' | 'gold' | 'snow';
+type TXmasPalette = 'classic' | 'gold' | 'snow';
 export type TXmasScene = {
   stop: () => void;
   rest: (on: boolean) => void;
@@ -26,7 +26,7 @@ export type TXmasScene = {
    *  drawn in the last second */
   cost: () => { ms: number; fps: number };
 };
-export type TXmasOptions = {
+type TXmasOptions = {
   palette: () => string;
   dark: () => boolean;
   focused?: () => boolean;
@@ -520,7 +520,6 @@ export const createXmasScene = (canvas: HTMLCanvasElement, o: TXmasOptions): TXm
   let last = performance.now();
   let T = 0;
   let px = -1e4;
-  let py = -1e4;
   let pt = 0;
 
   const paletteNow = (): TXmasPalette => {
@@ -1158,7 +1157,6 @@ export const createXmasScene = (canvas: HTMLCanvasElement, o: TXmasOptions): TXm
         schedule();
       }
       px = X;
-      py = Y;
       pt = now;
     }
   };

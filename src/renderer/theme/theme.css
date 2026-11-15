@@ -4,7 +4,6 @@
    file while <html data-look="water">. */
 
 @font-face { font-family: 'Pixelify Sans'; src: url('../fonts/PixelifySans.ttf') format('truetype'); font-weight: 400 700; }
-@font-face { font-family: 'Jersey 10'; src: url('../fonts/Jersey10.ttf') format('truetype'); }
 @font-face { font-family: 'Fredoka'; src: url('../fonts/Fredoka.ttf') format('truetype'); font-weight: 300 700; }
 
 :root {
@@ -14,7 +13,6 @@
   --dim: #46503e;
   --mute: #6c765e;
   --faint: #8e9876;
-  --line: #96a07e;
   --spark: #ecf4d4;
   --shadow-a: 0.32;
   --fg-rgb: 26, 34, 28;
@@ -24,7 +22,7 @@
 /* the neg lcd: pale ink on a dark panel */
 :root[data-theme='dark'] {
   --bg: #18201c; --panel: #202a24; --fg: #c4d6a6; --dim: #94a47e; --mute: #6c7a5e;
-  --faint: #384438; --line: #303c32; --spark: #ecf8ce; --shadow-a: 0.45;
+  --faint: #384438; --spark: #ecf8ce; --shadow-a: 0.45;
   --fg-rgb: 196, 214, 166; --dim-rgb: 148, 164, 126;
   --shadow: rgba(0, 0, 0, 0.5); --shadow-dim: rgba(0, 0, 0, 0.35);
   color-scheme: dark;
@@ -32,7 +30,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     --bg: #18201c; --panel: #202a24; --fg: #c4d6a6; --dim: #94a47e; --mute: #6c7a5e;
-    --faint: #384438; --line: #303c32; --spark: #ecf8ce; --shadow-a: 0.45;
+    --faint: #384438; --spark: #ecf8ce; --shadow-a: 0.45;
     --fg-rgb: 196, 214, 166; --dim-rgb: 148, 164, 126;
     --shadow: rgba(0, 0, 0, 0.5); --shadow-dim: rgba(0, 0, 0, 0.35);
     color-scheme: dark;
@@ -40,7 +38,6 @@
 }
 :root {
   --px: 'Pixelify Sans', ui-monospace, monospace;
-  --cnt: 'Jersey 10', ui-monospace, monospace;
   --body: 'Fredoka', system-ui, sans-serif;
   --shadow: rgba(var(--fg-rgb), var(--shadow-a));
   --shadow-dim: rgba(var(--dim-rgb), 0.35);

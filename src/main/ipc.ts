@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, net, safeStorage, shell, webContents, type BaseWindow, type IpcMainEvent, type IpcMainInvokeEvent, type WebContents } from 'electron';
+import { ipcMain, net, safeStorage, shell, webContents, type BaseWindow, type IpcMainEvent, type IpcMainInvokeEvent, type WebContents } from 'electron';
 import { PALETTES, type TServerInput, type TSettings, type TTestResult, type TVoiceMember, type TVoiceReport, type TVoiceState } from '../shared/types';
 import { finishPositioning, isWayland, refreshOverlay, setOverlayHeight, startPositioning } from './overlay';
 import { editCustomCss, refreshCustomCss } from './customcss';

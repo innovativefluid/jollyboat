@@ -14,7 +14,6 @@ Jollyboat is MIT licensed (`LICENSE`). It ships with the following third-party w
 | [uiohook-napi](https://github.com/SnosMe/uiohook-napi) (Windows only) | MIT | keyboard hook for push-to-talk |
 | [libuiohook](https://github.com/kwhat/libuiohook) (Windows only, inside uiohook-napi) | LGPL-3.0-or-later | the hook itself; unmodified, loaded at runtime from `resources/app.asar.unpacked/node_modules/uiohook-napi/prebuilds/` (that file can be replaced with your own build), source at the link |
 | [Pixelify Sans](https://github.com/eifetx/Pixelify-Sans) | SIL OFL 1.1 (`src/renderer/fonts/OFL-PixelifySans.txt`) | pixel typeface of the setup pages |
-| [Jersey 10](https://github.com/scfried/soft-type-jersey) | SIL OFL 1.1 (`src/renderer/fonts/OFL-Jersey10.txt`) | counter typeface |
 | [Fredoka](https://github.com/hafontia-zz/Fredoka) | SIL OFL 1.1 (`src/renderer/fonts/OFL-Fredoka.txt`) | body typeface |
 | [Nunito](https://github.com/googlefonts/nunito) | SIL OFL 1.1 (`src/renderer/fonts/OFL-Nunito.txt`) | typeface of the Water and Christmas themes (Latin and Latin Extended subset) |
 | [DotGothic16](https://github.com/fontworks-fonts/DotGothic16) | SIL OFL 1.1 (`src/renderer/fonts/OFL-DotGothic16.txt`) | typeface of the Retro theme (Latin subset) |

@@ -193,9 +193,11 @@ def tray_pixel(out, c):
             ico([nearest(img, 16), img, nearest(img, 64)], out / f'{name}{suffix}.ico')
 
     # the app's own icon in this set (the taskbar, the dock, the window): the plain boat, 8x
-    app = fin()
-    nearest(app, 256).save(out / 'app.png')
-    ico([nearest(app, 16), nearest(app, 24), app, nearest(app, 48), nearest(app, 64), nearest(app, 128), nearest(app, 256)], out / 'app.ico')
+    # (not for lcd: the Jollyboat theme keeps the app's own icon, resources/icon.png)
+    if out.name != 'lcd':
+        app = fin()
+        nearest(app, 256).save(out / 'app.png')
+        ico([nearest(app, 16), nearest(app, 24), app, nearest(app, 48), nearest(app, 64), nearest(app, 128), nearest(app, 256)], out / 'app.ico')
 
     overlay = Image.new('RGBA', (16, 16), CLEAR)
     px = overlay.load()

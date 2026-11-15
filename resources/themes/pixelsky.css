@@ -47,7 +47,7 @@ html .light {
   --sidebar-ring: #ff9a2e;
   /* the study's tokens */
   --s-sky: #3e8ee4; --s-panel: #fbfdff; --s-panel-hi: #ffffff; --s-edge: #5b74b8; --s-ink: #1b2552; --s-dim: #46568f; --s-mute: #8796c8;
-  --s-on-fill: #fbfdff; --s-focus: #ff9a2e; --s-well: #e7effc; --s-track: #c4d4f0; --s-shade: #24508f; --s-warn: #c0304a;
+  --s-on-fill: #fbfdff; --s-focus: #ff9a2e; --s-shade: #24508f; --s-warn: #c0304a;
   /* presence, in the cast's colours (colour belongs to the cast) */
   --s-online: #3fb24c; --s-idle: #ff8a3d; --s-busy: #ff5f7e;
 }
@@ -80,7 +80,7 @@ html .dark {
   --sidebar-border: #5d66c6;
   --sidebar-ring: #ffd35c;
   --s-sky: #070920; --s-panel: #141a4a; --s-panel-hi: #232b6c; --s-edge: #5d66c6; --s-ink: #f4f1ff; --s-dim: #a9b0ea; --s-mute: #7078bf;
-  --s-on-fill: #141a4a; --s-focus: #ffd35c; --s-well: #0c1036; --s-track: #2b3380; --s-shade: #03041a; --s-warn: #ff8a9a;
+  --s-on-fill: #141a4a; --s-focus: #ffd35c; --s-shade: #03041a; --s-warn: #ff8a9a;
   --s-online: #5fd36a; --s-idle: #ff8a3d; --s-busy: #ff86c0;
 }
 /* dithers (4 x 4 bayer, one design pixel 2 px): masks for things that dissolve in and out */
@@ -271,8 +271,7 @@ html [data-slot="checkbox"][data-state="checked"] { border-image: var(--k-check-
 /* (sharkord 0.0.31's formatting menu over selected text is a plain div on the body: it floats too) */
 html body > div.z-50.bg-card.shadow-md,
 html [data-slot="popover-content"], html [data-slot="dropdown-menu-content"], html [data-slot="context-menu-content"],
-html [data-slot="dialog-content"], html [data-slot="select-content"], html [data-slot="sheet-content"], html [data-slot="alert-dialog-content"],
-html [data-slot="hover-card-content"] {
+html [data-slot="dialog-content"], html [data-slot="select-content"], html [data-slot="sheet-content"], html [data-slot="alert-dialog-content"] {
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -302,9 +301,9 @@ html [data-slot="tooltip-content"] svg { display: none; }
 /* menu items: the one under the pointer or the keys filled with the ink */
 html [data-slot="dropdown-menu-item"], html [data-slot="context-menu-item"], html [data-slot="select-item"] { border-radius: 0; }
 html [data-slot="dropdown-menu-item"][data-highlighted], html [data-slot="context-menu-item"][data-highlighted],
-html [data-slot="select-item"][data-highlighted], html [data-slot="command-item"][data-selected="true"] { background: transparent; border-image: var(--k-row); color: var(--s-on-fill); }
+html [data-slot="select-item"][data-highlighted] { background: transparent; border-image: var(--k-row); color: var(--s-on-fill); }
 html [data-slot="dropdown-menu-item"][data-highlighted] svg, html [data-slot="context-menu-item"][data-highlighted] svg,
-html [data-slot="select-item"][data-highlighted] svg, html [data-slot="command-item"][data-selected="true"] svg { color: var(--s-on-fill); }
+html [data-slot="select-item"][data-highlighted] svg { color: var(--s-on-fill); }
 html [data-slot$="menu-item"][data-variant="destructive"] { color: var(--s-warn); }
 html [data-slot$="menu-separator"] { background: color-mix(in srgb, var(--s-edge) 45%, var(--s-panel)); }
 /* cards (settings, profiles): panels too */

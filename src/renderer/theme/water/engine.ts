@@ -104,7 +104,7 @@ export type TPearls = {
 export type TItem = TGlass | TTitle | TPearls;
 export type TScene = { stage: TGlass[]; items: TItem[]; /** where the pointer leaves no wake: the panels */ solid: TRgba[] };
 
-export type TWaterOptions = {
+type TWaterOptions = {
   tokens: () => TWaterTokens;
   scene: (time: number) => TScene;
   /** resolution of the glass, times min(device px, 1.5) */

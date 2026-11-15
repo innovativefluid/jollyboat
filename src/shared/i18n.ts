@@ -6,7 +6,7 @@ import de from './locales/de.json';
 import pl from './locales/pl.json';
 
 export type TLang = 'en' | 'de' | 'pl';
-export type TLanguageSetting = 'system' | TLang;
+type TLanguageSetting = 'system' | TLang;
 
 const LANGS: readonly TLang[] = ['en', 'de', 'pl'];
 

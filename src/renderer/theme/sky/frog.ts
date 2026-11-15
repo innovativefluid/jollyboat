@@ -11,7 +11,7 @@ const TONGUE = '#ff6f86';
 const C = { base: '#5fd36a', dark: '#3aa653', light: '#97ec8e', cream: '#ecfbd9', creamD: '#cdeab4', inner: '#2a6e3a', paw: '#97ec8e' };
 
 type TPal = string | { b: string; d: string; l: string };
-export type TFrogFrame = { hd: 0 | 1; eyes: 'open' | 'closed' | 'happy'; mouth: 'smile' | 'open'; arm: 'down' | 'up' | 'up2' };
+type TFrogFrame = { hd: 0 | 1; eyes: 'open' | 'closed' | 'happy'; mouth: 'smile' | 'open'; arm: 'down' | 'up' | 'up2' };
 
 class Ras {
   p: (string | null)[];
