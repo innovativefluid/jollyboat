@@ -166,20 +166,86 @@ if (boot.isSavedServer) {
     }
   }
 
-  // --- stay logged in: sharkord keeps a 7-day token in localStorage but drops it on any disconnect.
-  // we hold a copy, hand it back when the page starts without one, and pick up new logins.
+  // --- stay logged in: sharkord keeps a 7-day token in localStorage but drops it on any disconnect
+  // (and switches "login automatically" off when an attempt fails, whatever the reason). we hold
+  // a copy, hand it back when the page starts without one, and pick up new logins. the copy is
+  // only let go when it has run out, when the server turns it down twice while it can be reached,
+  // or when the user switches automatic login off; a login that failed because the server or the
+  // network was not there yet, and a lost connection sharkord gave up on, are tried again
   if (boot.login) {
     const FLAG = 'sharkord-auto-login';
     const SAVED = 'sharkord-auto-login-token';
     const SESSION = 'sharkord-token';
+    // (ours, in the tab's session storage: it outlives the reloads below, not the app)
+    const STRIKES = 'jollyboat-login-strikes';
     let held = boot.login.token;
     let lastFlag: string | null = null;
+    let sessionFor = 0;
+
+    // the token is a jwt: its "exp" says when the server stops taking it
+    const expired = (token: string) => {
+      try {
+        const exp = JSON.parse(atob(token.split('.')[1]!.replace(/-/g, '+').replace(/_/g, '/'))).exp;
+        return typeof exp === 'number' && exp * 1000 < Date.now();
+      } catch {
+        return false;
+      }
+    };
+    const drop = (why: string) => {
+      held = null;
+      ipcRenderer.send('server:login', null);
+      ipcRenderer.send('server:log', `login token let go: ${why}`);
+    };
+    const handBack = () => {
+      localStorage.setItem(FLAG, 'true');
+      localStorage.setItem(SAVED, held!);
+    };
+    const reachable = async () => {
+      try {
+        return (await fetch('/info', { cache: 'no-store', signal: AbortSignal.timeout(5000) })).ok;
+      } catch {
+        return false;
+      }
+    };
+    // a click or a key in the page: the user is at it (switching automatic login off, typing a login)
+    let lastGesture = 0;
+    for (const type of ['pointerdown', 'keydown'] as const) window.addEventListener(type, (e) => e.isTrusted && (lastGesture = Date.now()), true);
+    // sharkord's "connection lost" screen (its wifi-off icon; kicked and banned have others)
+    const lostScreen = () => !!document.querySelector('.min-h-screen svg.lucide-wifi-off');
+    // its "loading" screen: where it stays for good when the server's /info did not answer
+    const loadingScreen = () => !!document.querySelector('#root > div.h-full > svg.animate-spin');
+    const RELOADS = 'jollyboat-loading-reloads';
+    let loadingFor = 0;
+
+    // coming back: once the server answers again the page loads anew with the token in place
+    // (sharkord tries a login only when it starts). after 5, 10, 20, 40 s, then every minute;
+    // not while the user is doing something on the page
+    let comeBack: ReturnType<typeof setTimeout> | null = null;
+    let wait = 5000;
+    let since = 0;
+    const tryAgain = (why: 'login' | 'loading') => {
+      if (comeBack) return;
+      since = Date.now();
+      const attempt = async () => {
+        comeBack = null;
+        if (lastGesture > since) return;
+        if (why === 'login' ? !held || sessionStorage.getItem(SESSION) : !loadingScreen()) return;
+        if (await reachable()) {
+          if (why === 'login') handBack();
+          else sessionStorage.setItem(RELOADS, String(Number(sessionStorage.getItem(RELOADS) ?? 0) + 1));
+          ipcRenderer.send('server:log', why === 'login' ? 'logging in again' : 'stuck on the loading screen: loading again');
+          location.reload();
+          return;
+        }
+        wait = Math.min(60_000, wait * 2);
+        comeBack = setTimeout(attempt, wait);
+      };
+      comeBack = setTimeout(attempt, wait);
+    };
 
     try {
-      if (held && !localStorage.getItem(SAVED)) {
-        localStorage.setItem(FLAG, 'true');
-        localStorage.setItem(SAVED, held);
-      }
+      if (held && expired(held)) drop('expired');
+      else if (held && !localStorage.getItem(SAVED)) handBack();
       lastFlag = localStorage.getItem(FLAG);
     } catch {
       /* storage blocked */
@@ -189,14 +255,36 @@ if (boot.isSavedServer) {
       try {
         const session = sessionStorage.getItem(SESSION);
         const flag = localStorage.getItem(FLAG);
+        // (during a login attempt the token sits there for a moment: only a login that lasts counts)
+        sessionFor = session ? sessionFor + 1 : 0;
+        if (sessionFor === 5) {
+          sessionStorage.removeItem(STRIKES);
+          sessionStorage.removeItem(RELOADS);
+        }
+        // (five reloads at most until a login works: a server that never answers /info stays as it is)
+        loadingFor = loadingScreen() ? loadingFor + 1 : 0;
+        if (loadingFor >= 6 && !comeBack && Number(sessionStorage.getItem(RELOADS) ?? 0) < 5) tryAgain('loading');
 
         if (session && session !== held) {
           held = session;
           ipcRenderer.send('server:login', session);
         } else if (held && !session && lastFlag === 'true' && flag === 'false') {
-          // sharkord flips the switch off itself when the server rejects the token (expired)
-          held = null;
-          ipcRenderer.send('server:login', null);
+          // the switch went off: the user's click, or sharkord itself after a login that failed
+          if (Date.now() - lastGesture < 4000) drop('switched off');
+          else if (expired(held)) drop('expired');
+          else {
+            void reachable().then((up) => {
+              if (!held) return;
+              const strikes = Number(sessionStorage.getItem(STRIKES) ?? 0) + (up ? 1 : 0);
+              sessionStorage.setItem(STRIKES, String(strikes));
+              ipcRenderer.send('server:log', `automatic login failed (server ${up ? 'answers' : 'does not answer'})`);
+              if (strikes >= 2) drop('turned down by the server');
+              else tryAgain('login');
+            });
+          }
+        } else if (held && !session && !comeBack && lostScreen() && !expired(held)) {
+          // sharkord gave up reconnecting (a server restart, the network gone for a while)
+          tryAgain('login');
         }
         lastFlag = flag;
       } catch {
