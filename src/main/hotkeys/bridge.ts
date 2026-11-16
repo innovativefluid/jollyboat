@@ -189,6 +189,9 @@ const handleConnection = (ws: WebSocket, req: { headers: { origin?: string } }) 
     }
   });
 
+  // (a frame over the size limit, a broken one: ws reports it here and closes the socket; with
+  // nobody listening node would throw it into the main process)
+  ws.on('error', (err) => log('hotkeys', 'bridge socket error:', err.message));
   ws.on('close', () => {
     if (client) {
       clients.delete(client);
@@ -220,6 +223,8 @@ export const startBridge = async (): Promise<TBridgeStatus> => {
   });
 
   wss.on('connection', handleConnection);
+  // (the http server's errors arrive here too: the port being taken is handled below)
+  wss.on('error', () => undefined);
 
   await new Promise<void>((resolve) => {
     server.once('error', () => {

@@ -82,6 +82,18 @@
   </keywords>
 
   <releases>
+    <release version="0.4.14" date="2026-11-16">
+      <description>
+        <p>A stability pass. Jollyboat now recovers on its own from more things going wrong:</p>
+        <ul>
+          <li>Started at login before the network is up (or while the server is still starting): the server is tried again for about two minutes instead of giving up at once, and your open tabs are remembered either way.</li>
+          <li>The title bar, the setup window and the voice overlay come back if their process crashes; so does a server page the system ended (out of memory).</li>
+          <li>The settings file can no longer be left half-written, and a copy from the last start is used if it cannot be read.</li>
+          <li>An unexpected error no longer freezes the app behind an error dialog; it goes to the diagnostics log.</li>
+          <li>The pages are drawn again after sleep, unlocking the screen and display changes; the overlay returns on top and onto a display that is there.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.4.13" date="2026-11-16">
       <description>
         <p>Windows: Jollyboat could come back from the taskbar showing nothing while in a call (with a screen share and a webcam on, say). It now redraws its pages whenever the window comes back, and after the graphics process restarts.</p>

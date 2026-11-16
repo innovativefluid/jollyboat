@@ -1,9 +1,10 @@
 import { app, safeStorage } from 'electron';
 import { randomUUID } from 'node:crypto';
-import { chmodSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PALETTES, type TPalettes, type TServerEntry, type TServerInput, type TSettings } from '../shared/types';
 import { INVITE_CODE, parseInvite } from '../shared/invite';
+import { log } from './log';
 
 const DEFAULTS: TSettings = {
   servers: [],
@@ -102,18 +103,42 @@ const sanitize = (raw: unknown): TSettings => {
   return out;
 };
 
+// the servers and their logins live in this one file, so it is never left half-written: a save
+// goes to a file next to it that then takes its place, and every start keeps a copy of the file
+// it could read (settings.json.bak). a file that cannot be read (a crash or power cut while an
+// older version wrote it, a full disk) is set aside as settings.json.broken, and the copy is used
+const read = (file: string) => sanitize(JSON.parse(readFileSync(file, 'utf8')));
 export const getSettings = (): TSettings => {
   if (cache) return cache;
 
+  const file = filePath();
   try {
-    cache = sanitize(JSON.parse(readFileSync(filePath(), 'utf8')));
+    cache = read(file);
+    try {
+      copyFileSync(file, `${file}.bak`);
+    } catch {
+      /* no copy this time */
+    }
   } catch {
-    cache = { ...DEFAULTS };
+    const had = existsSync(file);
+    try {
+      if (had) renameSync(file, `${file}.broken`);
+    } catch {
+      /* it stays where it is; the next save replaces it */
+    }
+    try {
+      cache = read(`${file}.bak`);
+      log('settings', 'settings.json could not be read: using the copy from the last start');
+    } catch {
+      cache = { ...DEFAULTS };
+      if (had) log('settings', 'settings.json could not be read and there is no copy: starting fresh');
+    }
   }
 
   return cache!;
 };
 
+let saveFailed = false;
 const serverListeners = new Set<() => void>();
 /** called after any change to the server list (basic-auth filter follows it) */
 export const onServersChanged = (l: () => void) => serverListeners.add(l);
@@ -121,15 +146,31 @@ export const onServersChanged = (l: () => void) => serverListeners.add(l);
 export const saveSettings = (patch: Partial<TSettings>) => {
   const next = { ...getSettings(), ...patch };
 
-  mkdirSync(app.getPath('userData'), { recursive: true });
-  // passwords and the login token are in here (encrypted when there is a keyring): owner only
-  writeFileSync(filePath(), JSON.stringify(next, null, 2), { mode: 0o600 });
-  try {
-    chmodSync(filePath(), 0o600); // files from older versions
-  } catch {
-    /* windows: acls, not modes */
-  }
+  // (in memory first: a save that fails must not take the change back, nor stop its caller)
   cache = next;
+  const file = filePath();
+  const text = JSON.stringify(next, null, 2);
+  try {
+    mkdirSync(app.getPath('userData'), { recursive: true });
+    // passwords and the login token are in here (encrypted when there is a keyring): owner only
+    writeFileSync(`${file}.tmp`, text, { mode: 0o600 });
+    try {
+      renameSync(`${file}.tmp`, file);
+    } catch {
+      // windows: something holds the file open (a virus scanner, a backup): written in place
+      writeFileSync(file, text, { mode: 0o600 });
+    }
+    try {
+      chmodSync(file, 0o600); // files from older versions
+    } catch {
+      /* windows: acls, not modes */
+    }
+    saveFailed = false;
+  } catch (err) {
+    // (said once, not on every window move)
+    if (!saveFailed) log('settings', 'could not save:', (err as NodeJS.ErrnoException).code ?? 'error');
+    saveFailed = true;
+  }
 
   return next;
 };

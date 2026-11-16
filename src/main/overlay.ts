@@ -125,7 +125,19 @@ export const refreshOverlay = () => {
   if (!win) return create();
   applyMouse();
   send();
-  if (!win.isVisible()) win.showInactive();
+  if (!win.isVisible()) {
+    // (windows can take "always on top" away while it is hidden, behind a fullscreen game say;
+    // and a display may have gone: back on top, and onto a display that is there)
+    win.setAlwaysOnTop(true, 'screen-saver');
+    if (!positioning && !isWayland()) {
+      const { x, y } = position();
+      const [nowX, nowY] = win.getPosition();
+      if (nowX !== x || nowY !== y) win.setPosition(x, y);
+    }
+    win.showInactive();
+    // (it runs unthrottled and was hidden: a fresh frame, see repaintPages in index.ts)
+    win.webContents.invalidate();
+  }
 };
 
 export const setOverlayVoice = (next: TVoiceState, name: string, list: TVoiceMember[]) => {

@@ -241,6 +241,8 @@ const startPcm = (wc: WebContents, id: string) => {
   });
   child.stderr.on('data', (d: Buffer) => log('screen-audio', 'helper:', d.toString('utf8').trim().slice(0, 200)));
   child.on('error', (err) => log('screen-audio', 'helper failed:', err.message));
+  // (a pipe to a helper that is already gone must not become an uncaught error)
+  for (const pipe of [child.stdin, child.stdout, child.stderr]) pipe.on('error', () => undefined);
   child.on('exit', (code) => {
     if (pcm?.child === child) {
       log('screen-audio', 'helper ended', code);

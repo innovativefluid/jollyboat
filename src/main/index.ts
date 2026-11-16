@@ -1,4 +1,4 @@
-import { app, BaseWindow, BrowserWindow, ipcMain, Menu, nativeTheme, screen, session, shell, WebContentsView } from 'electron';
+import { app, BaseWindow, BrowserWindow, ipcMain, Menu, nativeTheme, powerMonitor, screen, session, shell, WebContentsView } from 'electron';
 import { existsSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { installBasicAuth, refreshBasicAuth } from './basic-auth';
@@ -61,6 +61,23 @@ app.commandLine.appendSwitch('disable-features', 'MediaRouter,DialMediaRouteProv
 app.userAgentFallback = app.userAgentFallback.replace(/\s(jollyboat|Electron)\/\S+/g, '');
 
 
+// an error nobody caught: electron's answer is a dialog that holds up the whole main process
+// until someone clicks it away (no window buttons, no hotkeys, no tray meanwhile). once the app
+// is up it goes to the log instead (diagnostics), without addresses or folders; while starting,
+// the dialog stays (an app that cannot start should say so)
+const scrub = (line: string) => line.replace(/\b(?:https?|wss?|file):\/\/[^\s'")]+/g, '(address)').replace(/(?:[A-Za-z]:)?[\\/].*[\\/]/, '');
+const quietErrors = () => {
+  process.on('uncaughtException', (err) => {
+    const lines = String((err as Error)?.stack ?? err).split('\n').slice(0, 4);
+    log('error', 'uncaught:', lines.map((l) => scrub(l.trim())).join(' | '));
+  });
+  process.on('unhandledRejection', (reason) => {
+    const text = String((reason as Error)?.message ?? reason).split('\n')[0]!;
+    // (a page that did not load is already in the log, see did-fail-load)
+    if (!/^ERR_[A-Z_]+ \(-\d+\) loading/.test(text)) log('error', 'unhandled rejection:', scrub(text));
+  });
+};
+
 // smoke runs in CI: a mac runner has no one to answer a keychain dialog
 if (process.env.JOLLYBOAT_SMOKE && process.platform === 'darwin') app.commandLine.appendSwitch('use-mock-keychain');
 
@@ -117,6 +134,9 @@ type TServerView = {
   /** a tab in the background that could not load: loaded again when it is shown */
   failed: string | null;
   crashes: number[];
+  /** load attempts since the last page that loaded, and the next one waiting (see RETRY_AFTER) */
+  retries: number;
+  retry: NodeJS.Timeout | null;
   /** chromium's background throttling (off while in a call) */
   throttled: boolean;
   /** the page shows sharkord's top bar (its server view, not its settings screen) */
@@ -141,6 +161,8 @@ const alive = (v: TServerView | undefined) => (v && !v.wc.isDestroyed() ? v : un
 const page = () => alive(active())?.wc ?? null;
 const viewOf = (wc: Electron.WebContents) => [...views.values()].find((v) => v.wc === wc);
 const serverOf = (id: string) => getSettings().servers.find((s) => s.id === id);
+// with an invite still to use, sharkord's connect screen gets it as ?invite= (it reads it from there)
+const startUrl = (server: { url: string; invite?: string }) => (server.invite ? `${server.url}/?invite=${encodeURIComponent(server.invite)}` : server.url);
 const inCall = (v: TServerView) => v.voice.inVoice || v.desktopVoice;
 // the server we are in a call on (the latest joined, when several)
 const voiceView = () => [...views.values()].filter(inCall).sort((a, b) => b.voiceAt - a.voiceAt)[0];
@@ -515,7 +537,12 @@ const createMainWindow = () => {
   });
   win.on('hide', () => setOverlayHostFocused(false));
   win.on('restore', () => repaintSoon());
-  win.on('show', () => repaintSoon());
+  win.on('show', () => {
+    repaintSoon();
+    // someone looks now: a page still waiting for the network is tried at once
+    const shown = active();
+    if (shown?.retry) retryNow(shown);
+  });
   win.on('resize', () => {
     layout();
     rememberBounds();
@@ -590,6 +617,19 @@ const fetchLogo = async (id: string) => {
   }
 };
 
+// a page that could not load because of the network (not up yet after a start at login or a
+// wake, a vpn still connecting, the server restarting) is tried again while nobody looks at it:
+// after 2, 4, 8, 15 and three times 30 seconds
+const NETWORK_ERRORS = new Set([-7, -15, -21, -100, -101, -102, -104, -105, -106, -109, -118, -130, -137]);
+const RETRY_AFTER = [2, 4, 8, 15, 30, 30, 30];
+const retryNow = (v: TServerView) => {
+  if (v.retry) clearTimeout(v.retry);
+  v.retry = null;
+  const server = serverOf(v.id);
+  if (!server || v.wc.isDestroyed() || views.get(v.id) !== v) return;
+  void v.wc.loadURL(startUrl(server)).catch(() => undefined);
+};
+
 const createServerView = (id: string): TServerView => {
   const win = mainWindow ?? createMainWindow();
   const view = new WebContentsView({ webPreferences });
@@ -611,6 +651,8 @@ const createServerView = (id: string): TServerView => {
     loading: true,
     failed: null,
     crashes: [],
+    retries: 0,
+    retry: null,
     throttled: true,
     topbar: false,
     barSent: '',
@@ -623,8 +665,16 @@ const createServerView = (id: string): TServerView => {
   win.contentView.addChildView(view, 0);
 
   // a server's zoom is remembered per address: the bar picks it up when the page loads
+  // (chromium "finishes loading" its own error page too: that is not the server's page)
+  let loadFailed = false;
+  const born = performance.now();
+  let first = true;
   wc.on('did-finish-load', () => {
+    if (loadFailed) return;
+    if (first) log('start', `server page loaded in ${Math.round(performance.now() - born)} ms (${Math.round(process.uptime() * 1000)} ms since launch)`);
+    first = false;
     v.loading = false;
+    v.retries = 0;
     wc.send('shell:shown', id === activeId);
     wc.send('shell:focus', win.isFocused());
     sendBarState();
@@ -660,6 +710,7 @@ const createServerView = (id: string): TServerView => {
   // a new document: nothing it said before counts (a pipewire share never outlives its page)
   wc.on('did-start-navigation', (details) => {
     if (!details.isMainFrame || details.isSameDocument) return;
+    if (!details.url.startsWith('chrome-error:')) loadFailed = false;
     if (inCall(v)) stopPipeWireShare();
     Object.assign(v, { loading: true, unread: null, titled: 0, connection: null, desktopVoice: false, voice: { ...NO_VOICE }, members: [], streams: 0, topbar: false, barSent: '', modal: false });
     follow();
@@ -670,7 +721,9 @@ const createServerView = (id: string): TServerView => {
     if (inCall(v)) stopPipeWireShare();
     log('window', 'renderer gone:', details.reason, details.exitCode);
 
-    if (details.reason === 'clean-exit' || details.reason === 'killed' || quitting) return;
+    // (killed: the system ran out of memory, or someone ended the process: the page comes back
+    // as after a crash; a tab that was closed is not in the list any more)
+    if (details.reason === 'clean-exit' || quitting || wc.isDestroyed() || views.get(id) !== v) return;
 
     const now = Date.now();
     v.crashes = v.crashes.filter((t) => now - t < 120_000).concat(now);
@@ -682,16 +735,21 @@ const createServerView = (id: string): TServerView => {
 
   let hangTimer: NodeJS.Timeout | null = null;
   wc.on('unresponsive', () => {
+    if (hangTimer) return;
     log('window', 'unresponsive');
     hangTimer = setTimeout(() => {
+      hangTimer = null;
+      if (wc.isDestroyed()) return;
       log('window', 'still unresponsive after 30 s, reloading');
       wc.forcefullyCrashRenderer();
     }, 30_000);
   });
-  wc.on('responsive', () => {
+  const calm = () => {
     if (hangTimer) clearTimeout(hangTimer);
     hangTimer = null;
-  });
+  };
+  wc.on('responsive', calm);
+  wc.on('destroyed', calm);
 
   // the server page only ever shows http(s). an OIDC login may bounce through the identity
   // provider, so other https origins are allowed in-window; anything else is not
@@ -728,15 +786,31 @@ const createServerView = (id: string): TServerView => {
     });
   });
 
+  // nobody is looking (started at login into the tray, a tab in the background) and it looks
+  // like the network or a server that is just starting: it is tried again for about two minutes
+  // before anything is said
+  const retryLater = () => {
+    const unseen = id !== activeId || !mainWindow?.isVisible();
+    if (!serverOf(id) || !unseen || v.retries >= RETRY_AFTER.length) return false;
+    const wait = RETRY_AFTER[v.retries++]!;
+    log('window', `trying again in ${wait} s (${v.retries} of ${RETRY_AFTER.length})`);
+    if (v.retry) clearTimeout(v.retry);
+    v.retry = setTimeout(() => retryNow(v), wait * 1000);
+    return true;
+  };
+
   // a server that cannot be reached: the tab goes and the launcher says why (a tab in the
   // background is tried again when it is shown)
   wc.on('did-fail-load', (_e, code, description, url, isMainFrame) => {
     // no address in the log: diagnostics promise no server names or urls
     log('window', 'load failed', code, description, isMainFrame ? 'main frame' : 'subframe', findServerByUrl(url) ? 'of a saved server' : 'elsewhere');
     if (!isMainFrame || code === -3 /* aborted: a new navigation started */) return;
+    loadFailed = true;
+
+    if (NETWORK_ERRORS.has(code) && retryLater()) return;
 
     const text = description.toLowerCase().replace(/^err_/, '').replace(/_/g, ' ');
-    failServer(id, text === 'too many retries' ? t('proxy login refused | check the proxy login') : text);
+    failServer(id, text === 'too many retries' ? t('proxy login refused | check the proxy login') : text, NETWORK_ERRORS.has(code));
   });
 
   // an http error page from the server itself (did-fail-load does not fire for those)
@@ -744,7 +818,13 @@ const createServerView = (id: string): TServerView => {
     if (!findServerByUrl(url) || httpResponseCode < 400) return;
     log('window', 'server answered', httpResponseCode, 'for the page');
     if (httpResponseCode === 401 || httpResponseCode === 407) failServer(id, t('proxy login refused | check the proxy login'));
-    else if (httpResponseCode >= 500) failServer(id, t('server error {code}', { code: httpResponseCode }));
+    else if (httpResponseCode >= 500) {
+      // (a reverse proxy in front of a server that is still starting: 502, 503, 504)
+      loadFailed = true;
+      const starting = httpResponseCode >= 502 && httpResponseCode <= 504;
+      if (starting && retryLater()) return;
+      failServer(id, t('server error {code}', { code: httpResponseCode }), starting);
+    }
   });
 
   wc.on('destroyed', () => removeView(id));
@@ -753,9 +833,11 @@ const createServerView = (id: string): TServerView => {
 };
 
 /** a page went away (its tab closed, a failure, quitting) */
-const removeView = (id: string, quiet = false) => {
+const removeView = (id: string, quiet = false, remember = false) => {
   const v = views.get(id);
   if (!v) return;
+  if (v.retry) clearTimeout(v.retry);
+  v.retry = null;
   // the tab to show instead: the one after it, else the one before
   const order = [...views.keys()];
   const neighbour = order[order.indexOf(id) + 1] ?? order[order.indexOf(id) - 1];
@@ -772,7 +854,8 @@ const removeView = (id: string, quiet = false) => {
     return;
   }
 
-  rememberTabs();
+  // (remember: the network was down, not the tab closed; the next start opens it again)
+  if (!remember) rememberTabs();
   if (activeId === id) {
     activeId = null;
     if (neighbour) switchTo(neighbour);
@@ -802,6 +885,7 @@ const switchTo = (id: string) => {
   const title = v.wc.getTitle();
   mainWindow?.setTitle(v.loading || !title || /^https?:/.test(title) ? `${serverOf(id)?.name ?? ''} — Jollyboat` : `${title} — Jollyboat`);
   if (mainWindow?.isFocused()) v.wc.focus();
+  if (v.retry) retryNow(v);
   if (v.failed) {
     const server = serverOf(id);
     v.failed = null;
@@ -811,9 +895,10 @@ const switchTo = (id: string) => {
 
 /** a page that could not load: shown, its tab goes and the launcher says why; in the
  * background, the tab stays and is tried again when shown */
-const failServer = (id: string, reason: string) => {
+const failServer = (id: string, reason: string, network = false) => {
   const v = views.get(id);
   if (!v) return;
+  v.retries = 0;
   if (id !== activeId) {
     v.failed = reason;
     sendBarState();
@@ -821,7 +906,7 @@ const failServer = (id: string, reason: string) => {
   }
   const visible = !!mainWindow?.isVisible() || !!launcherWindow?.isVisible();
   log('window', 'server tab closed:', reason);
-  removeView(id, true);
+  removeView(id, true, network);
   showLauncher(reason, id, visible);
 };
 
@@ -1024,10 +1109,7 @@ const connectToServer = (id: string, show = true, background = false) => {
 
   if (!v) {
     v = createServerView(id);
-    const loadStart = performance.now();
-    v.wc.once('did-finish-load', () => log('start', `server page loaded in ${Math.round(performance.now() - loadStart)} ms (${Math.round(process.uptime() * 1000)} ms since launch)`));
-    // with an invite still to use, sharkord's connect screen gets it as ?invite= (it reads it from there)
-    v.wc.loadURL(server.invite ? `${server.url}/?invite=${encodeURIComponent(server.invite)}` : server.url);
+    v.wc.loadURL(startUrl(server));
     rememberTabs();
   }
   if (!background || !activeId) switchTo(id);
@@ -1180,6 +1262,47 @@ app.on('web-contents-created', (_e, contents) => {
   contents.on('will-navigate', (event, url) => {
     if (isOwnPageUrl(contents.getURL()) && !isOwnPageUrl(url)) event.preventDefault();
   });
+
+  // one of our own pages lost its process or hangs (the bar, the setup window, the overlay, a
+  // dialog): it loads again, or the bar would stay empty and the window without its buttons.
+  // three times in two minutes and it is left alone. (server pages have their own, above)
+  const gone: number[] = [];
+  contents.on('render-process-gone', (_e, details) => {
+    if (details.reason === 'clean-exit' || quitting || contents.isDestroyed() || !isOwnPageUrl(contents.getURL())) return;
+    const now = Date.now();
+    while (gone.length && now - gone[0]! > 120_000) gone.shift();
+    gone.push(now);
+    log('window', 'own page gone:', details.reason, details.exitCode, gone.length > 3 ? '(left alone)' : '');
+    if (gone.length <= 3) contents.reload();
+  });
+  let hung: NodeJS.Timeout | null = null;
+  contents.on('unresponsive', () => {
+    if (hung || !isOwnPageUrl(contents.getURL())) return;
+    hung = setTimeout(() => {
+      hung = null;
+      if (contents.isDestroyed()) return;
+      log('window', 'own page unresponsive for 30 s, reloading');
+      contents.forcefullyCrashRenderer();
+    }, 30_000);
+  });
+  const calm = () => {
+    if (hung) clearTimeout(hung);
+    hung = null;
+  };
+  contents.on('responsive', calm);
+  contents.on('destroyed', calm);
+});
+
+// back from sleep or the lock screen, or the displays changed (one unplugged, another scale):
+// windows can come back with stale or empty surfaces, so the pages draw again
+app.whenReady().then(() => {
+  const woke = () => repaintSoon(1500);
+  powerMonitor.on('resume', woke);
+  powerMonitor.on('unlock-screen', woke);
+  const displays = () => repaintSoon(500);
+  screen.on('display-added', displays);
+  screen.on('display-removed', displays);
+  screen.on('display-metrics-changed', displays);
 });
 
 // a sharkord:// link that started the app (windows, linux), or that macos sent before it was ready
@@ -1302,6 +1425,7 @@ if (!app.requestSingleInstanceLock()) {
     integrateAppImage();
     refreshAutoStart();
     ready = true;
+    quietErrors();
     // started by a sharkord:// link: the setup window with it, nothing else
     if (startLink) handleDeepLink(startLink);
     else if (reopen.length) {
