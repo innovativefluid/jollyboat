@@ -82,6 +82,11 @@
   </keywords>
 
   <releases>
+    <release version="0.4.13" date="2026-11-16">
+      <description>
+        <p>Windows: Jollyboat could come back from the taskbar showing nothing while in a call (with a screen share and a webcam on, say). It now redraws its pages whenever the window comes back, and after the graphics process restarts.</p>
+      </description>
+    </release>
     <release version="0.4.12" date="2026-11-15">
       <description>
         <p>Updated the parts Jollyboat is built from (Electron 45.3.2 among them) and cleaned up: unused code, styles and files are gone, among them the Jersey 10 font that no theme used any more. Nothing changes in how Jollyboat looks or works.</p>

@@ -428,6 +428,38 @@ const sendFocus = (focused: boolean) => {
   for (const c of all) if (c && !c.isDestroyed()) c.send('shell:focus', focused);
 };
 
+// back from the taskbar (or the tray): a page that runs unthrottled (the one in a call) can come
+// back blank on windows, chromium still believing it is hidden and dropping its frames (electron
+// #42378, #50250; a resize brought it back). so once the window is up again, every unthrottled
+// page is told so again while visible, and all of them draw a fresh frame at a new size
+const repaintPages = () => {
+  const win = mainWindow;
+  if (!win || win.isDestroyed() || win.isMinimized() || !win.isVisible()) return;
+  for (const v of views.values()) {
+    if (v.wc.isDestroyed()) continue;
+    if (!v.throttled) {
+      v.wc.setBackgroundThrottling(true);
+      v.wc.setBackgroundThrottling(false);
+    }
+    v.wc.invalidate();
+  }
+  for (const c of [barView?.webContents, barRight?.webContents]) if (c && !c.isDestroyed()) c.invalidate();
+  log('window', 'back on screen, pages redrawn', [...views.values()].filter((v) => !v.throttled).length ? '(one in a call)' : '');
+  const shown = alive(active());
+  if (!shown) return;
+  const b = shown.view.getBounds();
+  shown.view.setBounds({ ...b, height: Math.max(0, b.height - 1) });
+  setTimeout(layout, 32);
+};
+let repaintTimer: NodeJS.Timeout | null = null;
+const repaintSoon = (ms = 250) => {
+  if (repaintTimer) clearTimeout(repaintTimer);
+  repaintTimer = setTimeout(() => {
+    repaintTimer = null;
+    repaintPages();
+  }, ms);
+};
+
 const createMainWindow = () => {
   const dark = barDark();
 
@@ -482,6 +514,8 @@ const createMainWindow = () => {
     sendFocus(false);
   });
   win.on('hide', () => setOverlayHostFocused(false));
+  win.on('restore', () => repaintSoon());
+  win.on('show', () => repaintSoon());
   win.on('resize', () => {
     layout();
     rememberBounds();
@@ -1124,6 +1158,14 @@ const runSmokeTest = async () => {
     app.exit(1);
   }
 };
+
+// the gpu process going away (a driver reset under a share and a webcam, say): chromium starts a
+// new one; the log says so for bug reports, and the pages draw again once it is up
+app.on('child-process-gone', (_e, details) => {
+  if (details.type !== 'GPU') return;
+  log('window', 'gpu process gone:', details.reason, details.exitCode);
+  repaintSoon(1000);
+});
 
 // every web contents, whatever made it: no <webview>, no bluetooth chooser, no new windows unless
 // a window says otherwise (the server window sends links to the browser), and our own pages
