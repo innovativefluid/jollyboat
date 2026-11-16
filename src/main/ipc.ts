@@ -1,4 +1,4 @@
-import { ipcMain, net, safeStorage, shell, webContents, type BaseWindow, type IpcMainEvent, type IpcMainInvokeEvent, type WebContents } from 'electron';
+import { ipcMain, net, safeStorage, session, shell, webContents, type BaseWindow, type IpcMainEvent, type IpcMainInvokeEvent, type WebContents } from 'electron';
 import { PALETTES, type TServerInput, type TSettings, type TTestResult, type TVoiceMember, type TVoiceReport, type TVoiceState } from '../shared/types';
 import { finishPositioning, isWayland, refreshOverlay, setOverlayHeight, startPositioning } from './overlay';
 import { editCustomCss, refreshCustomCss } from './customcss';
@@ -31,6 +31,9 @@ import {
   findServerByUrl,
   getSettings,
   loginTokenFor,
+  accountFor,
+  setAccount,
+  publicServer,
   normalizeUrl,
   publicServers,
   recordTest,
@@ -129,7 +132,8 @@ const pickServerInput = (input: unknown): TServerInput => {
     basicAuth:
       auth && typeof auth.username === 'string'
         ? { username: auth.username.slice(0, 200), password: String(auth.password ?? '').slice(0, 500) }
-        : null
+        : null,
+    rememberLogin: i.rememberLogin === true
   };
 };
 
@@ -200,7 +204,8 @@ export const registerIpc = ({ connectToServer, spellcheckAtStart, onLookChange, 
       wayland: isWayland(),
       bridge: server && bridge.ownedByUs ? { ownedByUs: true, token: getBridgeToken() } : null,
       // sharkord's own login, kept across launches (the page would hold it in localStorage anyway)
-      login: server ? { token: loginTokenFor(server) } : null,
+      // (account: whether this server's sharkord name and password are kept, see server:relogin)
+      login: server ? { token: loginTokenFor(server), account: !!accountFor(server) } : null,
       colorMode: getSettings().colorMode,
       look: currentLook(),
       palette: currentPalette(),
@@ -273,6 +278,57 @@ export const registerIpc = ({ connectToServer, spellcheckAtStart, onLookChange, 
     }
   });
 
+  // "remember my login" (the server's opt-in): the name and password of a login that just worked
+  // on the page are kept
+  ipcMain.handle('server:remembers', (event) => !!findServerByUrl(event.senderFrame?.url ?? '')?.rememberLogin);
+  ipcMain.on('server:account', (event, raw: unknown) => {
+    const server = findServerByUrl(event.senderFrame?.url ?? '');
+    const a = (raw ?? {}) as Record<string, unknown>;
+    if (!server?.rememberLogin || typeof a.identity !== 'string' || typeof a.password !== 'string') return;
+    if (!a.identity || !a.password || a.identity.length > 200 || a.password.length > 1000) return;
+    setAccount(server.id, { identity: a.identity, password: a.password });
+    log('login', 'sharkord login kept for this server');
+  });
+
+  // ...and used when the page has no token the server still takes: a login like the page's own
+  // (POST /login), from here so the password never goes back to the page. at most one try a
+  // minute for a server (its lockout counts failures); a login the server turns down is forgotten
+  const lastRelogin = new Map<string, number>();
+  ipcMain.handle('server:relogin', async (event): Promise<{ token?: string; refused?: boolean }> => {
+    const server = findServerByUrl(event.senderFrame?.url ?? '');
+    const account = server && accountFor(server);
+    if (!server || !account) return {};
+    if (Date.now() - (lastRelogin.get(server.id) ?? 0) < 60_000) return {};
+    lastRelogin.set(server.id, Date.now());
+    try {
+      const res = await session.defaultSession.fetch(`${server.url}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identity: account.identity, password: account.password }),
+        signal: AbortSignal.timeout(10_000)
+      });
+      const body = (await res.json().catch(() => null)) as { token?: unknown; errors?: unknown } | null;
+      // sharkord's own "no" (wrong password, banned, local logins off): 400 with its field errors.
+      // (a 401/403 would be a proxy in front of it, a 429 its lockout: nothing to forget)
+      if (res.status === 400 && body?.errors) {
+        setAccount(server.id, null);
+        log('login', 'the server turned the kept login down: forgotten');
+        return { refused: true };
+      }
+      const token = res.ok ? body?.token : null;
+      if (typeof token !== 'string' || !token || token.length > 4096) {
+        log('login', 'login again did not work', res.status);
+        return {};
+      }
+      setLoginToken(server.id, token);
+      log('login', 'logged in again with the kept login');
+      return { token };
+    } catch (err) {
+      log('login', 'login again failed:', (err as Error).name);
+      return {};
+    }
+  });
+
   // sharkord's title carries its own unread total: "name (3)"
   ipcMain.on('server:title', (event, title: unknown) => {
     if (!fromSavedServer(event) || typeof title !== 'string') return;
@@ -323,10 +379,7 @@ export const registerIpc = ({ connectToServer, spellcheckAtStart, onLookChange, 
 
     recordTest(entry.id, { ok: test.ok, status: test.ok ? undefined : test.status }, test.ok ? test.info.name : undefined);
 
-    const saved = getSettings().servers.find((s) => s.id === entry.id)!;
-    const { basicAuth, ...safe } = saved;
-
-    return { server: { ...safe, basicAuth: basicAuth ? { username: basicAuth.username, passwordEnc: '', hasPassword: decryptPassword(basicAuth.passwordEnc) !== '' } : undefined }, test };
+    return { server: publicServer(getSettings().servers.find((s) => s.id === entry.id)!), test };
   }));
   ipcMain.handle('servers:remove', guard((_e, id: unknown) => removeServer(String(id))));
   ipcMain.handle('servers:connect', guard((_e, id: unknown) => connectToServer(String(id))));

@@ -25,7 +25,7 @@ type TBootstrap = {
   wayland: boolean;
   lang: 'en' | 'de' | 'pl';
   bridge: { ownedByUs: boolean; token: string } | null;
-  login: { token: string | null } | null;
+  login: { token: string | null; account: boolean } | null;
   colorMode: 'auto' | 'dark' | 'light';
   /** the app's own windows: the lcd look or the water look */
   look: TLook;
@@ -183,14 +183,15 @@ if (boot.isSavedServer) {
     let sessionFor = 0;
 
     // the token is a jwt: its "exp" says when the server stops taking it
-    const expired = (token: string) => {
+    const expiresIn = (token: string) => {
       try {
         const exp = JSON.parse(atob(token.split('.')[1]!.replace(/-/g, '+').replace(/_/g, '/'))).exp;
-        return typeof exp === 'number' && exp * 1000 < Date.now();
+        return typeof exp === 'number' ? exp * 1000 - Date.now() : Infinity;
       } catch {
-        return false;
+        return Infinity;
       }
     };
+    const expired = (token: string) => expiresIn(token) < 0;
     const drop = (why: string) => {
       held = null;
       ipcRenderer.send('server:login', null);
@@ -243,9 +244,82 @@ if (boot.isSavedServer) {
       comeBack = setTimeout(attempt, wait);
     };
 
+    // "remember my login" (this server's opt-in in jollyboat's settings): the name and password
+    // typed on sharkord's connect screen are kept once that login worked. they stay in the main
+    // process, which logs in with them (as the page would) when no token is left that the server
+    // takes, and hands back the new token
+    let canLogin = boot.login.account;
+    let typed: { identity: string; password: string; at: number } | null = null;
+    // (what was typed is only passed on after a login that worked, and only when the main
+    // process says this server remembers logins; otherwise it is dropped here)
+    window.addEventListener(
+      'input',
+      (e) => {
+        const el = e.target;
+        if (!e.isTrusted || !(el instanceof HTMLInputElement)) return;
+        // the connect screen's form: one name, one password (not a dialog, not the settings)
+        const form = el.closest('form');
+        if (!form || form.closest('[role="dialog"], [role="alertdialog"]')) return;
+        const passwords = form.querySelectorAll<HTMLInputElement>('input[type="password"]');
+        const name = Array.from(form.querySelectorAll<HTMLInputElement>('input')).find((i) => i.type === 'text' || i.type === 'email' || i.type === '');
+        if (passwords.length !== 1 || !name) return;
+        typed = name.value && passwords[0]!.value ? { identity: name.value, password: passwords[0]!.value, at: Date.now() } : null;
+      },
+      true
+    );
+    // (two tries until a login lasts: the main process allows one a minute anyway)
+    const RELOGINS = 'jollyboat-relogins';
+    let asking = false;
+    let askedAt = 0;
+    const askLogin = async () => {
+      asking = true;
+      askedAt = Date.now();
+      const r = (await ipcRenderer.invoke('server:relogin').catch(() => null)) as { token?: string; refused?: boolean } | null;
+      asking = false;
+      if (r?.refused) canLogin = false;
+      return r?.token ?? null;
+    };
+    const relogin = async (why: string) => {
+      const tries = Number(sessionStorage.getItem(RELOGINS) ?? 0);
+      if (!canLogin || asking || tries >= 2) return false;
+      sessionStorage.setItem(RELOGINS, String(tries + 1));
+      const token = await askLogin();
+      if (!token) return false;
+      held = token;
+      // (someone logged in by hand meanwhile: theirs stands)
+      if (sessionStorage.getItem(SESSION)) return true;
+      ipcRenderer.send('server:log', `logged in with the kept login (${why})`);
+      handBack();
+      location.reload();
+      return true;
+    };
+    const loginOrDrop = (why: string) => {
+      const token = held;
+      void relogin(why).then((ok) => !ok && held === token && drop(why));
+    };
+    // a token that runs out within two days is swapped for a new one while logged in: nothing
+    // to see, and the login never runs out as long as the app is opened now and then
+    const renew = async () => {
+      const token = await askLogin();
+      if (!token) return;
+      held = token;
+      if (sessionStorage.getItem(SESSION)) sessionStorage.setItem(SESSION, token);
+      if (localStorage.getItem(SAVED)) localStorage.setItem(SAVED, token);
+      ipcRenderer.send('server:log', 'login renewed with the kept login');
+    };
+
     try {
-      if (held && expired(held)) drop('expired');
-      else if (held && !localStorage.getItem(SAVED)) handBack();
+      if (held && expired(held)) {
+        held = null;
+        ipcRenderer.send('server:login', null);
+      }
+      const saved = localStorage.getItem(SAVED);
+      if (held && !saved) handBack();
+      else if (!held && canLogin && (!saved || expired(saved))) {
+        // (a token of sharkord's own that has run out would only fail first)
+        if (saved) localStorage.removeItem(SAVED);
+        void relogin('no login left');
+      }
       lastFlag = localStorage.getItem(FLAG);
     } catch {
       /* storage blocked */
@@ -260,31 +334,48 @@ if (boot.isSavedServer) {
         if (sessionFor === 5) {
           sessionStorage.removeItem(STRIKES);
           sessionStorage.removeItem(RELOADS);
+          sessionStorage.removeItem(RELOGINS);
+          if (canLogin && held && held === session && expiresIn(held) < 2 * 86_400_000) void renew();
         }
         // (five reloads at most until a login works: a server that never answers /info stays as it is)
         loadingFor = loadingScreen() ? loadingFor + 1 : 0;
         if (loadingFor >= 6 && !comeBack && Number(sessionStorage.getItem(RELOADS) ?? 0) < 5) tryAgain('loading');
 
-        if (session && session !== held) {
+        if (session && session !== held && !asking) {
           held = session;
           ipcRenderer.send('server:login', session);
+          // a login typed just now, and it worked: kept when this server remembers logins
+          const login = typed && Date.now() - typed.at < 120_000 ? typed : null;
+          typed = null;
+          if (login) {
+            void ipcRenderer.invoke('server:remembers').then((on) => {
+              if (on !== true) return;
+              ipcRenderer.send('server:account', { identity: login.identity, password: login.password });
+              canLogin = true;
+            });
+          }
         } else if (held && !session && lastFlag === 'true' && flag === 'false') {
           // the switch went off: the user's click, or sharkord itself after a login that failed
           if (Date.now() - lastGesture < 4000) drop('switched off');
-          else if (expired(held)) drop('expired');
+          else if (expired(held)) loginOrDrop('expired');
           else {
             void reachable().then((up) => {
               if (!held) return;
               const strikes = Number(sessionStorage.getItem(STRIKES) ?? 0) + (up ? 1 : 0);
               sessionStorage.setItem(STRIKES, String(strikes));
               ipcRenderer.send('server:log', `automatic login failed (server ${up ? 'answers' : 'does not answer'})`);
-              if (strikes >= 2) drop('turned down by the server');
+              if (strikes >= 2) loginOrDrop('turned down by the server');
               else tryAgain('login');
             });
           }
-        } else if (held && !session && !comeBack && lostScreen() && !expired(held)) {
+        } else if (held && !session && !comeBack && !asking && lostScreen()) {
           // sharkord gave up reconnecting (a server restart, the network gone for a while)
-          tryAgain('login');
+          if (expired(held)) loginOrDrop('expired');
+          else tryAgain('login');
+        } else if (!held && !session && canLogin && !asking && lastGesture === 0 && Date.now() - askedAt > 65_000 && document.querySelector('form input[type="password"]')) {
+          // sharkord's connect screen, nobody at it, a kept login, no token: once more (the first
+          // try met no server, say)
+          void relogin('no login left');
         }
         lastFlag = flag;
       } catch {

@@ -49,6 +49,7 @@ const sanitize = (raw: unknown): TSettings => {
       }
       const auth = e.basicAuth as Record<string, unknown> | undefined;
       const test = e.lastTest as Record<string, unknown> | undefined;
+      const acct = e.account as Record<string, unknown> | undefined;
       return [
         {
           id: e.id,
@@ -61,6 +62,10 @@ const sanitize = (raw: unknown): TSettings => {
             ? { lastTest: { ok: test.ok, at: test.at, ...(typeof test.status === 'number' ? { status: test.status } : {}) } }
             : {}),
           ...(typeof e.loginEnc === 'string' ? { loginEnc: e.loginEnc } : {}),
+          ...(e.rememberLogin === true ? { rememberLogin: true } : {}),
+          ...(e.rememberLogin === true && acct && typeof acct.identity === 'string' && typeof acct.passwordEnc === 'string'
+            ? { account: { identity: acct.identity, passwordEnc: acct.passwordEnc } }
+            : {}),
           ...(typeof e.invite === 'string' && INVITE_CODE.test(e.invite) ? { invite: e.invite } : {})
         }
       ];
@@ -214,6 +219,12 @@ export const upsertServer = (input: TServerInput): TServerEntry => {
 
   // the login token belongs to one origin
   if (existing?.loginEnc && existing.url === entry.url) entry.loginEnc = existing.loginEnc;
+  // remembering the sharkord login: its own switch (kept as it was when the input does not say);
+  // the account goes with the switch and with the address
+  if (input.rememberLogin ?? existing?.rememberLogin) {
+    entry.rememberLogin = true;
+    if (existing?.account && existing.url === entry.url) entry.account = existing.account;
+  }
 
   if (input.basicAuth && input.basicAuth.username) {
     entry.basicAuth = {
@@ -297,8 +308,29 @@ export const setLoginToken = (id: string, token: string | null) => {
   });
 };
 
-export const publicServers = () =>
-  getSettings().servers.map(({ basicAuth, loginEnc, ...rest }) => ({
-    ...rest,
-    basicAuth: basicAuth ? { username: basicAuth.username, passwordEnc: '', hasPassword: decryptPassword(basicAuth.passwordEnc) !== '' } : undefined
-  }));
+/** a server as our own pages get it: no token, no passwords, only whether they are there */
+export const publicServer = ({ basicAuth, loginEnc, account, ...rest }: TServerEntry) => ({
+  ...rest,
+  basicAuth: basicAuth ? { username: basicAuth.username, passwordEnc: '', hasPassword: decryptPassword(basicAuth.passwordEnc) !== '' } : undefined,
+  account: account ? { identity: account.identity, passwordEnc: '' } : undefined
+});
+export const publicServers = () => getSettings().servers.map(publicServer);
+
+/** the sharkord account of a server with "remember my login": kept (a login on its page worked),
+ * or forgotten (null: the server turned it down) */
+export const setAccount = (id: string, account: { identity: string; password: string } | null) => {
+  const settings = getSettings();
+  const server = settings.servers.find((s) => s.id === id);
+
+  if (!server || (account ? !server.rememberLogin : !server.account)) return;
+  if (account && server.account?.identity === account.identity && decryptPassword(server.account.passwordEnc) === account.password) return;
+  saveSettings({
+    servers: settings.servers.map((s) => {
+      if (s.id !== id) return s;
+      const { account: _old, ...rest } = s;
+      return account ? { ...rest, account: { identity: account.identity, passwordEnc: encrypt(account.password) } } : rest;
+    })
+  });
+};
+export const accountFor = (server: TServerEntry) =>
+  server.rememberLogin && server.account ? { identity: server.account.identity, password: decryptPassword(server.account.passwordEnc) } : null;

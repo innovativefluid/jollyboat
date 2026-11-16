@@ -21,6 +21,9 @@ const openBtn = $<HTMLButtonElement>('open-now');
 const shareRow = $('share-row');
 const authBox = $<HTMLInputElement>('use-auth');
 const authFields = $('auth-fields');
+const rememberBox = $<HTMLInputElement>('remember-login');
+const rememberFields = $('remember-fields');
+const rememberStatus = $('remember-status');
 const right = $('right');
 
 let editingId: string | undefined;
@@ -84,7 +87,8 @@ const formInput = (): TServerInput => ({
   id: editingId,
   url: fUrl.value,
   name: fName.value,
-  basicAuth: authBox.checked && fUser.value ? { username: fUser.value, password: fPass.value } : null
+  basicAuth: authBox.checked && fUser.value ? { username: fUser.value, password: fPass.value } : null,
+  rememberLogin: rememberBox.checked
 });
 
 const resetRemove = () => {
@@ -102,6 +106,10 @@ const openEditor = (server?: TServerEntry) => {
   fPass.placeholder = server?.basicAuth ? 'unchanged' : '';
   authBox.checked = !!server?.basicAuth;
   authFields.hidden = !authBox.checked;
+  rememberBox.checked = !!server?.rememberLogin;
+  rememberFields.hidden = !rememberBox.checked;
+  // (the name only: the password stays in the main process)
+  hint(rememberStatus, server?.account ? t('kept for {name}', { name: server.account.identity }) : t('kept from your next login in sharkord on'), server?.account ? 'good' : undefined);
   checkUrl();
   deleteBtn.hidden = !server;
   openBtn.hidden = !server;
@@ -155,6 +163,9 @@ $('editor-close').onclick = () => closeEditor();
 authBox.onchange = () => {
   authFields.hidden = !authBox.checked;
   if (authBox.checked) fUser.focus();
+};
+rememberBox.onchange = () => {
+  rememberFields.hidden = !rememberBox.checked;
 };
 $('save').onclick = save;
 // open: a password just typed in is saved first; none at all for a proxy login is asked for

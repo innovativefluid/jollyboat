@@ -90,7 +90,7 @@ From [releases](../../releases):
 | Linux (x64 or ARM) | the AppImage, which updates itself: `Jollyboat-x.y.z-linux-x86_64.AppImage` (`arm64`), make it executable and run it once, it adds itself to the app menu; or `flatpak install ./Jollyboat-x.y.z-linux-x64.flatpak` (`arm64`) |
 | macOS 13+ (Intel or Apple silicon) | `Jollyboat-x.y.z-mac-universal.dmg`. It is not signed by Apple: open it the first time with **System Settings → Privacy & Security → Open Anyway**. It tells you about new releases instead of updating itself |
 
-Add your server's address; if a proxy asks for a login first, tick **proxy login / basic auth**. **servers and settings** in the bar (or ctrl+shift+s) opens the settings again, and **+** opens another server in a tab.
+Add your server's address; if a proxy asks for a login first, tick **proxy login / basic auth**. Sharkord's own login runs out seven days after you typed your password; tick **remember my sharkord login** for a server and Jollyboat keeps your name and password from your next login there and logs in again by itself. **servers and settings** in the bar (or ctrl+shift+s) opens the settings again, and **+** opens another server in a tab.
 
 ![The setup window: servers, app settings and privacy](docs/launcher.png)
 

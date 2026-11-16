@@ -21,8 +21,10 @@ crash reports and no usage statistics.
 
 Your server list, proxy logins (encrypted with the system's keyring where there is one), the
 Sharkord login for each server, and the settings, in the app's data folder (or the
-`Jollyboat-data` folder next to the portable exe). Nothing of it leaves your computer except to
-the server it belongs to.
+`Jollyboat-data` folder next to the portable exe). The Sharkord login is the token Sharkord
+itself keeps; your Sharkord name and password are kept as well only for servers where you tick
+**remember my sharkord login** (encrypted like the proxy logins), and forgotten when you untick
+it. Nothing of it leaves your computer except to the server it belongs to.
 
 On Windows, push-to-talk uses a keyboard hook while a hotkey is set: keys are compared with your
 hotkeys and never stored or sent.

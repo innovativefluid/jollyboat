@@ -90,6 +90,12 @@
                   <div class="control"><input type="password" id="f-pass" autocomplete="off" /></div>
                 </div>
               </div>
+              <label class="check" style="margin-top: 10px; display: flex">
+                <input type="checkbox" id="remember-login" /> <span data-i18n>remember my sharkord login</span></label>
+              <div id="remember-fields" hidden>
+                <div class="hint" style="margin-top: 4px" data-i18n>your sharkord name and password are kept on this computer | jollyboat logs in again when sharkord's login runs out (every 7 days)</div>
+                <div class="hint" id="remember-status" style="margin-top: 2px"></div>
+              </div>
               <div class="hint" id="test-status" style="margin-top: 6px"></div>
               <div class="row" style="margin-top: 10px">
                 <button class="pill small" id="save" data-i18n>save</button>

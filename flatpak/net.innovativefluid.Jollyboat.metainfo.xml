@@ -91,7 +91,7 @@
           <li>The settings file can no longer be left half-written, and a copy from the last start is used if it cannot be read.</li>
           <li>An unexpected error no longer freezes the app behind an error dialog; it goes to the diagnostics log.</li>
           <li>The pages are drawn again after sleep, unlocking the screen and display changes; the overlay returns on top and onto a display that is there.</li>
-          <li>Staying logged in: a login that failed because the server or the network was not there yet no longer costs you the saved login, and after a lost connection (a server restart, a long sleep) Jollyboat logs in again by itself once the server answers. Sharkord's login still runs out seven days after you last typed your password.</li>
+          <li>Staying logged in: a login that failed because the server or the network was not there yet no longer costs you the saved login, and after a lost connection (a server restart, a long sleep) Jollyboat logs in again by itself once the server answers. Sharkord's login still runs out seven days after you last typed your password; for that there is a new option per server, "remember my sharkord login": Jollyboat then keeps your name and password from your next login and logs in again by itself.</li>
         </ul>
       </description>
     </release>

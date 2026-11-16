@@ -192,5 +192,9 @@
   "Red and green": "Rot und Grün",
   "Gold": "Gold",
   "Snow": "Schnee",
-  "Sunset": "Sonnenuntergang"
+  "Sunset": "Sonnenuntergang",
+  "remember my sharkord login": "Sharkord-Login merken",
+  "your sharkord name and password are kept on this computer | jollyboat logs in again when sharkord's login runs out (every 7 days)": "dein Sharkord-Name und Passwort bleiben auf diesem Computer | Jollyboat meldet dich neu an, wenn Sharkords Login abläuft (alle 7 Tage)",
+  "kept for {name}": "gemerkt für {name}",
+  "kept from your next login in sharkord on": "wird ab deinem nächsten Login in Sharkord gemerkt"
 }

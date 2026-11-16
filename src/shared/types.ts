@@ -28,6 +28,12 @@ export type TServerEntry = {
   };
   /** Sharkord's 7-day login token, encrypted like the password; only handed to that server's page */
   loginEnc?: string;
+  /** opt-in: keep the sharkord name and password of this server, to log in again when the
+   *  token has run out */
+  rememberLogin?: boolean;
+  /** the sharkord account (kept only with rememberLogin, picked up from a login on the page).
+   *  the password is encrypted like the proxy's and never leaves the main process (pages get '') */
+  account?: { identity: string; passwordEnc: string };
   /** a Sharkord invite code (from an invite link or a share code): the page opens with it until
    *  someone logs in there */
   invite?: string;
@@ -42,6 +48,8 @@ export type TServerInput = {
   name: string;
   url: string;
   basicAuth?: { username: string; password: string } | null;
+  /** keep the sharkord login (off: a kept one is forgotten) */
+  rememberLogin?: boolean;
   /** an invite code; null drops a stored one (an invite link as the url brings its own) */
   invite?: string | null;
 };
