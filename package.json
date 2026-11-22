@@ -2,7 +2,7 @@
   "name": "jollyboat",
   "productName": "Jollyboat",
   "desktopName": "net.innovativefluid.Jollyboat.desktop",
-  "version": "0.4.14",
+  "version": "0.4.15",
   "description": "Sharkord client",
   "homepage": "https://github.com/innovativefluid/jollyboat",
   "repository": {
@@ -45,7 +45,7 @@
   "devDependencies": {
     "@types/node": "^24.19.2",
     "@types/ws": "^8.18.2",
-    "electron": "^45.3.2",
+    "electron": "^45.4.1",
     "electron-builder": "^26.18.0",
     "electron-vite": "^6.0.0",
     "typescript": "^7.0.2",

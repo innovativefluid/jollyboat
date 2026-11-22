@@ -171,7 +171,8 @@ html [data-slot="checkbox"][data-state="checked"] { background: var(--jb-ink); b
 
 html [data-testid="channel-item"] { border-radius: 10px 4px 10px 4px; }
 html [data-testid="channel-item"].bg-accent { background: var(--jb-ink); color: var(--background); }
-html [data-testid="channel-item"].bg-accent svg { color: var(--background); }
+/* (the voice channel one is in carries sharkord's text-green-500, and so does its timer) */
+html [data-testid="channel-item"].bg-accent[class], html [data-testid="channel-item"].bg-accent[class] :is(svg, span) { color: var(--background); }
 /* a two-pixel ink line instead of the hairline between sidebar, chat and member list */
 html .border-r, html .border-l, html .border-b, html .border-t, html .border { border-color: var(--border); }
 

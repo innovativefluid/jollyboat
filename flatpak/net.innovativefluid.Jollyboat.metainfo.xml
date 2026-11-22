@@ -82,6 +82,12 @@
   </keywords>
 
   <releases>
+    <release version="0.4.15" date="2026-11-22">
+      <description>
+        <p>Checked against Sharkord 0.0.32: everything works as before, including its new server setup, sessions list and user popover in all themes. Electron is updated to 45.4.1.</p>
+        <p>The voice channel you are in is readable again when it is selected in the Retro theme (dark), and its call timer shows in the Jollyboat theme.</p>
+      </description>
+    </release>
     <release version="0.4.14" date="2026-11-16">
       <description>
         <p>A stability pass. Jollyboat now recovers on its own from more things going wrong:</p>

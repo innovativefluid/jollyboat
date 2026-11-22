@@ -344,7 +344,8 @@ html [data-testid="channel-item"].bg-accent {
   box-shadow: 0 3px 7px -2px rgba(var(--w-shade), var(--w-shade-a)), inset 0 0 0 1px rgba(var(--w-edge), 0.5);
   text-shadow: 0 1px 1px rgba(var(--w-on-liq-shade), 0.95);
 }
-html [data-testid="channel-item"].bg-accent svg { color: #fff; }
+/* (the voice channel one is in carries sharkord's text-green-500, and so does its timer) */
+html [data-testid="channel-item"].bg-accent[class], html [data-testid="channel-item"].bg-accent[class] :is(svg, span) { color: #fff; }
 /* hover glows, the current thing is filled with water */
 html [data-testid="channel-item"]:not(.bg-accent):hover,
 html [data-testid="member-item"]:hover { background: rgba(var(--w-glow), 0.14); box-shadow: inset 0 0 0 1px rgba(var(--w-glow), 0.55), 0 0 10px rgba(var(--w-glow), 0.25); }

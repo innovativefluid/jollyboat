@@ -13,7 +13,7 @@
 import { frogFrame } from './frog';
 
 /** day and night, and the sunset palette's two: the sun going down (light), dusk (dark) */
-export type TSkyScheme = 'night' | 'day' | 'sunset' | 'dusk';
+type TSkyScheme = 'night' | 'day' | 'sunset' | 'dusk';
 export type TSky = {
   stop: () => void;
   /** stand still (a game open over the page, the page hidden): the sky is drawn once and waits */

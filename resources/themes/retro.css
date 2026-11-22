@@ -280,7 +280,8 @@ html [data-slot="checkbox"][data-state="checked"] { background: var(--r-field); 
 /* the channel you are on: picked out like a selected file */
 html [data-testid="channel-item"] { border-radius: 0; }
 html [data-testid="channel-item"].bg-accent { background: var(--r-sel); color: var(--r-sel-ink); }
-html [data-testid="channel-item"].bg-accent svg { color: var(--r-sel-ink); }
+/* (the voice channel one is in carries sharkord's text-green-500, and so does its timer) */
+html [data-testid="channel-item"].bg-accent[class], html [data-testid="channel-item"].bg-accent[class] :is(svg, span) { color: var(--r-sel-ink); }
 /* the one under the pointer: marching ants round it, the old way of saying "this one" */
 html [data-testid="channel-item"]:not(.bg-accent):hover,
 html [data-testid="member-item"]:hover {
