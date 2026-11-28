@@ -2,7 +2,7 @@
   "name": "jollyboat",
   "productName": "Jollyboat",
   "desktopName": "net.innovativefluid.Jollyboat.desktop",
-  "version": "0.4.15",
+  "version": "0.4.16",
   "description": "Sharkord client",
   "homepage": "https://github.com/innovativefluid/jollyboat",
   "repository": {
@@ -36,20 +36,20 @@
   },
   "dependencies": {
     "electron-updater": "^6.8.11",
-    "ws": "^8.23.0"
+    "ws": "^8.23.1"
   },
   "optionalDependencies": {
     "@vencord/venmic": "^7.2.5",
     "uiohook-napi": "^1.5.5"
   },
   "devDependencies": {
-    "@types/node": "^24.19.2",
+    "@types/node": "^24.19.4",
     "@types/ws": "^8.18.2",
-    "electron": "^45.4.1",
+    "electron": "^45.5.0",
     "electron-builder": "^26.18.0",
     "electron-vite": "^6.0.0",
     "typescript": "^7.0.2",
-    "vite": "^8.3.8"
+    "vite": "^8.4.0"
   },
   "overrides": {
     "tar": "^7.5.21",

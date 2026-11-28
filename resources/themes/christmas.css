@@ -356,3 +356,6 @@ html .space-y-4 > :last-child div.rounded-md:last-child > [data-testid="message-
 @media (prefers-reduced-motion: reduce) {
   html *, html *::before, html *::after { animation: none !important; transition: none !important; }
 }
+
+/* sharkord's charts (server settings, metrics) draw with --chart-1: the theme's own colour */
+html:root { --chart-1: var(--x-accent); }

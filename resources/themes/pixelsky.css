@@ -472,3 +472,6 @@ html[data-jb-bar] .h-dvh > .bg-card.border-b {
   box-shadow: none !important;
   animation: none;
 }
+
+/* sharkord's charts (server settings, metrics) draw with --chart-1: the theme's own colour */
+html:root { --chart-1: var(--primary); }

@@ -486,3 +486,6 @@ html.dark[data-jb-bar]:not(.jb-water) .h-dvh > .bg-card.border-b {
     linear-gradient(to bottom, rgba(var(--w-light), 0.1), rgba(var(--w-light), 0) 55%),
     linear-gradient(to bottom, color-mix(in srgb, rgb(var(--w-pool-top)) 94%, rgb(var(--w-light))), color-mix(in srgb, rgb(var(--w-pool-mid)) 88%, rgb(var(--w-pool-top)))) !important;
 }
+
+/* sharkord's charts (server settings, metrics) draw with --chart-1: the theme's own colour */
+html:root { --chart-1: var(--primary); }

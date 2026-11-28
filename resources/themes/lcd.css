@@ -300,3 +300,6 @@ html ::-webkit-scrollbar-track { background: transparent; }
 html ::-webkit-scrollbar-thumb { background: var(--jb-dim); border-radius: 4px; border: 2px solid var(--background); }
 html ::-webkit-scrollbar-thumb:hover { background: var(--jb-ink); }
 html body { scrollbar-color: var(--jb-dim) transparent; }
+
+/* sharkord's charts (server settings, metrics) draw with --chart-1: the theme's own colour */
+html:root { --chart-1: var(--primary); }

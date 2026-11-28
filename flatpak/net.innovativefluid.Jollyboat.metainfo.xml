@@ -82,6 +82,12 @@
   </keywords>
 
   <releases>
+    <release version="0.4.16" date="2026-11-28">
+      <description>
+        <p>Checked against Sharkord 0.0.33: everything works as before, including its new plugin pages, the metrics page and the pick-several settings, in all themes. The charts on the metrics page now take each theme's own colour.</p>
+        <p>Electron is updated to 45.5.0.</p>
+      </description>
+    </release>
     <release version="0.4.15" date="2026-11-22">
       <description>
         <p>Checked against Sharkord 0.0.32: everything works as before, including its new server setup, sessions list and user popover in all themes. Electron is updated to 45.4.1.</p>
